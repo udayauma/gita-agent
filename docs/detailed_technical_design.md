@@ -32,7 +32,6 @@ Video processing is **slow**. A 1-hour video takes minutes to transcribe. If we 
 -   **Design**: The API acknowledges the request ("Job Created") immediately.
 -   **Execution**: A background worker picks up the job and crunches the video without blocking the user.
 -   **Component**: For the MVP, this can be a single Python Service using `BackgroundTasks` in FastAPI. For scale, we use Google Cloud Tasks.
-```
 
 ### Selected Framework: Google ADK (Python)
 We will use the **Google Agent Development Kit (ADK)**.
@@ -185,5 +184,3 @@ We must ensure the pipeline doesn't crash on corrupted inputs.
     -   Generate random JSON payloads for `POST /ingest`.
     -   Generate malformed `job_id` strings for `GET /status`.
     -   **Text Fuzzing**: Send queries with emojis, 100k characters, or SQL injection patterns to the ADK agent to ensure it handles them gracefully (sanitization).
-
-

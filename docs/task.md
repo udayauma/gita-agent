@@ -21,10 +21,13 @@
 - [ ] Testing Strategy
     - [ ] Pytest & Golden Set
     - [ ] **Fuzz Testing & Validation** (New)
-- [/] Draft `detailed_technical_design.md` <!-- id: 1 -->
+- [x] Draft `detailed_technical_design.md` <!-- id: 1 -->
 
 ## Next Phase: Implementation Initialization
-- [ ] Set up Project Structure (Google ADK)
+- [x] **Git Setup & Version Control**
+    - [x] Initialize Git Repo
+    - [x] Connect to User's GitHub Remote
+- [x] Set up Project Structure (Google ADK)
 - [ ] **Data Pipeline MVP**
-    - [ ] Script to listing Drive files
+    - [ ] Script to list Drive files
     - [ ] Audio Extraction prototype
