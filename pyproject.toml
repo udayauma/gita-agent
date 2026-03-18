@@ -1,0 +1,14 @@
+[project]
+name = "gita-agent"
+version = "0.1.0"
+description = "Bhagavad Gita AI Agent with personal video context"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+python_files = "test_*.py"
+python_functions = "test_*"
+
+[tool.structlog]
+json_format = true
