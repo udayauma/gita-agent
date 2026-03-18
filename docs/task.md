@@ -1,37 +1,85 @@
 # Task: Design Hinduism & Bhagavad Gita Query Agent
 
+## Phase 1: Design (Current)
 - [x] Define System Architecture
-    - [x] High-level Diagram (Mermaid) <!-- id: 5 -->
-    - [x] Component Breakdown (Backend, MCP, Frontend)
-    - [x] MVP vs Long-term Strategy Definition
-- [x] **Clarify Requirements & Data Sources** <!-- id: 0 -->
-- [ ] Design Data Ingestion Pipeline
-    - [ ] Google Drive API Integration
-    - [ ] **Detailed Ingestion API Specs** (New)
-    - [ ] **Transcription & Diarization Deep Dive** (New)
-    - [ ] Chunking & Embedding Strategy
-- [ ] Design MCP Integration
-    - [ ] `gita-context-server` Specification
-    - [ ] Tool Definitions
-- [ ] Plan Deployment Strategy
-    - [x] Docker/Cloud Run Selection
-    - [ ] **Google ADK Framework Integration** (New)
-- [ ] Frontend Design
-    - [ ] Simple React UI Definition
-- [ ] Testing Strategy
-    - [ ] Pytest & Golden Set
-    - [ ] **Fuzz Testing & Validation** (New)
-- [x] Draft `detailed_technical_design.md` <!-- id: 1 -->
+    - [x] High-level Diagram (Mermaid)
+    - [x] Agent Query Flow (Sequence Diagram)
+    - [x] Data Ingestion Pipeline Flow (Sequence Diagram)
+    - [x] Deployment Diagram (Mermaid)
+    - [x] Component Breakdown (ADK, MCP, Ingestion, Frontend)
+- [x] **Clarify Requirements & Data Sources**
+    - [x] Source data: 4 Google Meet recordings (~3.26 GB), Telugu/English
+    - [x] Translation pipeline: Chirp 3 + Gemini 3 Flash (Option A)
+    - [x] No raw transcript storage — vector embeddings only (Pinecone)
+- [x] Design Data Ingestion Pipeline
+    - [x] Google Drive API Integration
+    - [x] Ingestion API Specs (POST /ingest, GET /jobs, GET /videos)
+    - [x] Audio Extraction (ffmpeg → FLAC)
+    - [x] Transcription (Chirp 3, te-IN + en-US, diarization)
+    - [x] Translation (Gemini 3 Flash, Telugu → English)
+    - [x] Chunking & Embedding Strategy (500 tokens, 50 overlap, text-embedding-004)
+- [x] Design MCP Integration
+    - [x] `gita-context-server` Specification
+    - [x] Tool Definitions (search_transcripts, get_video_metadata)
+    - [x] ADK native MCP support via McpToolset
+- [x] Plan Deployment Strategy
+    - [x] Cloud Run (Staging only, personal use)
+    - [x] Google ADK Framework Integration (v1.0+, Gemini 3 Flash)
+    - [x] Secrets Management (Google Secret Manager)
+    - [x] API Gap Analysis (4 APIs to enable)
+- [x] Frontend Design
+    - [x] MVP: `adk web` built-in dev UI (no frontend code)
+- [x] Testing Strategy
+    - [x] TDD approach with test specs per component
+    - [x] Golden Set (20 QA pairs)
+    - [x] Fuzz Testing (hypothesis)
+    - [x] Validation (corrupt MP4, silence, edge cases)
+- [x] Draft `detailed_technical_design.md`
 
-## Next Phase: Implementation Initialization
+## Phase 2: Environment Setup
 - [x] **Git Setup & Version Control**
     - [x] Initialize Git Repo
-    - [x] Connect to User's GitHub Remote
-- [x] Set up Project Structure (Google ADK)
-- [ ] **Environment Setup**
-    - [ ] Obtain Google Cloud Credentials (JSON)
-    - [ ] Obtain Pinecone API Key
-    - [ ] Configure `.env` file
-- [ ] **Data Pipeline MVP**
-    - [ ] Script to listing Drive files
-    - [ ] Audio Extraction prototype
+    - [x] Connect to GitHub Remote
+- [x] Set up Project Structure
+- [ ] **GCP Configuration**
+    - [ ] Enable missing APIs (Speech-to-Text, Cloud Run, Secret Manager, Generative Language)
+    - [ ] Share Drive folder with service account
+    - [ ] Create GCS bucket (gita-agent-prod-audio)
+    - [ ] Create secrets in Secret Manager
+    - [ ] Create Pinecone index (gita-videos, 768 dims, cosine)
+- [ ] **Local Dev Environment**
+    - [ ] Python virtual environment
+    - [ ] Install dependencies
+    - [ ] Configure .env for local development
+    - [ ] Verify `adk web` runs locally
+
+## Phase 3: Implementation (TDD)
+- [ ] **Ingestion Service**
+    - [ ] Write tests for audio extraction
+    - [ ] Implement audio extraction (ffmpeg)
+    - [ ] Write tests for Drive API integration
+    - [ ] Implement Drive file listing + download
+    - [ ] Write tests for transcription
+    - [ ] Implement Chirp 3 transcription
+    - [ ] Write tests for translation
+    - [ ] Implement Gemini translation
+    - [ ] Write tests for chunking + embedding
+    - [ ] Implement chunking + Pinecone upsert
+    - [ ] Write tests for FastAPI endpoints
+    - [ ] Implement FastAPI ingestion service
+- [ ] **MCP Server**
+    - [ ] Write tests for search_transcripts
+    - [ ] Implement Pinecone search logic
+    - [ ] Write tests for get_video_metadata
+    - [ ] Implement metadata retrieval
+    - [ ] Write tests for tool listing
+    - [ ] Implement MCP server
+- [ ] **Agent**
+    - [ ] Write integration tests
+    - [ ] Define root_agent with MCP tools
+    - [ ] Build Golden Set (20 QA pairs)
+    - [ ] Validate agent responses against Golden Set
+- [ ] **Deployment**
+    - [ ] Write Dockerfile
+    - [ ] Deploy to Cloud Run (staging)
+    - [ ] Verify end-to-end flow

@@ -1,186 +1,730 @@
 # Technical Design: Hinduism & Bhagavad Gita Agent
 
 ## 1. Executive Summary
-An AI agent designed to answer natural language queries about Hinduism, specifically the Bhagavad Gita, utilizing personal video context via Model Context Protocol (MCP).
+
+An AI agent designed to answer natural language queries about Hinduism, specifically the Bhagavad Gita, utilizing personal video context from recorded sessions between a father ("Nanna" / Guru) and daughter (Udaya / Student). The agent is built on **Google Agent Development Kit (ADK)** with **Gemini 3 Flash**, uses a two-stage translation pipeline (**Chirp 3** for Telugu/English transcription + **Gemini** for English translation), stores context as vector embeddings in **Pinecone**, and exposes transcript search via a native **MCP tool** integrated directly into the ADK agent. The MVP frontend is the built-in **`adk web`** development UI.
+
+---
 
 ## 2. System Architecture
 
-### High-Level Architecture (Google ADK)
+### 2.1 High-Level Architecture
+
 ```mermaid
 graph TD
-    User[User] -->|Chat/Voice| UI[React Frontend]
-    UI -->|Session API| Runtime[Google ADK Runtime]
-    
-    subgraph "Google Cloud Run (Serverless)"
-        Runtime -->|Orchestrates| Agent["Gita Agent (Python ADK)"]
-        Agent -->|Tools| ContextTool[Video Context Tool]
-        
-        ContextTool -->|Query| VDB[(Pinecone Vector DB)]
+    User[User] -->|Chat| ADKWEB["adk web (Built-in Dev UI)"]
+    ADKWEB -->|Session API| Runtime[Google ADK Runtime]
+
+    subgraph "Google Cloud Run - Staging"
+        Runtime -->|Orchestrates| Agent["Gita Agent<br/>(Gemini 3 Flash)"]
+        Agent -->|Native MCP Tool| MCPTool["search_transcripts()"]
+        Agent -->|Native MCP Tool| MCPMeta["get_video_metadata()"]
+        MCPTool -->|Similarity Search| VDB[(Pinecone Vector DB)]
+        MCPMeta -->|Metadata Lookup| VDB
     end
-    
-    subgraph "Data Pipeline (Async Service)"
-        Drive[Google Drive] -.->|Webhooks/Poll| IngestAPI[Ingestion API]
-        IngestAPI -->|Async Task| Worker[Background Worker]
-        Worker -->|STT| SpeechAPI[Cloud Speech-to-Text V2]
-        Worker -->|Upsert| VDB
+
+    subgraph "Data Ingestion Pipeline (Local / Cloud Run Job)"
+        Drive[Google Drive<br/>Bhagavad Gita Sessions] -->|Download MP4| Ingest[Ingestion Service<br/>FastAPI]
+        Ingest -->|ffmpeg| Audio[Audio Extraction<br/>WAV/FLAC]
+        Audio -->|Upload| GCS[Cloud Storage Bucket]
+        GCS -->|BatchRecognize| STT[Chirp 3<br/>Speech-to-Text V2]
+        STT -->|Telugu + English Text| Trans[Gemini 3 Flash<br/>Translation to English]
+        Trans -->|English Text| Embed[Embedding<br/>text-embedding-004]
+        Embed -->|Upsert Vectors| VDB
     end
 ```
 
-### Architecture Clarification: The "Async" Pipeline
-**Why Pub/Sub (or Async Queues)?**
-Video processing is **slow**. A 1-hour video takes minutes to transcribe. If we run this directly in the API call (`POST /ingest`), the request will time out (HTTP limit is usually 60s).
--   **Design**: The API acknowledges the request ("Job Created") immediately.
--   **Execution**: A background worker picks up the job and crunches the video without blocking the user.
--   **Component**: For the MVP, this can be a single Python Service using `BackgroundTasks` in FastAPI. For scale, we use Google Cloud Tasks.
+### 2.2 Agent Query Flow
 
-### Selected Framework: Google ADK (Python)
-We will use the **Google Agent Development Kit (ADK)**.
--   **Why?**: Native integration with Google Gemini, built-in "Agent Runtime".
--   **Setup Instructions**:
-    1.  Install the CLI: `pip install google-adk`
-    2.  Initialize Project: `adk create my-gita-agent` (Follows standard structure: `agent.py`, `requirements.txt`).
-    3.  Define Agent: Update `agent.py` to use `model="gemini-1.5-pro"` and import our MCP tools.
-    4.  Run Locally: `adk run` for interactive testing.
-    *Reference: [Google ADK Python Guide](https://google.github.io/adk-docs/get-started/python/)*
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant ADK as ADK Runtime (adk web)
+    participant Agent as Gita Agent (Gemini 3 Flash)
+    participant MCP as MCP Tool (search_transcripts)
+    participant P as Pinecone
 
-### System Components
-1.  **Frontend**: React + Tailwind (Talks to ADK Runtime API).
-2.  **Runtime**: ADK Service handling history, state, and user sessions.
-3.  **Data Pipeline**: A dedicated Microservice (FastAPI) for processing videos.
+    U->>ADK: "What does Krishna say about duty?"
+    ADK->>Agent: Forward query with session context
+    Agent->>Agent: Decide to use search_transcripts tool
+    Agent->>MCP: search_transcripts(query="Krishna duty dharma", limit=5)
+    MCP->>MCP: Embed query via text-embedding-004
+    MCP->>P: Similarity search (top 5 chunks)
+    P-->>MCP: Ranked chunks with metadata
+    MCP-->>Agent: Return chunks + timestamps + speaker labels
+    Agent->>Agent: Synthesize answer from chunks + Gita knowledge
+    Agent-->>ADK: Response with citations
+    ADK-->>U: Display answer + source references
+```
+
+### 2.3 Data Ingestion Pipeline Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User / CLI
+    participant API as Ingestion API (FastAPI)
+    participant W as Background Worker
+    participant GD as Google Drive
+    participant GCS as Cloud Storage
+    participant STT as Chirp 3 (Speech-to-Text V2)
+    participant LLM as Gemini 3 Flash
+    participant P as Pinecone
+
+    U->>API: POST /api/v1/ingest {folder_id, force_reindex}
+    API->>API: Create job record, return job_id
+    API-->>U: 202 Accepted {job_id}
+    API->>W: Enqueue job (BackgroundTasks)
+
+    W->>GD: List MP4 files in folder
+    GD-->>W: File list (4 recordings, ~3.26 GB)
+
+    loop For each video file
+        W->>GD: Download MP4
+        W->>W: ffmpeg: extract audio (MP4 → FLAC)
+        W->>GCS: Upload audio to gs://gita-agent-prod-audio/
+        W->>STT: BatchRecognizeRequest (Chirp 3, te-IN, diarization)
+        STT-->>W: Transcribed text (Telugu + English mixed) with speaker labels
+        W->>LLM: Translate Telugu portions to English
+        LLM-->>W: Full English text with speaker labels preserved
+        W->>W: Chunk text (500 tokens, 50 token overlap)
+        W->>P: Upsert embeddings (text-embedding-004) + metadata
+    end
+
+    U->>API: GET /api/v1/jobs/{job_id}
+    API-->>U: {status: "completed", files_processed: 4}
+```
+
+### 2.4 Architecture Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Agent Framework | Google ADK (Python) v1.0+ | Native Gemini integration, built-in runtime, MCP support |
+| Agent Model | Gemini 3 Flash | Fast, cost-effective, strong reasoning for personal use |
+| Transcription | Chirp 3 (Speech-to-Text V2) | Best multilingual ASR, diarization, auto language detection |
+| Translation | Gemini 3 Flash | Handles Telugu→English naturally, preserves context |
+| Vector DB | Pinecone (Serverless, Free Tier) | Managed, stateless access, ~100k vectors sufficient |
+| Embedding Model | text-embedding-004 | Google's latest, 768 dimensions, multilingual |
+| Frontend (MVP) | `adk web` built-in UI | Zero frontend code, instant chat interface |
+| Deployment | Cloud Run (Staging) | Scale-to-zero, personal use, cost-efficient |
+| Secrets | Google Secret Manager | Native Cloud Run integration |
+
+---
 
 ## 3. Data Processing Pipeline: Deep Dive
-*Goal: Robust, observable video ingestion.*
 
-### Ingestion Service API Definitions
-*Handles Video Content (Google Meet Recordings).*
-This service accepts video files, extracts the audio track, and discards the visual data to optimize processing.
+*Goal: Robust, observable pipeline that converts Telugu/English video recordings into searchable English text embeddings.*
+
+### 3.1 Source Data
+
+| Recording | Date | Size | Format |
+|-----------|------|------|--------|
+| Nanna / Udaya - 2025/07/06 14:22 EDT | Jul 6, 2025 | 1 GB | MP4 (Google Meet) |
+| Nanna / Udaya - 2025/07/20 19:57 EDT | Jul 20, 2025 | 640.9 MB | MP4 (Google Meet) |
+| Nanna / Udaya - 2025/08/03 18:59 EDT | Aug 3, 2025 | 668.3 MB | MP4 (Google Meet) |
+| Nanna / Udaya - 2025/08/17 12:05 EDT | Aug 17, 2025 | 952 MB | MP4 (Google Meet) |
+
+**Total**: 4 recordings, ~3.26 GB, two speakers (Nanna = Guru, Udaya = Student), Telugu/English code-switching.
+
+**Google Drive Folder ID**: `1hWMRJRvw5di8WF7WpDPH1a311FAIpbPA`
+
+### 3.2 Ingestion Service API
+
+**Framework**: FastAPI with `BackgroundTasks` (MVP). Upgradeable to Google Cloud Tasks for scale.
+
+**Why async?** A 1-hour video takes minutes to transcribe. Synchronous HTTP would time out (60s limit). The API acknowledges immediately; a background worker does the heavy lifting.
 
 **Endpoint 1: Trigger Ingestion**
 -   `POST /api/v1/ingest`
--   **Request**: 
+-   **Request**:
     ```json
-    { 
-      "source_folder_id": "1hWMR...", 
-      "file_types": ["mp4", "mov"],
-      "force_reindex": false 
+    {
+      "source_folder_id": "1hWMRJRvw5di8WF7WpDPH1a311FAIpbPA",
+      "file_types": ["mp4"],
+      "force_reindex": false
     }
     ```
--   **Logic**: Scans folder for **Video Files**, downloads them, uses `ffmpeg` to strip audio, then proceeds to transcription.
+-   **Response** (202 Accepted):
+    ```json
+    {
+      "job_id": "job_abc123",
+      "status": "queued",
+      "files_found": 4
+    }
+    ```
+-   **Logic**: Scans Drive folder for MP4 files, skips already-indexed files (unless `force_reindex`), queues each for processing.
 
 **Endpoint 2: Check Status**
 -   `GET /api/v1/jobs/{job_id}`
--   **Response**: 
+-   **Response**:
     ```json
     {
+      "job_id": "job_abc123",
       "status": "processing",
-      "progress": 45,
-      "current_step": "transcription",
-      "file": "lesson_01.mp4"
+      "progress": {
+        "total_files": 4,
+        "completed": 2,
+        "current_file": "Nanna / Udaya - 2025/08/03 18:59 EDT - Recording",
+        "current_step": "translation"
+      }
     }
     ```
 
-### Technical Deep Dive: Transcription Strategy
-**Service**: **Google Cloud Speech-to-Text V2 API**.
-**Library**: `google-cloud-speech` (Python Client).
+**Endpoint 3: List Indexed Videos**
+-   `GET /api/v1/videos`
+-   **Response**: List of all processed videos with metadata (title, date, duration, chunk count).
 
-**Why this service?**
-It is a fully managed API. We do not need to run our own Whisper models (which requires GPU management). It integrates natively with GCS (where our audio files live).
+### 3.3 Step 1: Audio Extraction
+
+**Tool**: `ffmpeg-python` (Python wrapper around ffmpeg).
+
+```
+ffmpeg -i input.mp4 -vn -acodec flac -ar 16000 -ac 1 output.flac
+```
+
+-   `-vn`: Discard video track entirely.
+-   `-acodec flac`: Lossless audio (best quality for STT).
+-   `-ar 16000`: 16kHz sample rate (optimal for Chirp 3).
+-   `-ac 1`: Mono (speech doesn't benefit from stereo).
+
+**Output**: ~50-100 MB FLAC per 1-hour recording (vs. ~800 MB MP4).
+
+**Upload**: Extracted audio is uploaded to `gs://gita-agent-prod-audio/{video_id}/audio.flac`.
+
+### 3.4 Step 2: Transcription (Chirp 3)
+
+**Service**: Google Cloud Speech-to-Text V2 API.
+**Model**: `chirp_3` — latest generation, enhanced multilingual ASR with automatic language detection.
+**Library**: `google-cloud-speech` (Python client).
+
+**Why Chirp 3 over Chirp 2?**
+-   Enhanced accuracy and speed over Chirp 2.
+-   Automatic language detection — handles Telugu/English code-switching without manual language tagging.
+-   Native diarization — distinguishes Speaker 1 (Nanna) from Speaker 2 (Udaya).
+-   Word-level timestamps for citation back to source video.
 
 **Configuration**:
--   **Model**: `chirp_2` (Best for "spontaneous speech" and mixed languages like Hindi/English).
--   **Features**:
-    -   `enable_word_time_offsets`: True (Timestamps for every word).
-    -   `diarization_config`: `{ "min_speaker_count": 1, "max_speaker_count": 3 }` (Distinguish Guru vs Student).
--   **Flow**:
-    1.  **Extract**: `ffmpeg-python` strips audio from MP4 -> Upload to GCS bucket.
-    2.  **Transcribe**: Python code calls `BatchRecognizeRequest` pointing to the GCS URI.
-    3.  **Poll**: The worker waits for the "Long Running Operation" (LRO) to complete.
-    4.  **Parse**: Download JSON result, grouping words by Speaker Label.
+```python
+from google.cloud.speech_v2 import SpeechClient
+from google.cloud.speech_v2.types import cloud_speech
 
-### Technical Deep Dive: Vector Database (Pinecone)
-*Why Pinecone?*
--   **Indexing**: Uses **HNSW (Hierarchical Navigable Small World)** graphs. Think of it as a multi-layered highway system for data. It can find the "nearest neighbor" (most similar meaning) among millions of vectors in milliseconds without checking every single one.
--   **Serverless**: We specifically use the Serverless tier which decouples storage from compute. Checkpointing is automatic.
+config = cloud_speech.RecognitionConfig(
+    auto_decoding_config=cloud_speech.AutoDetectDecodingConfig(),
+    language_codes=["te-IN", "en-US"],  # Telugu + English
+    model="chirp_3",
+    features=cloud_speech.RecognitionFeatures(
+        enable_word_time_offsets=True,
+        diarization_config=cloud_speech.SpeakerDiarizationConfig(
+            min_speaker_count=1,
+            max_speaker_count=3,
+        ),
+        enable_automatic_punctuation=True,
+    ),
+)
+
+request = cloud_speech.BatchRecognizeRequest(
+    recognizer=f"projects/gita-agent-prod/locations/global/recognizers/_",
+    config=config,
+    files=[cloud_speech.BatchRecognizeFileMetadata(
+        uri="gs://gita-agent-prod-audio/{video_id}/audio.flac"
+    )],
+    recognition_output_config=cloud_speech.RecognitionOutputConfig(
+        gcs_output_config=cloud_speech.GcsOutputConfig(
+            uri="gs://gita-agent-prod-audio/{video_id}/transcript/"
+        ),
+    ),
+)
+```
+
+**Output**: JSON with mixed Telugu/English text, speaker labels, and word timestamps.
+
+### 3.5 Step 3: Translation (Gemini 3 Flash)
+
+**Why not use a dedicated translation API?**
+Chirp 3 does not support Telugu→English translation. Google Translate API could work but loses contextual nuance (spiritual/philosophical terminology). Gemini 3 Flash understands context and can preserve meaning of terms like "dharma", "karma", "atman" while translating conversational Telugu.
+
+**Approach**: Send transcribed chunks to Gemini with a structured prompt.
+
+```python
+translation_prompt = """You are translating a conversation about the Bhagavad Gita
+between a father (Guru/Nanna) and daughter (Student/Udaya).
+
+The text below contains Telugu and English mixed speech (code-switching).
+Translate ALL Telugu portions to English. Keep English portions as-is.
+Preserve speaker labels (Speaker 1, Speaker 2).
+Preserve spiritual/philosophical terms in their original Sanskrit where
+commonly known (e.g., dharma, karma, atman, moksha, yoga).
+
+Transcribed text:
+{chunk_text}
+
+Output the fully translated English text with speaker labels preserved."""
+```
+
+**Chunking for Translation**: Process in ~2000-word segments to stay within context limits and maintain coherence.
+
+**Fallback**: If Gemini translation encounters issues, fall back to Google Translate API (`googletrans` or Cloud Translation V3) as Option B.
+
+### 3.6 Step 4: Chunking & Embedding
+
+**Chunking Strategy**:
+-   **Chunk size**: 500 tokens (~375 words).
+-   **Overlap**: 50 tokens between adjacent chunks (preserves cross-boundary context).
+-   **Boundary**: Split on sentence boundaries where possible (not mid-sentence).
+-   **Metadata per chunk**:
+    ```json
+    {
+      "video_id": "nanna_udaya_2025_07_06",
+      "video_title": "Nanna / Udaya - 2025/07/06 14:22 EDT - Recording",
+      "chunk_index": 3,
+      "start_time_seconds": 245.5,
+      "end_time_seconds": 312.8,
+      "speakers": ["Speaker 1", "Speaker 2"],
+      "source_language": "te-IN",
+      "session_date": "2025-07-06"
+    }
+    ```
+
+**Embedding Model**: `text-embedding-004` (Google, 768 dimensions, multilingual).
+
+**Pinecone Upsert**:
+```python
+from pinecone import Pinecone
+
+pc = Pinecone(api_key=PINECONE_API_KEY)
+index = pc.Index("gita-videos")
+
+index.upsert(vectors=[
+    {
+        "id": f"{video_id}_chunk_{i}",
+        "values": embedding_vector,  # 768-dim float array
+        "metadata": chunk_metadata
+    }
+    for i, (embedding_vector, chunk_metadata) in enumerate(chunks)
+])
+```
+
+**Pinecone Index Configuration**:
+-   **Name**: `gita-videos`
+-   **Dimensions**: 768 (matches text-embedding-004)
+-   **Metric**: Cosine similarity
+-   **Tier**: Serverless (Free Tier — supports ~100k vectors, sufficient for 4+ hours of video)
+
+---
 
 ## 4. MCP Integration Strategy
-*Decoupling data fetch from reasoning.*
 
-### Implementation: MCP Python SDK
-We will use the official `modelcontextprotocol` Python SDK.
-*Repo: [https://github.com/modelcontextprotocol/python-sdk](https://github.com/modelcontextprotocol/python-sdk)*
+*Decoupling data fetch from agent reasoning via native ADK MCP tool support.*
 
-### Server Specification
--   **Name**: `gita-context-server`
--   **Setup**: `pip install mcp`
--   **Code Structure**:
-    ```python
-    from mcp.server import Server
-    import mcp.types as types
+### 4.1 ADK Native MCP Support
 
-    app = Server("gita-context-server")
+Google ADK v1.0+ natively supports MCP tools via `McpToolset`. This eliminates the need for a standalone MCP server process — the ADK agent directly consumes MCP tools.
 
-    @app.call_tool()
-    async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
-        if name == "search_transcripts":
-            # Logic to query Pinecone
-            return [types.TextContent(type="text", text="...")]
-    ```
-    1.  `search_transcripts(query: str, limit: int = 5)`
-        -   **Input**: Natural language query (e.g., "What is the nature of the soul?").
-        -   **Logic**: Encodes query -> Pinecone Similarity Search -> Returns Top K chunks with timestamps.
-    2.  `get_video_metadata(video_id: str)`
-        -   **Input**: Video ID.
-        -   **Logic**: Returns title, date, and summary (if available).
+**Key benefit**: The agent, MCP tools, and Pinecone queries all live in one deployable unit.
 
-## 5. Deployment Architecture: Cloud Run (Serverless)
-*Why this is the right choice for your needs.*
+*Reference: [ADK MCP Tools Documentation](https://google.github.io/adk-docs/tools-custom/mcp-tools/)*
 
-### What is "Serverless"?
-In a traditional setup, you rent a computer (VM) that runs 24/7, costing money even when no one uses it. You also have to update linux, manage firewalls, etc.
-**Serverless (Google Cloud Run)** abstracts the machine away. You give Google your code (in a Docker container), and they run it only when a request comes in.
+### 4.2 MCP Server: `gita-context-server`
 
-### Benefits for this Project
-1.  **Cost Efficiency (Scale to Zero)**: If no one asks a question for a week, your compute bill is **$0**. usage is billed by the millisecond.
-2.  **Zero Maintenance**: No OS patches or server restarts. Google handles the infrastructure.
-3.  **Simplicity**: Deployment is just one command (`gcloud run deploy`).
+We build a lightweight MCP server that the ADK agent connects to via `StdioServerParameters` (local process) or `SseConnectionParams` (remote, for Cloud Run).
 
-### Architecture Update for Serverless
-Since Cloud Run is "stateless" (files created disappear after the web request ends), we cannot store the Vector Database files *inside* the running container permanently.
-*Adjustment*: For a truly serverless MVP, we have two paths:
-1.  **Managed Vector DB (Pinecone)**: Use the **Free Tier**. It connects via API, so your Cloud Run service remains stateless. **(Recommended for ease)**.
-2.  **Chroma + GCS**: The service downloads the database from Google Cloud Storage on startup. (Slower cold-starts).
+```python
+from mcp.server.lowlevel import Server
+from mcp import types as mcp_types
+from pinecone import Pinecone
+import google.generativeai as genai
 
-### Component View
--   **Agent Service (Cloud Run)**: Runs FastAPI + LangChain.
--   **Database (Pinecone)**: External persistent memory (Free Tier supports ~100k vectors, plenty for 6hrs video).
--   **Ingestion (Local/Script)**: You run a script on your laptop to process videos -> upload vectors to Pinecone.
+app = Server("gita-context-server")
 
-## 6. Frontend
-*Goal: Simple, high-quality Web UI.*
+@app.list_tools()
+async def list_tools() -> list[mcp_types.Tool]:
+    return [
+        mcp_types.Tool(
+            name="search_transcripts",
+            description="Search Bhagavad Gita session transcripts by semantic similarity. "
+                        "Returns relevant passages from recorded conversations between "
+                        "Nanna (Guru) and Udaya (Student) about the Bhagavad Gita.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Natural language query"},
+                    "limit": {"type": "integer", "description": "Max results", "default": 5}
+                },
+                "required": ["query"]
+            }
+        ),
+        mcp_types.Tool(
+            name="get_video_metadata",
+            description="Get metadata for a specific Bhagavad Gita recording session.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "video_id": {"type": "string", "description": "Video identifier"}
+                },
+                "required": ["video_id"]
+            }
+        ),
+    ]
 
--   **Type**: Single Page Application (SPA).
--   **Stack**: React + Vite + TailwindCSS (Standard modern web stack).
--   **Design**: Clean, minimalist interface.
-    -   **Hero Section**: Simple greeting ("Ask about the Gita").
-    -   **Chat Interface**: Standard message bubble layout.
-    -   **Citation Panel**: When the agent cites a video, it appears as a clickable source that (optionally) plays the clip.
--   **Deploy**: Static hosting (Firebase Hosting or GCS Bucket) talking to the Cloud Run Backend.
+@app.call_tool()
+async def call_tool(name: str, arguments: dict) -> list[mcp_types.TextContent]:
+    if name == "search_transcripts":
+        query_embedding = genai.embed_content(
+            model="models/text-embedding-004",
+            content=arguments["query"]
+        )["embedding"]
+        results = index.query(
+            vector=query_embedding,
+            top_k=arguments.get("limit", 5),
+            include_metadata=True
+        )
+        formatted = format_results(results)
+        return [mcp_types.TextContent(type="text", text=formatted)]
 
-## 7. Testing Strategy: Robustness Focus
+    elif name == "get_video_metadata":
+        metadata = get_metadata(arguments["video_id"])
+        return [mcp_types.TextContent(type="text", text=str(metadata))]
+```
 
-### Unit & Integration
--   **PyTest**: Standard runner.
--   **Golden Set**: 20 QA pairs verified by human (you).
+### 4.3 Agent Definition with MCP Tools
 
-### Validation Strategy (Bad Data)
-We must ensure the pipeline doesn't crash on corrupted inputs.
-1.  **Corrupt MP4s**: Pipeline detects invalid headers and marks job as `failed` (not `crashed`).
-2.  **Silence/Noise**: If an audio track is 100% silence, STT returns empty. Pipeline should log warning and skip embedding.
+```python
+# agent/agent.py
+from google.adk.agents import LlmAgent
+from google.adk.tools.mcp_tool import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
+from mcp import StdioServerParameters
 
-### Fuzz Testing (New)
-*Goal: Bombard the API with random inputs to find edge cases.*
--   **Tool**: `hypothesis` library for Python.
--   **Strategy**:
-    -   Generate random JSON payloads for `POST /ingest`.
-    -   Generate malformed `job_id` strings for `GET /status`.
-    -   **Text Fuzzing**: Send queries with emojis, 100k characters, or SQL injection patterns to the ADK agent to ensure it handles them gracefully (sanitization).
+root_agent = LlmAgent(
+    model="gemini-3-flash",
+    name="gita_agent",
+    description="An AI agent specializing in the Bhagavad Gita, with access to "
+                "personal video recordings of father-daughter discussions.",
+    instruction="""You are a knowledgeable guide on the Bhagavad Gita and Hindu philosophy.
+    You have access to transcribed recordings of Bhagavad Gita teaching sessions
+    between Nanna (the Guru/father) and Udaya (the Student/daughter).
+
+    When answering questions:
+    1. ALWAYS use the search_transcripts tool first to find relevant passages.
+    2. Ground your answers in the retrieved context from the recordings.
+    3. Cite which session and approximate timestamp when referencing a passage.
+    4. If the recordings don't contain relevant information, say so and provide
+       general knowledge about the topic from the Bhagavad Gita.
+    5. Preserve Sanskrit terms (dharma, karma, atman, moksha) and explain them.
+    6. Distinguish between what Nanna (Guru) said vs. Udaya (Student) said.""",
+    tools=[
+        McpToolset(
+            connection_params=StdioConnectionParams(
+                server_params=StdioServerParameters(
+                    command="python",
+                    args=["-m", "mcp_server.server"],
+                ),
+                timeout=30,
+            ),
+        ),
+    ],
+)
+```
+
+---
+
+## 5. Deployment Architecture
+
+### 5.1 Environment: Staging Only
+
+**GCP Project**: `gita-agent-prod` (Project Number: `881793829896`)
+**Purpose**: Personal use, staging environment. No production environment for now.
+
+### 5.2 Cloud Run (Serverless)
+
+**Why Cloud Run?**
+1.  **Scale to Zero**: No traffic = $0 compute cost. Billed per millisecond of use.
+2.  **Zero Maintenance**: No OS patches, no server management.
+3.  **Simple Deployment**: `gcloud run deploy` from a Docker container.
+
+**Stateless Design**: Cloud Run containers are ephemeral. All persistent state lives in Pinecone (vectors) and GCS (audio files). The agent service is fully stateless.
+
+### 5.3 Deployment Diagram
+
+```mermaid
+graph TD
+    subgraph "Developer Machine"
+        Code[Source Code] -->|git push| GH[GitHub: gita-agent]
+    end
+
+    subgraph "Google Cloud - gita-agent-prod"
+        subgraph "Cloud Run Services"
+            AgentSvc["Agent Service<br/>(ADK + MCP Server)<br/>Port 8080"]
+            IngestSvc["Ingestion Service<br/>(FastAPI)<br/>Port 8081"]
+        end
+
+        subgraph "Storage"
+            GCS_Audio["GCS Bucket<br/>gita-agent-prod-audio"]
+            SM["Secret Manager<br/>API Keys"]
+        end
+
+        subgraph "Monitoring"
+            CL["Cloud Logging<br/>(Structured)"]
+            CM["Cloud Monitoring<br/>(Alerts)"]
+        end
+    end
+
+    subgraph "External Services"
+        Pinecone["Pinecone<br/>(Free Tier)"]
+        Gemini["Gemini API<br/>(3 Flash)"]
+        STT["Speech-to-Text V2<br/>(Chirp 3)"]
+        GDrive["Google Drive<br/>(Recordings)"]
+    end
+
+    AgentSvc -->|Query| Pinecone
+    AgentSvc -->|LLM| Gemini
+    AgentSvc -->|Logs| CL
+    IngestSvc -->|Download| GDrive
+    IngestSvc -->|Upload Audio| GCS_Audio
+    IngestSvc -->|Transcribe| STT
+    IngestSvc -->|Translate| Gemini
+    IngestSvc -->|Upsert| Pinecone
+    AgentSvc -->|Read| SM
+    IngestSvc -->|Read| SM
+```
+
+### 5.4 Secrets Management (Google Secret Manager)
+
+| Secret Name | Value | Used By |
+|-------------|-------|---------|
+| `pinecone-api-key` | Pinecone API key | Agent Service, Ingestion Service |
+| `google-api-key` | Gemini API key (for `google-genai` SDK) | Agent Service (ADK), Ingestion Service (translation + embedding) |
+| `drive-folder-id` | `1hWMRJRvw5di8WF7WpDPH1a311FAIpbPA` | Ingestion Service (configurable, not truly secret) |
+
+**Note on GCP Service Authentication**: The Cloud Run services will use **Workload Identity** — the service binds directly to the `gita-ingest-worker` service account without a JSON key file. This is more secure than downloading a key. The service account already has Editor role, which grants access to Speech-to-Text, Cloud Storage, Drive API, and Secret Manager.
+
+**Accessing Secrets in Code**:
+```python
+from google.cloud import secretmanager
+
+def get_secret(secret_id: str) -> str:
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/gita-agent-prod/secrets/{secret_id}/versions/latest"
+    response = client.access_secret_version(request={"name": name})
+    return response.payload.data.decode("UTF-8")
+```
+
+### 5.5 APIs Required
+
+| API | Status | Action Needed |
+|-----|--------|---------------|
+| Google Drive API | Enabled | None |
+| Cloud Storage API | Enabled | None |
+| Cloud Logging API | Enabled | None |
+| Cloud Monitoring API | Enabled | None |
+| Cloud Text-to-Speech API | Enabled (not needed) | Can disable — we need Speech-to-**Text**, not Text-to-Speech |
+| **Cloud Speech-to-Text API** | **Not Enabled** | **Enable before implementation** |
+| **Cloud Run Admin API** | **Not Enabled** | **Enable before deployment** |
+| **Secret Manager API** | **Not Enabled** | **Enable before implementation** |
+| **Generative Language API** | **Not Enabled** | **Enable for Gemini 3 Flash access** |
+
+**Enable command**:
+```bash
+gcloud services enable \
+    speech.googleapis.com \
+    run.googleapis.com \
+    secretmanager.googleapis.com \
+    generativelanguage.googleapis.com \
+    --project=gita-agent-prod
+```
+
+### 5.6 CI/CD (Future)
+
+Not in scope for MVP. Manual deployment via `gcloud run deploy`. When ready:
+-   GitHub Actions → Google Cloud Build → Cloud Run deploy.
+-   Triggered on push to `main` branch.
+
+---
+
+## 6. Frontend (MVP)
+
+### `adk web` — Built-in Development UI
+
+For the MVP, we use the ADK's built-in web interface. No frontend code is needed.
+
+**Run locally**:
+```bash
+cd gita-agent/agent
+adk web --port 8000
+```
+
+This launches a chat interface at `http://localhost:8000` with:
+-   Text input for queries.
+-   Message history (session-aware).
+-   Tool call visibility (see when `search_transcripts` is invoked).
+
+**Limitations**: Development-only, not suitable for sharing publicly. A custom frontend (React, Mesop, or Streamlit) can be built later as a separate phase.
+
+---
+
+## 7. Testing Strategy: Test-Driven Development
+
+### 7.1 TDD Approach
+
+Tests are written **before** implementation for each component. The cycle is: write test → see it fail (red) → implement → see it pass (green) → refactor.
+
+### 7.2 Test Specifications by Component
+
+**Ingestion Service Tests** (`tests/test_ingestion.py`):
+| Test | Description |
+|------|-------------|
+| `test_extract_audio_produces_valid_flac` | Given a valid MP4, ffmpeg produces a mono 16kHz FLAC file |
+| `test_extract_audio_rejects_corrupt_mp4` | Corrupt MP4 raises `AudioExtractionError`, job marked `failed` |
+| `test_extract_audio_handles_silent_track` | Silent audio produces empty transcript, logs warning, skips embedding |
+| `test_ingest_endpoint_returns_202` | POST /api/v1/ingest returns 202 with job_id |
+| `test_ingest_skips_already_indexed` | Files already in Pinecone are skipped unless force_reindex=True |
+| `test_job_status_tracks_progress` | GET /api/v1/jobs/{id} returns current step and file count |
+| `test_drive_folder_listing` | Service account can list files in the shared Drive folder |
+
+**Transcription Tests** (`tests/test_transcription.py`):
+| Test | Description |
+|------|-------------|
+| `test_chirp3_returns_telugu_text` | Given Telugu audio, Chirp 3 returns text with `te-IN` language code |
+| `test_chirp3_detects_english_segments` | English segments in mixed audio are detected and transcribed correctly |
+| `test_diarization_identifies_two_speakers` | Output contains at least two distinct speaker labels |
+| `test_word_timestamps_are_sequential` | Word-level timestamps are monotonically increasing |
+
+**Translation Tests** (`tests/test_translation.py`):
+| Test | Description |
+|------|-------------|
+| `test_gemini_translates_telugu_to_english` | Telugu text is translated to coherent English |
+| `test_english_passthrough` | Already-English text is returned unchanged |
+| `test_sanskrit_terms_preserved` | Terms like "dharma", "karma", "atman" are kept in Sanskrit |
+| `test_speaker_labels_preserved` | Speaker 1 / Speaker 2 labels survive translation |
+| `test_fallback_to_translate_api` | On Gemini failure, falls back to Cloud Translation API |
+
+**Chunking & Embedding Tests** (`tests/test_chunking.py`):
+| Test | Description |
+|------|-------------|
+| `test_chunk_size_within_limit` | No chunk exceeds 500 tokens |
+| `test_chunk_overlap` | Adjacent chunks share ~50 tokens of overlap |
+| `test_chunk_splits_on_sentence_boundary` | Chunks don't split mid-sentence |
+| `test_embedding_dimension` | Embedding vectors are exactly 768 dimensions |
+| `test_metadata_attached_to_chunk` | Each chunk has video_id, timestamps, speaker labels |
+
+**MCP Server Tests** (`tests/test_mcp_server.py`):
+| Test | Description |
+|------|-------------|
+| `test_search_transcripts_returns_results` | Valid query returns ranked chunks from Pinecone |
+| `test_search_transcripts_empty_query` | Empty string returns empty results, no error |
+| `test_get_video_metadata_valid_id` | Known video_id returns title, date, chunk count |
+| `test_get_video_metadata_invalid_id` | Unknown video_id returns helpful error message |
+| `test_tool_listing` | MCP server exposes exactly 2 tools |
+
+**Agent Integration Tests** (`tests/test_agent.py`):
+| Test | Description |
+|------|-------------|
+| `test_agent_uses_search_tool` | Agent calls search_transcripts for a Gita question |
+| `test_agent_cites_sources` | Response includes session date and/or timestamp references |
+| `test_agent_handles_no_results` | When no relevant chunks found, agent says so gracefully |
+| `test_agent_distinguishes_speakers` | Agent can reference what "Nanna said" vs. "Udaya asked" |
+
+### 7.3 Golden Set
+
+20 QA pairs, manually verified, covering:
+-   Direct Gita questions ("What is dharma according to Chapter 2?")
+-   Contextual questions ("What did Nanna explain about karma yoga?")
+-   Edge cases ("Tell me about quantum physics" — should say not in recordings)
+-   Multi-turn conversations (follow-up questions referencing prior context)
+
+### 7.4 Validation & Fuzz Testing
+
+**Bad Data Handling**:
+1.  Corrupt MP4s: Pipeline detects invalid headers, marks job as `failed` (not crashed).
+2.  Silent audio: STT returns empty → log warning, skip embedding.
+3.  Very long recordings: Graceful chunking, no OOM.
+
+**Fuzz Testing** (using `hypothesis` library):
+-   Random JSON payloads for `POST /api/v1/ingest`.
+-   Malformed `job_id` strings for `GET /api/v1/jobs/{id}`.
+-   Text fuzzing: Queries with emojis, 100k characters, SQL injection patterns → agent handles gracefully.
+
+---
+
+## 8. Project Structure
+
+```
+gita-agent/
+├── agent/
+│   ├── __init__.py
+│   ├── agent.py              # ADK agent definition (root_agent)
+│   └── .env                  # Local dev: GOOGLE_API_KEY
+├── mcp_server/
+│   ├── __init__.py
+│   ├── server.py             # MCP server (gita-context-server)
+│   ├── pinecone_client.py    # Pinecone query logic
+│   └── embeddings.py         # text-embedding-004 wrapper
+├── ingestion/
+│   ├── __init__.py
+│   ├── main.py               # FastAPI app
+│   ├── audio.py              # ffmpeg audio extraction
+│   ├── transcription.py      # Chirp 3 STT logic
+│   ├── translation.py        # Gemini translation logic
+│   ├── chunking.py           # Text chunking + embedding
+│   └── drive.py              # Google Drive API client
+├── tests/
+│   ├── __init__.py
+│   ├── test_ingestion.py
+│   ├── test_transcription.py
+│   ├── test_translation.py
+│   ├── test_chunking.py
+│   ├── test_mcp_server.py
+│   └── test_agent.py
+├── docs/
+│   ├── detailed_technical_design.md   # This document
+│   ├── task.md                        # Task tracking
+│   └── SETUP_GUIDE.md                # Credential setup
+├── Dockerfile                # For Cloud Run deployment
+├── requirements.txt          # Python dependencies
+├── pyproject.toml            # Project config + test config
+└── README.md
+```
+
+---
+
+## 9. Dependencies
+
+```
+# Core
+google-adk>=1.0.0
+google-cloud-speech>=2.0.0
+google-cloud-storage>=2.0.0
+google-generativeai>=0.8.0
+pinecone-client>=3.0.0
+mcp>=1.0.0
+fastapi>=0.110.0
+uvicorn>=0.27.0
+ffmpeg-python>=0.2.0
+
+# Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+hypothesis>=6.0.0
+httpx>=0.27.0          # For testing FastAPI endpoints
+
+# Utilities
+python-dotenv>=1.0.0
+structlog>=24.0.0      # Structured logging
+```
+
+---
+
+## 10. Appendix: Fallback Strategy (Option B)
+
+If the two-step pipeline (Chirp 3 + Gemini translation) proves difficult to maintain, we can switch to **Option B: Gemini Direct**.
+
+```
+Video → ffmpeg → Audio (WAV) → Gemini 3 Flash (multimodal audio) → English text → Embed → Pinecone
+```
+
+**Trade-offs**:
+-   Simpler (single API call).
+-   No diarization or word timestamps.
+-   Potential hallucination in transcription.
+-   Higher cost per audio hour (Gemini token pricing vs. STT pricing).
+
+This fallback requires minimal code changes — replace the `transcription.py` + `translation.py` modules with a single `gemini_transcribe.py` module.
