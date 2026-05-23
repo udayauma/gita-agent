@@ -122,12 +122,12 @@ Each sub-component follows: write test → red → implement → green → refac
 - [x] Run tests → all green
 
 ### 4.3 Transcription (Chirp 3)
-- [ ] Write `tests/test_transcription.py::test_chirp3_returns_telugu_text`
-- [ ] Write `tests/test_transcription.py::test_chirp3_detects_english_segments`
-- [ ] Write `tests/test_transcription.py::test_diarization_identifies_two_speakers`
-- [ ] Write `tests/test_transcription.py::test_word_timestamps_are_sequential`
-- [ ] Implement `ingestion/transcription.py` — Chirp 3 BatchRecognize, LRO polling, result parsing
-- [ ] Run tests → all green
+- [x] Write `tests/test_transcription.py::test_chirp3_returns_telugu_text`
+- [x] Write `tests/test_transcription.py::test_chirp3_detects_english_segments`
+- [x] Write `tests/test_transcription.py::test_diarization_identifies_two_speakers`
+- [x] Write `tests/test_transcription.py::test_word_timestamps_are_sequential`
+- [x] Implement `ingestion/transcription.py` — Chirp 3 BatchRecognize, LRO polling, result parsing
+- [x] Run tests → all green
 
 ### 4.4 Translation (Gemini 3 Flash)
 - [ ] Write `tests/test_translation.py::test_gemini_translates_telugu_to_english`
