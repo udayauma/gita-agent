@@ -249,6 +249,52 @@ This constraint is actually a *feature*: it forces a clean architecture where al
 
 ---
 
+## 8. 2026 Architecture Review (2026-05-23)
+
+Re-examined the full stack against Cloud Next 2026 (April 22) and Google I/O '26 (May 19) announcements. Summary of what was evaluated, kept, changed, and deferred.
+
+### Decisions Kept
+
+| Component | Why we're keeping it |
+|---|---|
+| **ADK 1.x** (currently v1.27.2) | ADK 2.0 is alpha as of I/O '26 — too early for non-experimental work. v1.x continues to receive observability and Agent Engine improvements. |
+| **Gemini 3 Flash Preview** ($0.50 in / $3 out per 1M tokens) | Still available with no deprecation date. Gemini 3.5 Flash GA'd at I/O '26 but is 3× more expensive ($1.50 / $9). Gemini 3.1 Flash-Lite is half-price but weaker for agent reasoning. For personal-staging cost, Preview is the right tier. |
+| **Pinecone serverless free tier** | At our expected scale (~hundreds of chunks across 4 recordings), free tier covers us with margin. Vertex AI Vector Search would add per-vector GCP cost with no measurable latency benefit (~12ms vs 10-15ms). Reconsider only above ~1M vectors. |
+| **Cloud Run** for deployment | Scales to zero, which matches twice-a-week personal use. Agent Engine offers a playground UI and built-in observability but charges per vCPU-hour; for idle-most-of-the-time use, Cloud Run is cheaper. Revisit if the playground UX becomes valuable. |
+| **MCP via ADK `McpToolset`** | Still Google's recommended pattern for tool integration. No competing primitive has shipped. |
+| **`adk web`** as MVP frontend | Still fits a single-user MVP. |
+| **Chirp 3 + Gemini two-step translation** | No relevant API changes. The Chirp 3 + Gemini split remains the cleanest path for code-switched Telugu/English with diarization. |
+
+### Decisions Changed
+
+| Change | Rationale |
+|---|---|
+| **Added Phase 4.7 — Observability instrumentation** | ADK now ships built-in OpenTelemetry semantic conventions for GenAI with OTLP output and a Cloud Trace exporter. Enabling it costs almost nothing and gives us distributed traces for every transcription, Pinecone query, and LLM call. We extend the same pattern to ingestion (`drive.download`, `audio.extract`, `transcription.batch_recognize` spans) so the whole pipeline is observable. Was previously not in the plan. |
+| **Rewrote Phase 6.3 — Golden Set Validation** | Switched from a custom golden-set framework to ADK's built-in `AgentEvaluator`. Captures goldens through the `adk web` UI, runs them via `AgentEvaluator.evaluate()` inside pytest, and uses prebuilt metrics: `final_response_match_v2` (LLM-as-judge semantic match), `hallucinations_v1` (sentence-level grounding), plus a tool-trajectory check. Strictly less work than building our own; integrates with standard pytest reporting. |
+
+### Decisions Deferred
+
+| Option | Why we're not pursuing now |
+|---|---|
+| **Gemini Enterprise Agent Platform** (Cloud Next 2026) | Enterprise bundle — agent governance, Agent Gallery, Agent Studio, 200+ models via Model Garden. Massive overkill for a personal project. Worth revisiting only if this becomes a multi-tenant or organization-deployed product. |
+| **Vertex AI Agent Engine** (managed ADK runtime) | $0.0864/vCPU-hr + $0.0090/GB-hr + $0.25/1k events. For sporadic personal use, Cloud Run's scale-to-zero is cheaper. The playground UI and built-in versioning are nice but not yet worth the cost floor. Revisit when running real agent traffic. |
+| **Vertex AI Vector Search** | Would simplify IAM and keep everything in-GCP, but adds cost vs Pinecone's free tier with no measurable benefit at our scale. |
+| **Gemini 3.5 Flash** (GA May 19, 2026) | More capable but 3× the cost of 3 Flash Preview. Hold for now; consider for the agent (not translation) only if 3 Flash quality proves insufficient on the Phase 6.3 golden set. |
+| **ADK 2.0** (alpha) | Wait for stable. |
+| **Managed Agents** (I/O '26) | Same reasoning as Gemini Enterprise — enterprise tier. |
+
+### References
+
+- [Google Cloud Next 2026 Wrap-Up](https://cloud.google.com/blog/topics/google-cloud-next/google-cloud-next-2026-wrap-up)
+- [Introducing Gemini Enterprise Agent Platform](https://cloud.google.com/blog/products/ai-machine-learning/introducing-gemini-enterprise-agent-platform)
+- [ADK Cloud Trace observability](https://google.github.io/adk-docs/observability/cloud-trace/)
+- [ADK with OpenTelemetry](https://docs.cloud.google.com/stackdriver/docs/instrumentation/ai-agent-adk)
+- [ADK Evaluation Framework](https://adk.dev/evaluate/)
+- [Vertex AI Agent Engine + ADK Quickstart](https://cloud.google.com/agent-builder/agent-engine/quickstart-adk)
+- [Google I/O '26: ADK 2.0 and Managed Agents](https://virtualizationreview.com/articles/2026/05/19/google-io-26-fills-out-enterprise-agent-stack-with-managed-agents-adk-2,-d-,0.aspx)
+
+---
+
 ## Summary
 
 Every technology choice in this project follows three principles:

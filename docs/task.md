@@ -158,9 +158,21 @@ Each sub-component follows: write test → red → implement → green → refac
     - [ ] Background worker orchestrating: download → extract → transcribe → translate → chunk → embed
 - [ ] Run all ingestion tests → all green
 
-### 4.7 Ingestion Integration Test
+### 4.7 Observability Instrumentation (added per 2026-05-23 architecture review)
+- [ ] Add `opentelemetry-sdk`, `opentelemetry-exporter-gcp-trace`, and `opentelemetry-instrumentation` to `requirements.txt`
+- [ ] Add `ingestion/observability.py` — initialize TracerProvider with Cloud Trace exporter, configure structlog → OTel log correlation
+- [ ] Write `tests/test_observability.py::test_tracer_initializes_with_cloud_trace_exporter`
+- [ ] Write `tests/test_observability.py::test_spans_are_emitted_with_correct_attributes`
+- [ ] Instrument `ingestion/drive.py` — span `drive.download` with `video_id`, `size_bytes` attributes
+- [ ] Instrument `ingestion/audio.py` — span `audio.extract` with `duration_seconds`, `output_codec`
+- [ ] Instrument `ingestion/transcription.py` — span `transcription.batch_recognize` with `video_id`, `audio_uri`, plus LRO polling sub-span
+- [ ] Verify traces appear in Cloud Trace console after a local pipeline run
+- [ ] Run all observability tests → all green
+
+### 4.8 Ingestion Integration Test
 - [ ] Process one real recording end-to-end (smallest file: Jul 20, 640.9 MB)
 - [ ] Verify vectors appear in Pinecone index with correct metadata
+- [ ] Verify Cloud Trace spans cover the full pipeline (download → embed)
 - [ ] Process remaining 3 recordings
 - [ ] Verify total vector count in Pinecone is reasonable (~hundreds of chunks)
 
@@ -204,11 +216,13 @@ Each sub-component follows: write test → red → implement → green → refac
 - [ ] Write `tests/test_agent.py::test_agent_distinguishes_speakers`
 - [ ] Run tests → all green
 
-### 6.3 Golden Set Validation
-- [ ] Build 20 QA pairs (10 direct Gita questions, 5 contextual, 3 edge cases, 2 multi-turn)
-- [ ] Run agent against Golden Set
-- [ ] Evaluate answer quality — target: 80%+ accuracy on grounded answers
-- [ ] Iterate on agent instruction prompt if needed
+### 6.3 Golden Set Validation (via ADK AgentEvaluator — updated 2026-05-23)
+- [ ] Capture 20 golden conversations through `adk web` UI (10 direct Gita questions, 5 contextual, 3 edge cases, 2 multi-turn)
+- [ ] Save each as a `.evalset.json` file under `tests/evalsets/`
+- [ ] Write `tests/test_agent_eval.py` using `AgentEvaluator.evaluate()` inside pytest
+- [ ] Configure metrics: `final_response_match_v2` (LLM-as-judge), `hallucinations_v1` (grounding), and a tool-trajectory check that asserts `search_transcripts` was called
+- [ ] Target: 80%+ pass rate on grounded answers, zero hallucinations on edge cases
+- [ ] Iterate on agent instruction prompt if needed; commit goldens alongside code so CI can re-run them
 
 ### 6.4 Local End-to-End Test
 - [ ] Launch `adk web --port 8000`

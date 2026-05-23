@@ -462,8 +462,9 @@ graph TD
             SM["Secret Manager<br/>API Keys"]
         end
 
-        subgraph "Monitoring"
+        subgraph "Observability"
             CL["Cloud Logging<br/>(Structured)"]
+            CT["Cloud Trace<br/>(OTel spans)"]
             CM["Cloud Monitoring<br/>(Alerts)"]
         end
     end
@@ -478,6 +479,8 @@ graph TD
     AgentSvc -->|Query| Pinecone
     AgentSvc -->|LLM| Gemini
     AgentSvc -->|Logs| CL
+    AgentSvc -->|Traces| CT
+    IngestSvc -->|Traces| CT
     IngestSvc -->|Download| GDrive
     IngestSvc -->|Upload Audio| GCS_Audio
     IngestSvc -->|Transcribe| STT
@@ -532,7 +535,50 @@ gcloud services enable \
     --project=gita-agent-prod
 ```
 
-### 5.6 CI/CD (Future)
+### 5.6 Observability (OpenTelemetry + Cloud Trace)
+
+Added per the 2026-05-23 architecture review. ADK ships with built-in OpenTelemetry semantic conventions for GenAI and emits OTLP — spans for every LLM call, tool invocation, and (with our instrumentation) every ingestion step land in Cloud Trace automatically.
+
+**Why now**: We were previously planning to debug from structured logs alone. With ADK's OTel support already in the runtime, the marginal cost of adding distributed tracing is one initialization call + a handful of `with tracer.start_as_current_span(...)` blocks. The payoff is end-to-end visibility from `POST /api/v1/ingest` through every downstream call.
+
+**Stack**:
+- `opentelemetry-sdk` — TracerProvider + span processor
+- `opentelemetry-exporter-gcp-trace` — OTLP → Cloud Trace
+- `opentelemetry-instrumentation-{requests, httpx, grpc}` — auto-instrument HTTP clients
+- `structlog` (already a dependency) — emit logs with trace/span IDs for correlation in Cloud Logging
+
+**What gets a span**:
+
+| Layer | Span name | Key attributes |
+|---|---|---|
+| Drive download | `drive.download` | `video_id`, `size_bytes`, `mime_type` |
+| Audio extract | `audio.extract` | `video_id`, `duration_seconds`, `output_codec` |
+| Chirp 3 transcribe | `transcription.batch_recognize` | `video_id`, `audio_uri`, `speaker_count`, `word_count` |
+| LRO polling | `transcription.poll` (child span) | `operation_name`, `poll_count` |
+| Gemini translate | `translation.translate` | `video_id`, `chunk_count`, `model` |
+| Chunking | `chunking.split` | `video_id`, `chunk_count` |
+| Pinecone upsert | `pinecone.upsert` | `video_id`, `vector_count` |
+| MCP tool call | `mcp.search_transcripts` | `query`, `top_k`, `result_count` |
+| Agent LLM call | `adk.llm.invoke` | auto-emitted by ADK |
+
+**Initialization** (called once in `ingestion/observability.py` and `agent/agent.py`):
+```python
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
+
+def init_tracer(service_name: str) -> None:
+    provider = TracerProvider()
+    provider.add_span_processor(BatchSpanProcessor(CloudTraceSpanExporter()))
+    trace.set_tracer_provider(provider)
+```
+
+**Local development**: When `GOOGLE_APPLICATION_CREDENTIALS` is unset, the exporter falls back to a no-op so unit tests don't hit Cloud Trace. CI runs use a console exporter for inspection.
+
+**View traces**: Cloud Console → Trace → filter by service name.
+
+### 5.7 CI/CD (Future)
 
 Not in scope for MVP. Manual deployment via `gcloud run deploy`. When ready:
 -   GitHub Actions → Google Cloud Build → Cloud Run deploy.
@@ -623,13 +669,39 @@ Tests are written **before** implementation for each component. The cycle is: wr
 | `test_agent_handles_no_results` | When no relevant chunks found, agent says so gracefully |
 | `test_agent_distinguishes_speakers` | Agent can reference what "Nanna said" vs. "Udaya asked" |
 
-### 7.3 Golden Set
+### 7.3 Golden Set (via ADK AgentEvaluator)
 
-20 QA pairs, manually verified, covering:
--   Direct Gita questions ("What is dharma according to Chapter 2?")
--   Contextual questions ("What did Nanna explain about karma yoga?")
--   Edge cases ("Tell me about quantum physics" — should say not in recordings)
--   Multi-turn conversations (follow-up questions referencing prior context)
+Updated per the 2026-05-23 architecture review. Instead of building a custom evaluation runner, we use ADK's built-in `AgentEvaluator`, which integrates with pytest and ships prebuilt metrics for LLM-as-judge scoring, hallucination detection, and tool-trajectory verification.
+
+**Capture**: Run `adk web`, ask each question interactively, click "Save as eval" in the UI. Each conversation lands as a `.evalset.json` file under `tests/evalsets/`.
+
+**20 QA pairs**, covering:
+-   10 direct Gita questions ("What is dharma according to Chapter 2?")
+-   5 contextual questions ("What did Nanna explain about karma yoga?")
+-   3 edge cases ("Tell me about quantum physics" — should say not in recordings; tests the no-hallucination guarantee)
+-   2 multi-turn conversations (follow-ups referencing prior context)
+
+**Metrics**:
+
+| Metric | What it checks | Target |
+|---|---|---|
+| `final_response_match_v2` | LLM-as-judge semantic equivalence between actual and golden response | ≥ 80% pass |
+| `hallucinations_v1` | Sentence-level grounding against retrieved transcript chunks | 0 hallucinations on edge cases |
+| Tool-trajectory assertion | `search_transcripts` was called for every grounded question | 100% (custom check) |
+
+**Test scaffolding** (`tests/test_agent_eval.py`):
+```python
+from google.adk.evaluation.agent_evaluator import AgentEvaluator
+
+def test_gita_golden_set():
+    AgentEvaluator.evaluate(
+        agent_module="agent",
+        eval_dataset_file_path_or_dir="tests/evalsets/",
+        num_runs=3,  # account for LLM variance
+    )
+```
+
+Failures emit JUnit XML for any CI/dashboarding we add later. Goldens live in the repo so they evolve with the agent prompt and any model upgrades.
 
 ### 7.4 Validation & Fuzz Testing
 
