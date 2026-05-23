@@ -110,16 +110,16 @@ These are tasks that require manual action in the GCP Console, Google Drive, or 
 Each sub-component follows: write test → red → implement → green → refactor.
 
 ### 4.1 Audio Extraction
-- [ ] Write `tests/test_ingestion.py::test_extract_audio_produces_valid_flac`
-- [ ] Write `tests/test_ingestion.py::test_extract_audio_rejects_corrupt_mp4`
-- [ ] Write `tests/test_ingestion.py::test_extract_audio_handles_silent_track`
-- [ ] Implement `ingestion/audio.py` — ffmpeg wrapper (MP4 → mono 16kHz FLAC)
-- [ ] Run tests → all green
+- [x] Write `tests/test_ingestion.py::test_extract_audio_produces_valid_flac`
+- [x] Write `tests/test_ingestion.py::test_extract_audio_rejects_corrupt_mp4`
+- [x] Write `tests/test_ingestion.py::test_extract_audio_handles_silent_track`
+- [x] Implement `ingestion/audio.py` — ffmpeg wrapper (MP4 → mono 16kHz FLAC)
+- [x] Run tests → all green
 
 ### 4.2 Google Drive Integration
-- [ ] Write `tests/test_ingestion.py::test_drive_folder_listing`
-- [ ] Implement `ingestion/drive.py` — list files in shared folder, download MP4s
-- [ ] Run tests → all green
+- [x] Write `tests/test_ingestion.py::test_drive_folder_listing`
+- [x] Implement `ingestion/drive.py` — list files in shared folder, download MP4s
+- [x] Run tests → all green
 
 ### 4.3 Transcription (Chirp 3)
 - [ ] Write `tests/test_transcription.py::test_chirp3_returns_telugu_text`
