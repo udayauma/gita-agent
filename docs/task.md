@@ -139,13 +139,13 @@ Each sub-component follows: write test → red → implement → green → refac
 - [x] Run tests → all green
 
 ### 4.5 Chunking & Embedding
-- [ ] Write `tests/test_chunking.py::test_chunk_size_within_limit`
-- [ ] Write `tests/test_chunking.py::test_chunk_overlap`
-- [ ] Write `tests/test_chunking.py::test_chunk_splits_on_sentence_boundary`
-- [ ] Write `tests/test_chunking.py::test_embedding_dimension`
-- [ ] Write `tests/test_chunking.py::test_metadata_attached_to_chunk`
-- [ ] Implement `ingestion/chunking.py` — text splitter, embedding via text-embedding-004, Pinecone upsert
-- [ ] Run tests → all green
+- [x] Write `tests/test_chunking.py::test_chunk_size_within_limit`
+- [x] Write `tests/test_chunking.py::test_chunk_overlap`
+- [x] Write `tests/test_chunking.py::test_chunk_splits_on_sentence_boundary`
+- [x] Write `tests/test_chunking.py::test_embedding_dimension`
+- [x] Write `tests/test_chunking.py::test_metadata_attached_to_chunk`
+- [x] Implement `ingestion/chunking.py` — text splitter, embedding via text-embedding-004, Pinecone upsert
+- [x] Run tests → all green
 
 ### 4.6 FastAPI Ingestion Service
 - [ ] Write `tests/test_ingestion.py::test_ingest_endpoint_returns_202`
