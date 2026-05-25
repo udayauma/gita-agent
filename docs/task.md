@@ -147,16 +147,43 @@ Each sub-component follows: write test → red → implement → green → refac
 - [x] Implement `ingestion/chunking.py` — text splitter, embedding via text-embedding-004, Pinecone upsert
 - [x] Run tests → all green
 
-### 4.6 FastAPI Ingestion Service
-- [ ] Write `tests/test_ingestion.py::test_ingest_endpoint_returns_202`
-- [ ] Write `tests/test_ingestion.py::test_ingest_skips_already_indexed`
-- [ ] Write `tests/test_ingestion.py::test_job_status_tracks_progress`
-- [ ] Implement `ingestion/main.py` — FastAPI app with BackgroundTasks
-    - [ ] `POST /api/v1/ingest` endpoint
-    - [ ] `GET /api/v1/jobs/{job_id}` endpoint
-    - [ ] `GET /api/v1/videos` endpoint
-    - [ ] Background worker orchestrating: download → extract → transcribe → translate → chunk → embed
-- [ ] Run all ingestion tests → all green
+### 4.6 Ingestion Orchestrator + Cloud Run Job (replaces FastAPI service — pivoted 2026-05-24)
+
+Originally planned as a FastAPI service with `BackgroundTasks`. Pivoted to a CLI/Cloud Run Job because:
+(a) `BackgroundTasks` doesn't survive Cloud Run container teardown on scale-to-zero;
+(b) in-memory job state is lost on cold start;
+(c) the agent never *triggers* ingestion — the user does, manually, when a new recording lands in Drive.
+Cloud Run Jobs are purpose-built for this batch-execution shape. See `docs/technology_decisions.md` § 8.
+
+#### 4.6.1 Storage module (cashes IOU from Phase 4.3)
+- [ ] Write `tests/test_storage.py::test_upload_file_writes_to_correct_uri`
+- [ ] Write `tests/test_storage.py::test_download_json_returns_parsed_dict`
+- [ ] Write `tests/test_storage.py::test_list_blobs_returns_uris_under_prefix`
+- [ ] Write `tests/test_storage.py::test_sentinel_write_and_check`
+- [ ] Implement `ingestion/storage.py` — `upload_file`, `download_json`, `list_blobs`, `delete_prefix`, `write_sentinel`, `sentinel_exists`
+- [ ] Update `ingestion/transcription.py` to call `storage.download_json` (replace the placeholder) and to resolve the actual Chirp 3 output filename from `BatchRecognizeResponse.results[uri].uri` instead of the hardcoded `transcript.json`
+- [ ] Run tests → all green
+
+#### 4.6.2 Orchestrator + CLI
+- [ ] Write `tests/test_orchestrator.py::test_process_video_runs_full_pipeline_in_order`
+- [ ] Write `tests/test_orchestrator.py::test_is_already_indexed_checks_sentinel`
+- [ ] Write `tests/test_orchestrator.py::test_scan_and_process_skips_already_indexed`
+- [ ] Write `tests/test_orchestrator.py::test_force_reindex_bypasses_sentinel`
+- [ ] Write `tests/test_orchestrator.py::test_dry_run_lists_without_processing`
+- [ ] Write `tests/test_orchestrator.py::test_pipeline_step_failure_writes_no_sentinel`
+- [ ] Implement `ingestion/orchestrator.py`:
+    - [ ] `process_video(drive_file, *, force_reindex=False) -> ProcessingResult` — runs the 6-step pipeline
+    - [ ] `is_already_indexed(video_id) -> bool` — checks `gs://{bucket}/{video_id}/.indexed` GCS sentinel
+    - [ ] `scan_and_process(*, force_reindex=False, video_id_filter=None, dry_run=False)` — lists Drive folder, diffs against sentinels, processes the new set
+    - [ ] Writes the `.indexed` sentinel only after `chunk_and_embed` reports `total_vectors_upserted > 0`
+    - [ ] argparse CLI entrypoint: `python -m ingestion.orchestrator` (default: scan + process new); flags `--video-id X`, `--force-reindex`, `--dry-run`
+- [ ] Run tests → all green
+
+#### 4.6.3 Cloud Run Job artifacts
+- [ ] Write `Dockerfile.ingestion` — Python 3.13-slim, install ffmpeg, copy ingestion/, `ENTRYPOINT ["python", "-m", "ingestion.orchestrator"]`
+- [ ] Build image locally and smoke-test: `docker build . -f Dockerfile.ingestion -t ingest:local && docker run --rm ingest:local --dry-run --help`
+- [ ] Document the `gcloud run jobs deploy ingest-recordings` invocation in `docs/SETUP_GUIDE.md` (region, service account, env vars, secret bindings for `PINECONE_API_KEY` + `GOOGLE_API_KEY`)
+- [ ] Document the manual-trigger workflow: `gcloud run jobs execute ingest-recordings --region=us-central1 --wait`
 
 ### 4.7 Observability Instrumentation (added per 2026-05-23 architecture review)
 - [ ] Add `opentelemetry-sdk`, `opentelemetry-exporter-gcp-trace`, and `opentelemetry-instrumentation` to `requirements.txt`
@@ -236,29 +263,34 @@ Each sub-component follows: write test → red → implement → green → refac
 ## Phase 7: Deployment (Staging)
 
 ### 7.1 Containerization
-- [ ] Write `Dockerfile` for Agent Service (ADK + MCP server, port 8080)
-- [ ] Write `Dockerfile` for Ingestion Service (FastAPI, port 8081) — or combine into one
-- [ ] Build and test Docker image locally (`docker build` + `docker run`)
-- [ ] Verify agent responds correctly inside container
+- [ ] Write `Dockerfile.agent` for the Agent Service (ADK + MCP server, port 8080)
+- [ ] `Dockerfile.ingestion` is already authored in Phase 4.6.3 — just confirm it builds clean
+- [ ] Build and test both images locally (`docker build` + `docker run`)
+- [ ] Verify agent responds correctly inside its container; verify ingestion image runs `--help` clean
 
-### 7.2 Cloud Run Deployment
-- [ ] Deploy Agent Service to Cloud Run
+### 7.2 Cloud Run Deployment (Service for Agent, Job for Ingestion)
+- [ ] Deploy Agent as a Cloud Run **Service**: `gcloud run deploy gita-agent`
     - [ ] Set service account to `gita-ingest-worker`
-    - [ ] Configure Secret Manager environment variables
-    - [ ] Set memory/CPU limits (512MB / 1 vCPU minimum)
-    - [ ] Set concurrency and min/max instances (min=0 for scale-to-zero)
-- [ ] Deploy Ingestion Service to Cloud Run (or run as a Cloud Run Job)
-- [ ] Verify both services start and pass health checks
+    - [ ] Configure Secret Manager env bindings (`PINECONE_API_KEY`, `GOOGLE_API_KEY`)
+    - [ ] Memory/CPU: 512MB / 1 vCPU minimum
+    - [ ] Min instances = 0 (scale to zero); max instances = 1 (personal use)
+- [ ] Deploy Ingestion as a Cloud Run **Job**: `gcloud run jobs deploy ingest-recordings`
+    - [ ] Same service account, same secret bindings
+    - [ ] Env vars: `GCP_PROJECT_ID`, `GCS_AUDIO_BUCKET`, `DRIVE_FOLDER_ID`, `PINECONE_INDEX_NAME`
+    - [ ] Memory/CPU: 2GB / 2 vCPU (transcription + embedding burst)
+    - [ ] Task timeout: 1 hour
+- [ ] Verify Agent Service starts and passes health check
+- [ ] Verify Ingestion Job runs end-to-end via `gcloud run jobs execute ingest-recordings --wait`
 - [ ] Test agent from Cloud Run URL
 
 ### 7.3 Monitoring & Alerting
-- [ ] Verify structured logs appear in Cloud Logging
+- [ ] Verify structured logs appear in Cloud Logging for both Agent Service and Ingestion Job
+- [ ] Verify Cloud Trace receives spans from both (Phase 4.7 OTel work)
 - [ ] Create log-based metric for errors (severity=ERROR)
-- [ ] Create alert policy: notify on >5 errors in 5 minutes
-- [ ] Verify Cloud Run metrics dashboard (request count, latency, instance count)
+- [ ] Create alert policy: notify on >5 errors in 5 minutes (Agent only — Job failures are visible from `gcloud run jobs executions list`)
 
 ### 7.4 Staging End-to-End Validation
-- [ ] Trigger ingestion via Cloud Run Ingestion Service (if not already done locally)
+- [ ] Trigger ingestion via `gcloud run jobs execute` (smoke test against one recording first, then full set)
 - [ ] Query agent via Cloud Run Agent Service URL
 - [ ] Verify full flow: user question → agent → MCP tool → Pinecone → response with citations
 - [ ] Run Golden Set against staging endpoint

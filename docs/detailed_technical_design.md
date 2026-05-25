@@ -24,7 +24,7 @@ graph TD
     end
 
     subgraph "Data Ingestion Pipeline (Local / Cloud Run Job)"
-        Drive[Google Drive<br/>Bhagavad Gita Sessions] -->|Download MP4| Ingest[Ingestion Service<br/>FastAPI]
+        Drive[Google Drive<br/>Bhagavad Gita Sessions] -->|Download MP4| Ingest[Ingestion Orchestrator<br/>CLI / Cloud Run Job]
         Ingest -->|ffmpeg| Audio[Audio Extraction<br/>WAV/FLAC]
         Audio -->|Upload| GCS[Cloud Storage Bucket]
         GCS -->|BatchRecognize| STT[Chirp 3<br/>Speech-to-Text V2]
@@ -61,38 +61,38 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant U as User / CLI
-    participant API as Ingestion API (FastAPI)
-    participant W as Background Worker
+    participant U as User
+    participant CLI as Orchestrator CLI<br/>(local or Cloud Run Job)
     participant GD as Google Drive
     participant GCS as Cloud Storage
     participant STT as Chirp 3 (Speech-to-Text V2)
     participant LLM as Gemini 3 Flash
     participant P as Pinecone
 
-    U->>API: POST /api/v1/ingest {folder_id, force_reindex}
-    API->>API: Create job record, return job_id
-    API-->>U: 202 Accepted {job_id}
-    API->>W: Enqueue job (BackgroundTasks)
+    U->>CLI: gcloud run jobs execute ingest-recordings<br/>(or `python -m ingestion.orchestrator`)
 
-    W->>GD: List MP4 files in folder
-    GD-->>W: File list (4 recordings, ~3.26 GB)
+    CLI->>GD: List MP4 files in folder
+    GD-->>CLI: File list (4 recordings, ~3.26 GB)
+    CLI->>GCS: Check `.indexed` sentinel for each video_id
+    GCS-->>CLI: List of already-indexed video_ids → diff to new set
 
-    loop For each video file
-        W->>GD: Download MP4
-        W->>W: ffmpeg: extract audio (MP4 → FLAC)
-        W->>GCS: Upload audio to gs://gita-agent-prod-audio/
-        W->>STT: BatchRecognizeRequest (Chirp 3, te-IN, diarization)
-        STT-->>W: Transcribed text (Telugu + English mixed) with speaker labels
-        W->>LLM: Translate Telugu portions to English
-        LLM-->>W: Full English text with speaker labels preserved
-        W->>W: Chunk text (500 tokens, 50 token overlap)
-        W->>P: Upsert embeddings (text-embedding-004) + metadata
+    loop For each new video file
+        CLI->>GD: Download MP4
+        CLI->>CLI: ffmpeg: extract audio (MP4 → FLAC)
+        CLI->>GCS: Upload audio to gs://gita-agent-prod-audio/{video_id}/audio.flac
+        CLI->>STT: BatchRecognizeRequest (Chirp 3, te-IN + en-US, diarization)
+        STT-->>CLI: Transcribed text with speaker labels (Telugu + English mixed)
+        CLI->>LLM: Translate Telugu portions to English (preserve Sanskrit)
+        LLM-->>CLI: Full English text with speaker labels preserved
+        CLI->>CLI: Chunk text (375 words, 38-word overlap, sentence-aligned)
+        CLI->>P: Upsert embeddings (text-embedding-004) + metadata
+        CLI->>GCS: Write `.indexed` sentinel at gs://{bucket}/{video_id}/.indexed
     end
 
-    U->>API: GET /api/v1/jobs/{job_id}
-    API-->>U: {status: "completed", files_processed: 4}
+    CLI-->>U: Exit code 0 with summary (videos processed, vectors upserted)
 ```
+
+Run completion is observed via the exit code, Cloud Run Job execution status (`gcloud run jobs executions list`), and Cloud Trace spans — not via an HTTP status endpoint. The GCS `.indexed` sentinel is the durable record of which videos are fully ingested.
 
 ### 2.4 Architecture Decisions
 
@@ -127,51 +127,46 @@ sequenceDiagram
 
 **Google Drive Folder ID**: `1hWMRJRvw5di8WF7WpDPH1a311FAIpbPA`
 
-### 3.2 Ingestion Service API
+### 3.2 Ingestion Orchestrator (CLI + Cloud Run Job)
 
-**Framework**: FastAPI with `BackgroundTasks` (MVP). Upgradeable to Google Cloud Tasks for scale.
+**Pattern**: CLI orchestrator deployed as a Cloud Run **Job** (not a Service). Pivoted from the original FastAPI plan on 2026-05-24 — see `docs/technology_decisions.md` § 8 for the rationale (BackgroundTasks + in-memory state don't survive scale-to-zero; the agent never triggers ingestion, the user does).
 
-**Why async?** A 1-hour video takes minutes to transcribe. Synchronous HTTP would time out (60s limit). The API acknowledges immediately; a background worker does the heavy lifting.
+**Entry point**: `python -m ingestion.orchestrator` — same code path locally and inside the Cloud Run Job container. The Job container's `ENTRYPOINT` is exactly this command.
 
-**Endpoint 1: Trigger Ingestion**
--   `POST /api/v1/ingest`
--   **Request**:
-    ```json
-    {
-      "source_folder_id": "1hWMRJRvw5di8WF7WpDPH1a311FAIpbPA",
-      "file_types": ["mp4"],
-      "force_reindex": false
-    }
-    ```
--   **Response** (202 Accepted):
-    ```json
-    {
-      "job_id": "job_abc123",
-      "status": "queued",
-      "files_found": 4
-    }
-    ```
--   **Logic**: Scans Drive folder for MP4 files, skips already-indexed files (unless `force_reindex`), queues each for processing.
+**Trigger options**:
 
-**Endpoint 2: Check Status**
--   `GET /api/v1/jobs/{job_id}`
--   **Response**:
-    ```json
-    {
-      "job_id": "job_abc123",
-      "status": "processing",
-      "progress": {
-        "total_files": 4,
-        "completed": 2,
-        "current_file": "Nanna / Udaya - 2025/08/03 18:59 EDT - Recording",
-        "current_step": "translation"
-      }
-    }
-    ```
+| Trigger | Use case | Command |
+|---|---|---|
+| Local CLI | Development, debugging, one-off re-process | `python -m ingestion.orchestrator` |
+| Manual Cloud Run Job | "I uploaded a new recording, ingest it" | `gcloud run jobs execute ingest-recordings --region=us-central1 --wait` |
+| Cloud Scheduler (future) | Nightly diff + ingest | Cron → Cloud Run Job |
 
-**Endpoint 3: List Indexed Videos**
--   `GET /api/v1/videos`
--   **Response**: List of all processed videos with metadata (title, date, duration, chunk count).
+**CLI flags**:
+```
+python -m ingestion.orchestrator [options]
+
+  (default)            Scan Drive folder, diff against GCS sentinels, process new videos
+  --video-id VIDEO_ID  Process a single video (skip the scan/diff)
+  --force-reindex      Re-process even if `.indexed` sentinel exists
+  --dry-run            Print what would be processed; do not download/upload/upsert
+```
+
+**Pipeline steps** (per video):
+1. Drive download (MP4 → local `/tmp`)
+2. Audio extract (MP4 → mono 16kHz FLAC via ffmpeg)
+3. GCS upload (FLAC → `gs://{bucket}/{video_id}/audio.flac`)
+4. Chirp 3 BatchRecognize (LRO with polling; output to `gs://{bucket}/{video_id}/transcript/`)
+5. Gemini translation (with Cloud Translation V3 fallback)
+6. Chunk + embed + Pinecone upsert
+7. **Sentinel write**: `gs://{bucket}/{video_id}/.indexed` — only after step 6 reports `total_vectors_upserted > 0`
+
+The sentinel is the **single source of truth** for "is this video done." `is_already_indexed(video_id)` checks the sentinel, not Pinecone — Pinecone metadata only confirms vectors exist, which doesn't distinguish a complete run from a half-completed one.
+
+**Failure handling**: any step raising → process exits non-zero, no sentinel written. The next `python -m ingestion.orchestrator` invocation re-processes the same video from scratch. No partial-state machinery, no retry/resume logic. Trade-off: re-processing wastes the work already done, but failures should be rare and the workflow is simple. `--force-reindex` is the escape hatch.
+
+**Observing progress**: structlog → Cloud Logging + OTel spans → Cloud Trace (Phase 4.7). No HTTP status endpoint to poll.
+
+**Listing indexed videos** (replaces the planned `GET /api/v1/videos`): query Pinecone metadata aggregated by `video_id`, or list `.indexed` sentinels in GCS. The MCP server's `get_video_metadata` tool covers this need from the agent side.
 
 ### 3.3 Step 1: Audio Extraction
 
@@ -452,9 +447,9 @@ graph TD
     end
 
     subgraph "Google Cloud - gita-agent-prod"
-        subgraph "Cloud Run Services"
+        subgraph "Cloud Run"
             AgentSvc["Agent Service<br/>(ADK + MCP Server)<br/>Port 8080"]
-            IngestSvc["Ingestion Service<br/>(FastAPI)<br/>Port 8081"]
+            IngestJob["Ingestion Job<br/>(CLI orchestrator,<br/>manual `gcloud run jobs execute`)"]
         end
 
         subgraph "Storage"
@@ -480,23 +475,23 @@ graph TD
     AgentSvc -->|LLM| Gemini
     AgentSvc -->|Logs| CL
     AgentSvc -->|Traces| CT
-    IngestSvc -->|Traces| CT
-    IngestSvc -->|Download| GDrive
-    IngestSvc -->|Upload Audio| GCS_Audio
-    IngestSvc -->|Transcribe| STT
-    IngestSvc -->|Translate| Gemini
-    IngestSvc -->|Upsert| Pinecone
+    IngestJob -->|Traces| CT
+    IngestJob -->|Download| GDrive
+    IngestJob -->|Upload Audio| GCS_Audio
+    IngestJob -->|Transcribe| STT
+    IngestJob -->|Translate| Gemini
+    IngestJob -->|Upsert| Pinecone
     AgentSvc -->|Read| SM
-    IngestSvc -->|Read| SM
+    IngestJob -->|Read| SM
 ```
 
 ### 5.4 Secrets Management (Google Secret Manager)
 
 | Secret Name | Value | Used By |
 |-------------|-------|---------|
-| `pinecone-api-key` | Pinecone API key | Agent Service, Ingestion Service |
-| `google-api-key` | Gemini API key (for `google-genai` SDK) | Agent Service (ADK), Ingestion Service (translation + embedding) |
-| `drive-folder-id` | `1hWMRJRvw5di8WF7WpDPH1a311FAIpbPA` | Ingestion Service (configurable, not truly secret) |
+| `pinecone-api-key` | Pinecone API key | Agent Service, Ingestion Job |
+| `google-api-key` | Gemini API key (for `google-genai` SDK) | Agent Service (ADK), Ingestion Job (translation + embedding) |
+| `drive-folder-id` | `1hWMRJRvw5di8WF7WpDPH1a311FAIpbPA` | Ingestion Job (configurable env var, not truly secret) |
 
 **Note on GCP Service Authentication**: The Cloud Run services will use **Workload Identity** — the service binds directly to the `gita-ingest-worker` service account without a JSON key file. This is more secure than downloading a key. The service account already has Editor role, which grants access to Speech-to-Text, Cloud Storage, Drive API, and Secret Manager.
 
@@ -539,7 +534,7 @@ gcloud services enable \
 
 Added per the 2026-05-23 architecture review. ADK ships with built-in OpenTelemetry semantic conventions for GenAI and emits OTLP — spans for every LLM call, tool invocation, and (with our instrumentation) every ingestion step land in Cloud Trace automatically.
 
-**Why now**: We were previously planning to debug from structured logs alone. With ADK's OTel support already in the runtime, the marginal cost of adding distributed tracing is one initialization call + a handful of `with tracer.start_as_current_span(...)` blocks. The payoff is end-to-end visibility from `POST /api/v1/ingest` through every downstream call.
+**Why now**: We were previously planning to debug from structured logs alone. With ADK's OTel support already in the runtime, the marginal cost of adding distributed tracing is one initialization call + a handful of `with tracer.start_as_current_span(...)` blocks. The payoff is end-to-end visibility from CLI invocation (or `gcloud run jobs execute`) through every downstream call.
 
 **Stack**:
 - `opentelemetry-sdk` — TracerProvider + span processor
@@ -621,10 +616,25 @@ Tests are written **before** implementation for each component. The cycle is: wr
 | `test_extract_audio_produces_valid_flac` | Given a valid MP4, ffmpeg produces a mono 16kHz FLAC file |
 | `test_extract_audio_rejects_corrupt_mp4` | Corrupt MP4 raises `AudioExtractionError`, job marked `failed` |
 | `test_extract_audio_handles_silent_track` | Silent audio produces empty transcript, logs warning, skips embedding |
-| `test_ingest_endpoint_returns_202` | POST /api/v1/ingest returns 202 with job_id |
-| `test_ingest_skips_already_indexed` | Files already in Pinecone are skipped unless force_reindex=True |
-| `test_job_status_tracks_progress` | GET /api/v1/jobs/{id} returns current step and file count |
 | `test_drive_folder_listing` | Service account can list files in the shared Drive folder |
+
+**Storage Tests** (`tests/test_storage.py`) — added Phase 4.6.1:
+| Test | Description |
+|------|-------------|
+| `test_upload_file_writes_to_correct_uri` | `upload_file(local, gs://bucket/key)` puts blob at expected URI |
+| `test_download_json_returns_parsed_dict` | `download_json(gs://...)` returns parsed JSON dict |
+| `test_list_blobs_returns_uris_under_prefix` | `list_blobs(gs://b/prefix/)` returns all matching URIs |
+| `test_sentinel_write_and_check` | `write_sentinel` + `sentinel_exists` are round-trip consistent |
+
+**Orchestrator Tests** (`tests/test_orchestrator.py`) — added Phase 4.6.2:
+| Test | Description |
+|------|-------------|
+| `test_process_video_runs_full_pipeline_in_order` | All six steps invoked in correct sequence with proper handoffs |
+| `test_is_already_indexed_checks_sentinel` | Returns True iff `.indexed` exists in GCS for the video_id |
+| `test_scan_and_process_skips_already_indexed` | Videos with sentinel are skipped in the diff |
+| `test_force_reindex_bypasses_sentinel` | `--force-reindex` re-processes even with sentinel present |
+| `test_dry_run_lists_without_processing` | `--dry-run` calls no downstream module |
+| `test_pipeline_step_failure_writes_no_sentinel` | A raised exception leaves the sentinel unwritten so the next run re-attempts |
 
 **Transcription Tests** (`tests/test_transcription.py`):
 | Test | Description |
@@ -711,8 +721,7 @@ Failures emit JUnit XML for any CI/dashboarding we add later. Goldens live in th
 3.  Very long recordings: Graceful chunking, no OOM.
 
 **Fuzz Testing** (using `hypothesis` library):
--   Random JSON payloads for `POST /api/v1/ingest`.
--   Malformed `job_id` strings for `GET /api/v1/jobs/{id}`.
+-   Orchestrator CLI: malformed `--video-id` values, missing env vars, Drive folder containing non-MP4 files.
 -   Text fuzzing: Queries with emojis, 100k characters, SQL injection patterns → agent handles gracefully.
 
 ---
@@ -732,25 +741,33 @@ gita-agent/
 │   └── embeddings.py         # text-embedding-004 wrapper
 ├── ingestion/
 │   ├── __init__.py
-│   ├── main.py               # FastAPI app
+│   ├── orchestrator.py       # Top-level CLI: scan + diff + process new videos
+│   ├── drive.py              # Google Drive API client
 │   ├── audio.py              # ffmpeg audio extraction
+│   ├── storage.py            # GCS upload/download + .indexed sentinel helpers
 │   ├── transcription.py      # Chirp 3 STT logic
-│   ├── translation.py        # Gemini translation logic
-│   ├── chunking.py           # Text chunking + embedding
-│   └── drive.py              # Google Drive API client
+│   ├── translation.py        # Gemini translation logic (+ Cloud Translate fallback)
+│   ├── chunking.py           # Chunk + embed + Pinecone upsert
+│   └── observability.py      # OTel / Cloud Trace initialization (Phase 4.7)
 ├── tests/
 │   ├── __init__.py
-│   ├── test_ingestion.py
+│   ├── test_drive.py
+│   ├── test_audio.py
+│   ├── test_storage.py
 │   ├── test_transcription.py
 │   ├── test_translation.py
 │   ├── test_chunking.py
+│   ├── test_orchestrator.py
+│   ├── test_observability.py
 │   ├── test_mcp_server.py
 │   └── test_agent.py
 ├── docs/
 │   ├── detailed_technical_design.md   # This document
+│   ├── technology_decisions.md        # Tech choices + 2026 architecture review
 │   ├── task.md                        # Task tracking
-│   └── SETUP_GUIDE.md                # Credential setup
-├── Dockerfile                # For Cloud Run deployment
+│   └── SETUP_GUIDE.md                 # Credential setup + Cloud Run Job deploy commands
+├── Dockerfile.agent          # For Agent Service deployment (port 8080)
+├── Dockerfile.ingestion      # For Ingestion Cloud Run Job (CLI entrypoint)
 ├── requirements.txt          # Python dependencies
 ├── pyproject.toml            # Project config + test config
 └── README.md
@@ -762,21 +779,19 @@ gita-agent/
 
 ```
 # Core
-google-adk>=1.0.0
-google-cloud-speech>=2.0.0
-google-cloud-storage>=2.0.0
-google-generativeai>=0.8.0
-pinecone-client>=3.0.0
-mcp>=1.0.0
-fastapi>=0.110.0
-uvicorn>=0.27.0
-ffmpeg-python>=0.2.0
+google-adk>=1.0.0           # Agent runtime (used by agent/ only)
+google-cloud-speech>=2.0.0  # Chirp 3 transcription
+google-cloud-storage>=2.0.0 # GCS upload + sentinel
+google-cloud-translate>=3.0.0  # Translation fallback
+google-generativeai>=0.8.0  # Gemini translation + text-embedding-004
+pinecone-client>=3.0.0      # Vector DB
+mcp>=1.0.0                  # MCP server protocol
+ffmpeg-python>=0.2.0        # Audio extraction wrapper
 
 # Testing
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
 hypothesis>=6.0.0
-httpx>=0.27.0          # For testing FastAPI endpoints
 
 # Utilities
 python-dotenv>=1.0.0
