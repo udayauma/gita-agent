@@ -130,13 +130,13 @@ Each sub-component follows: write test → red → implement → green → refac
 - [x] Run tests → all green
 
 ### 4.4 Translation (Gemini 3 Flash)
-- [ ] Write `tests/test_translation.py::test_gemini_translates_telugu_to_english`
-- [ ] Write `tests/test_translation.py::test_english_passthrough`
-- [ ] Write `tests/test_translation.py::test_sanskrit_terms_preserved`
-- [ ] Write `tests/test_translation.py::test_speaker_labels_preserved`
-- [ ] Write `tests/test_translation.py::test_fallback_to_translate_api`
-- [ ] Implement `ingestion/translation.py` — Gemini translation prompt, chunked processing, fallback
-- [ ] Run tests → all green
+- [x] Write `tests/test_translation.py::test_gemini_translates_telugu_to_english`
+- [x] Write `tests/test_translation.py::test_english_passthrough`
+- [x] Write `tests/test_translation.py::test_sanskrit_terms_preserved`
+- [x] Write `tests/test_translation.py::test_speaker_labels_preserved`
+- [x] Write `tests/test_translation.py::test_fallback_to_translate_api`
+- [x] Implement `ingestion/translation.py` — Gemini translation prompt, chunked processing, fallback
+- [x] Run tests → all green
 
 ### 4.5 Chunking & Embedding
 - [ ] Write `tests/test_chunking.py::test_chunk_size_within_limit`
