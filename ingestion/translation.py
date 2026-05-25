@@ -25,6 +25,7 @@ from typing import Optional
 
 import structlog
 
+from ingestion.observability import get_tracer
 from ingestion.transcription import TranscriptionResult, TranscriptWord
 
 logger = structlog.get_logger(__name__)
@@ -293,47 +294,57 @@ def translate(
 
     source_segments = _group_into_segments(transcription.words)
     chunks = _chunk_segments(source_segments, chunk_size)
+    total_input_chars = sum(len(s.text) for s in source_segments)
 
-    used_fallback = False
-    try:
-        gemini = build_gemini_model(model)
-        translated = _translate_via_gemini(chunks, gemini)
-        logger.info(
-            "translation.gemini_success",
-            video_id=transcription.video_id,
-            segment_count=len(translated),
-            chunk_count=len(chunks),
-        )
-    except Exception as e:
-        if not enable_fallback:
-            if isinstance(e, TranslationError):
-                raise
-            raise TranslationError(f"Gemini translation failed: {e}") from e
-        logger.warning(
-            "translation.gemini_failed_using_fallback",
-            video_id=transcription.video_id,
-            error=str(e),
-        )
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("translation.translate_segments") as span:
+        span.set_attribute("video_id", transcription.video_id)
+        span.set_attribute("source_segment_count", len(source_segments))
+        span.set_attribute("chunk_count", len(chunks))
+        span.set_attribute("total_chars", total_input_chars)
+
+        used_fallback = False
         try:
-            project = project_id or os.environ.get("GCP_PROJECT_ID", "gita-agent-prod")
-            client = build_translate_client()
-            translated = _translate_via_cloud(source_segments, client, project)
-            used_fallback = True
+            gemini = build_gemini_model(model)
+            translated = _translate_via_gemini(chunks, gemini)
             logger.info(
-                "translation.fallback_success",
+                "translation.gemini_success",
                 video_id=transcription.video_id,
                 segment_count=len(translated),
+                chunk_count=len(chunks),
             )
-        except Exception as fallback_err:
-            raise TranslationError(
-                f"Both Gemini and Cloud Translation failed. Gemini: {e}; "
-                f"Cloud Translation: {fallback_err}"
-            ) from fallback_err
+        except Exception as e:
+            if not enable_fallback:
+                if isinstance(e, TranslationError):
+                    raise
+                raise TranslationError(f"Gemini translation failed: {e}") from e
+            logger.warning(
+                "translation.gemini_failed_using_fallback",
+                video_id=transcription.video_id,
+                error=str(e),
+            )
+            try:
+                project = project_id or os.environ.get("GCP_PROJECT_ID", "gita-agent-prod")
+                client = build_translate_client()
+                translated = _translate_via_cloud(source_segments, client, project)
+                used_fallback = True
+                logger.info(
+                    "translation.fallback_success",
+                    video_id=transcription.video_id,
+                    segment_count=len(translated),
+                )
+            except Exception as fallback_err:
+                raise TranslationError(
+                    f"Both Gemini and Cloud Translation failed. Gemini: {e}; "
+                    f"Cloud Translation: {fallback_err}"
+                ) from fallback_err
 
-    full_text = " ".join(seg.text for seg in translated).strip()
-    return TranslationResult(
-        video_id=transcription.video_id,
-        segments=translated,
-        full_text=full_text,
-        used_fallback=used_fallback,
-    )
+        full_text = " ".join(seg.text for seg in translated).strip()
+        span.set_attribute("segment_count", len(translated))
+        span.set_attribute("used_fallback", used_fallback)
+        return TranslationResult(
+            video_id=transcription.video_id,
+            segments=translated,
+            full_text=full_text,
+            used_fallback=used_fallback,
+        )

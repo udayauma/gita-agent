@@ -47,6 +47,7 @@ from ingestion import storage
 from ingestion.audio import extract_audio
 from ingestion.chunking import chunk_and_embed
 from ingestion.drive import DriveClient, DriveFile
+from ingestion.observability import get_tracer
 from ingestion.transcription import transcribe
 from ingestion.translation import translate
 
@@ -138,77 +139,90 @@ def process_video(
     video_id = drive_file.video_id
     sentinel = _sentinel_uri(video_id, bucket)
 
-    if not force_reindex and storage.sentinel_exists(sentinel):
-        logger.info("orchestrator.skip_indexed", video_id=video_id)
-        return ProcessingResult(
-            video_id=video_id,
-            video_title=drive_file.name,
-            success=True,
-            skipped=True,
-        )
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("orchestrator.ingest_video") as span:
+        span.set_attribute("video_id", video_id)
+        span.set_attribute("video_title", drive_file.name)
 
-    work_dir = work_dir or Path(tempfile.mkdtemp(prefix="gita_ingest_"))
-    work_dir.mkdir(parents=True, exist_ok=True)
-
-    try:
-        logger.info("orchestrator.start", video_id=video_id, video_title=drive_file.name)
-
-        # 1. Drive download
-        drive_client = build_drive_client()
-        mp4_path = drive_client.download_file(
-            drive_file.file_id, drive_file.name, work_dir
-        )
-
-        # 2. Audio extract
-        audio_result = extract_audio(mp4_path, work_dir, video_id=video_id)
-
-        # 3. GCS upload
-        audio_uri = _audio_uri(video_id, bucket)
-        storage.upload_file(audio_result.output_path, audio_uri)
-
-        # 4. Transcribe (Chirp 3)
-        transcription = transcribe(audio_uri=audio_uri, video_id=video_id)
-
-        # 5. Translate (Gemini 3 Flash, with Cloud Translate fallback)
-        translation = translate(transcription)
-
-        # 6. Chunk + embed + Pinecone upsert
-        chunking_result = chunk_and_embed(
-            translation,
-            video_title=drive_file.name,
-            session_date=_derive_session_date(drive_file),
-            upsert=True,
-        )
-
-        # 7. Sentinel — only if we actually upserted vectors
-        if chunking_result.total_vectors_upserted > 0:
-            storage.write_sentinel(sentinel)
-            logger.info(
-                "orchestrator.complete",
+        if not force_reindex and storage.sentinel_exists(sentinel):
+            logger.info("orchestrator.skip_indexed", video_id=video_id)
+            span.set_attribute("skipped", True)
+            span.set_attribute("success", True)
+            span.set_attribute("vector_count", 0)
+            return ProcessingResult(
                 video_id=video_id,
+                video_title=drive_file.name,
+                success=True,
+                skipped=True,
+            )
+        span.set_attribute("skipped", False)
+
+        work_dir = work_dir or Path(tempfile.mkdtemp(prefix="gita_ingest_"))
+        work_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            logger.info("orchestrator.start", video_id=video_id, video_title=drive_file.name)
+
+            # 1. Drive download
+            drive_client = build_drive_client()
+            mp4_path = drive_client.download_file(
+                drive_file.file_id, drive_file.name, work_dir, video_id=video_id
+            )
+
+            # 2. Audio extract
+            audio_result = extract_audio(mp4_path, work_dir, video_id=video_id)
+
+            # 3. GCS upload
+            audio_uri = _audio_uri(video_id, bucket)
+            storage.upload_file(audio_result.output_path, audio_uri)
+
+            # 4. Transcribe (Chirp 3)
+            transcription = transcribe(audio_uri=audio_uri, video_id=video_id)
+
+            # 5. Translate (Gemini 3 Flash, with Cloud Translate fallback)
+            translation = translate(transcription)
+
+            # 6. Chunk + embed + Pinecone upsert
+            chunking_result = chunk_and_embed(
+                translation,
+                video_title=drive_file.name,
+                session_date=_derive_session_date(drive_file),
+                upsert=True,
+            )
+
+            # 7. Sentinel — only if we actually upserted vectors
+            if chunking_result.total_vectors_upserted > 0:
+                storage.write_sentinel(sentinel)
+                logger.info(
+                    "orchestrator.complete",
+                    video_id=video_id,
+                    vector_count=chunking_result.total_vectors_upserted,
+                )
+            else:
+                logger.warning(
+                    "orchestrator.no_vectors_skipping_sentinel",
+                    video_id=video_id,
+                )
+
+            span.set_attribute("success", True)
+            span.set_attribute("vector_count", chunking_result.total_vectors_upserted)
+            return ProcessingResult(
+                video_id=video_id,
+                video_title=drive_file.name,
+                success=True,
                 vector_count=chunking_result.total_vectors_upserted,
             )
-        else:
-            logger.warning(
-                "orchestrator.no_vectors_skipping_sentinel",
+
+        except Exception as e:
+            logger.error("orchestrator.failed", video_id=video_id, error=str(e))
+            span.set_attribute("success", False)
+            span.set_attribute("error", str(e))
+            return ProcessingResult(
                 video_id=video_id,
+                video_title=drive_file.name,
+                success=False,
+                error=str(e),
             )
-
-        return ProcessingResult(
-            video_id=video_id,
-            video_title=drive_file.name,
-            success=True,
-            vector_count=chunking_result.total_vectors_upserted,
-        )
-
-    except Exception as e:
-        logger.error("orchestrator.failed", video_id=video_id, error=str(e))
-        return ProcessingResult(
-            video_id=video_id,
-            video_title=drive_file.name,
-            success=False,
-            error=str(e),
-        )
 
 
 # ---------------------------------------------------------------------------

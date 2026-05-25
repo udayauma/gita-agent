@@ -188,15 +188,19 @@ Cloud Run Jobs are purpose-built for this batch-execution shape. See `docs/techn
 - [x] Document the manual-trigger workflow: `gcloud run jobs execute ingest-recordings --region=us-central1 --wait` (§ 5.3)
 
 ### 4.7 Observability Instrumentation (added per 2026-05-23 architecture review)
-- [ ] Add `opentelemetry-sdk`, `opentelemetry-exporter-gcp-trace`, and `opentelemetry-instrumentation` to `requirements.txt`
-- [ ] Add `ingestion/observability.py` — initialize TracerProvider with Cloud Trace exporter, configure structlog → OTel log correlation
-- [ ] Write `tests/test_observability.py::test_tracer_initializes_with_cloud_trace_exporter`
-- [ ] Write `tests/test_observability.py::test_spans_are_emitted_with_correct_attributes`
-- [ ] Instrument `ingestion/drive.py` — span `drive.download` with `video_id`, `size_bytes` attributes
-- [ ] Instrument `ingestion/audio.py` — span `audio.extract` with `duration_seconds`, `output_codec`
-- [ ] Instrument `ingestion/transcription.py` — span `transcription.batch_recognize` with `video_id`, `audio_uri`, plus LRO polling sub-span
-- [ ] Verify traces appear in Cloud Trace console after a local pipeline run
-- [ ] Run all observability tests → all green
+- [x] Add `opentelemetry-sdk`, `opentelemetry-exporter-gcp-trace`, and `opentelemetry-instrumentation` to `requirements.txt`
+- [x] Add `ingestion/observability.py` — initialize TracerProvider with Cloud Trace exporter, configure structlog → OTel log correlation (via `inject_trace_context` processor)
+- [x] Write `tests/test_observability.py::test_tracer_initializes_with_cloud_trace_exporter`
+- [x] Write `tests/test_observability.py::test_spans_are_emitted_with_correct_attributes`
+- [x] Instrument `ingestion/drive.py` — span `drive.download` with `video_id`, `size_bytes` attributes
+- [x] Instrument `ingestion/audio.py` — span `audio.extract` with `duration_seconds`, `output_codec`
+- [x] Instrument `ingestion/transcription.py` — span `transcription.batch_recognize` with `video_id`, `audio_uri`, plus LRO polling sub-span
+- [x] Instrument `ingestion/translation.py` — span `translation.translate_segments` with `segment_count`, `total_chars`, `used_fallback`
+- [x] Instrument `ingestion/chunking.py` — spans `chunking.split_into_chunks`, `embedding.embed_chunks`, `storage.upsert_pinecone`
+- [x] Instrument `ingestion/storage.py` — spans `storage.upload_file`, `storage.write_sentinel`
+- [x] Instrument `ingestion/orchestrator.py` — parent span `orchestrator.ingest_video` (all module spans become children)
+- [ ] Verify traces appear in Cloud Trace console after a local pipeline run (deferred to Phase 4.8 end-to-end run)
+- [x] Run all observability tests → all green (33 new tests; 167 total passing)
 
 ### 4.8 Ingestion Integration Test
 - [ ] Process one real recording end-to-end (smallest file: Jul 20, 640.9 MB)

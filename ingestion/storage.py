@@ -27,6 +27,8 @@ from pathlib import Path
 
 import structlog
 
+from ingestion.observability import get_tracer
+
 logger = structlog.get_logger(__name__)
 
 
@@ -62,11 +64,17 @@ def _parse_gcs_uri(uri: str) -> tuple[str, str]:
 def upload_file(local_path: Path, gcs_uri: str) -> str:
     """Upload a local file to GCS at the given URI; return the URI."""
     bucket_name, blob_path = _parse_gcs_uri(gcs_uri)
-    client = build_storage_client()
-    blob = client.bucket(bucket_name).blob(blob_path)
-    blob.upload_from_filename(str(local_path))
-    logger.info("storage.upload_file", uri=gcs_uri, local_path=str(local_path))
-    return gcs_uri
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("storage.upload_file") as span:
+        span.set_attribute("uri", gcs_uri)
+        size_bytes = Path(local_path).stat().st_size
+        span.set_attribute("size_bytes", size_bytes)
+
+        client = build_storage_client()
+        blob = client.bucket(bucket_name).blob(blob_path)
+        blob.upload_from_filename(str(local_path))
+        logger.info("storage.upload_file", uri=gcs_uri, local_path=str(local_path))
+        return gcs_uri
 
 
 def download_json(gcs_uri: str) -> dict:
@@ -111,11 +119,15 @@ def delete_prefix(gcs_prefix_uri: str) -> int:
 def write_sentinel(gcs_uri: str) -> str:
     """Write an empty blob at the given URI as a completion sentinel; return URI."""
     bucket_name, blob_path = _parse_gcs_uri(gcs_uri)
-    client = build_storage_client()
-    blob = client.bucket(bucket_name).blob(blob_path)
-    blob.upload_from_string("")
-    logger.info("storage.write_sentinel", uri=gcs_uri)
-    return gcs_uri
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("storage.write_sentinel") as span:
+        span.set_attribute("sentinel_uri", gcs_uri)
+
+        client = build_storage_client()
+        blob = client.bucket(bucket_name).blob(blob_path)
+        blob.upload_from_string("")
+        logger.info("storage.write_sentinel", uri=gcs_uri)
+        return gcs_uri
 
 
 def sentinel_exists(gcs_uri: str) -> bool:

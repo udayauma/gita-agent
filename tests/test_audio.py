@@ -200,6 +200,20 @@ class TestExtractAudioWithVideoId:
         assert result.output_path.stem == valid_mp4.stem
         assert result.output_path.parent == output_dir
 
+    def test_emits_audio_extract_span(self, valid_mp4, output_dir, in_memory_spans):
+        """extract_audio emits an `audio.extract` span with duration + codec attrs."""
+        vid = "nanna_udaya_2025_07_06"
+        extract_audio(valid_mp4, output_dir, video_id=vid)
+
+        spans = [
+            s for s in in_memory_spans.get_finished_spans() if s.name == "audio.extract"
+        ]
+        assert len(spans) == 1
+        attrs = spans[0].attributes
+        assert attrs["video_id"] == vid
+        assert attrs["output_codec"] == "flac"
+        assert attrs["duration_seconds"] > 0
+
 
 # ---------------------------------------------------------------------------
 # 4.1.3 — Error Handling: Corrupt, empty, and missing files

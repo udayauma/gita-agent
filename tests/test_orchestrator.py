@@ -371,3 +371,58 @@ class TestEnvHandling:
         monkeypatch.delenv("DRIVE_FOLDER_ID", raising=False)
         with pytest.raises(OrchestrationError, match="DRIVE_FOLDER_ID"):
             scan_and_process()
+
+
+# ---------------------------------------------------------------------------
+# Observability — Phase 4.7
+# ---------------------------------------------------------------------------
+
+class TestOrchestratorSpans:
+    """Verify process_video emits a parent `orchestrator.ingest_video` span."""
+
+    def test_emits_parent_ingest_video_span(
+        self, drive_file, mock_pipeline, tmp_path, in_memory_spans
+    ):
+        process_video(drive_file, work_dir=tmp_path)
+
+        parents = [
+            s for s in in_memory_spans.get_finished_spans()
+            if s.name == "orchestrator.ingest_video"
+        ]
+        assert len(parents) == 1
+        attrs = parents[0].attributes
+        assert attrs["video_id"] == VIDEO_ID
+        assert attrs["video_title"] == VIDEO_TITLE
+        assert attrs["vector_count"] == 12
+        assert attrs["success"] is True
+        assert attrs["skipped"] is False
+
+    def test_skipped_video_span_marks_skipped(
+        self, drive_file, mock_pipeline, tmp_path, in_memory_spans
+    ):
+        mock_pipeline.sentinel_exists.return_value = True
+        process_video(drive_file, work_dir=tmp_path)
+
+        parents = [
+            s for s in in_memory_spans.get_finished_spans()
+            if s.name == "orchestrator.ingest_video"
+        ]
+        assert len(parents) == 1
+        attrs = parents[0].attributes
+        assert attrs["skipped"] is True
+        assert attrs["video_id"] == VIDEO_ID
+
+    def test_failed_video_span_records_error(
+        self, drive_file, mock_pipeline, tmp_path, in_memory_spans
+    ):
+        mock_pipeline.transcribe.side_effect = RuntimeError("Chirp 3 outage")
+        process_video(drive_file, work_dir=tmp_path)
+
+        parents = [
+            s for s in in_memory_spans.get_finished_spans()
+            if s.name == "orchestrator.ingest_video"
+        ]
+        assert len(parents) == 1
+        attrs = parents[0].attributes
+        assert attrs["success"] is False
+        assert "Chirp 3 outage" in attrs.get("error", "")

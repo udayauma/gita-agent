@@ -387,6 +387,36 @@ class TestDriveClientDownload:
                 output_dir=output_dir,
             )
 
+    def test_download_emits_drive_download_span(
+        self, drive_client, mock_drive_service, output_dir, in_memory_spans
+    ):
+        """download_file emits a `drive.download` span with video_id + size_bytes."""
+        mock_request = MagicMock()
+        mock_drive_service.files.return_value.get_media.return_value = mock_request
+
+        with patch("ingestion.drive.MediaIoBaseDownload") as mock_dl_class:
+            mock_downloader = MagicMock()
+            mock_dl_class.return_value = mock_downloader
+            mock_downloader.next_chunk.side_effect = [
+                (MagicMock(progress=MagicMock(return_value=1.0)), True),
+            ]
+
+            drive_client.download_file(
+                file_id="file_abc123",
+                filename="test_video.mp4",
+                output_dir=output_dir,
+                video_id="nanna_udaya_2025_07_06",
+            )
+
+        download_spans = [
+            s for s in in_memory_spans.get_finished_spans() if s.name == "drive.download"
+        ]
+        assert len(download_spans) == 1
+        attrs = download_spans[0].attributes
+        assert attrs["video_id"] == "nanna_udaya_2025_07_06"
+        assert "size_bytes" in attrs
+        assert attrs["file_id"] == "file_abc123"
+
 
 # ---------------------------------------------------------------------------
 # 4.2.4 — DriveFile dataclass

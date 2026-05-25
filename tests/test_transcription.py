@@ -285,3 +285,34 @@ class TestErrorHandling:
              patch("ingestion.transcription.storage.download_json", return_value=mock_transcript_json):
             with pytest.raises(TranscriptionError):
                 transcribe(audio_uri="gs://b/a.flac", video_id="v1")
+
+
+# ---------------------------------------------------------------------------
+# Observability — Phase 4.7
+# ---------------------------------------------------------------------------
+
+class TestTranscriptionSpans:
+    """Verify the batch_recognize span + LRO poll sub-span are emitted."""
+
+    def test_emits_batch_recognize_span_with_lro_child(
+        self, mock_speech_client, mock_transcript_json, in_memory_spans
+    ):
+        with patch("ingestion.transcription.build_speech_client", return_value=mock_speech_client), \
+             patch("ingestion.transcription.storage.download_json", return_value=mock_transcript_json):
+            transcribe(
+                audio_uri="gs://gita-agent-prod-audio/test_video/audio.flac",
+                video_id="test_video",
+            )
+
+        spans = in_memory_spans.get_finished_spans()
+        parents = [s for s in spans if s.name == "transcription.batch_recognize"]
+        children = [s for s in spans if s.name == "transcription.poll_lro"]
+
+        assert len(parents) == 1
+        assert len(children) == 1
+
+        parent = parents[0]
+        child = children[0]
+        assert parent.attributes["video_id"] == "test_video"
+        assert parent.attributes["audio_uri"] == "gs://gita-agent-prod-audio/test_video/audio.flac"
+        assert child.parent.span_id == parent.context.span_id

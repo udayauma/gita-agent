@@ -25,6 +25,8 @@ from pathlib import Path
 
 import structlog
 
+from ingestion.observability import get_tracer
+
 logger = structlog.get_logger(__name__)
 
 # Supported input video extensions
@@ -110,81 +112,91 @@ def extract_audio(
     input_path = Path(input_path)
     output_dir = Path(output_dir)
 
-    # Validate input
-    validate_input_file(input_path)
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("audio.extract") as span:
+        if video_id:
+            span.set_attribute("video_id", video_id)
+        span.set_attribute("input_path", str(input_path))
 
-    # Build output path based on whether video_id is provided
-    if video_id:
-        # Pipeline mode: output_dir/{video_id}/audio.flac
-        output_subdir = output_dir / video_id
-        output_subdir.mkdir(parents=True, exist_ok=True)
-        output_path = output_subdir / "audio.flac"
-    else:
-        # Standalone mode: output_dir/{input_stem}.flac
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"{input_path.stem}.flac"
+        # Validate input
+        validate_input_file(input_path)
 
-    logger.info(
-        "extracting_audio",
-        input_path=str(input_path),
-        output_path=str(output_path),
-        target_sample_rate=TARGET_SAMPLE_RATE,
-        target_channels=TARGET_CHANNELS,
-    )
+        # Build output path based on whether video_id is provided
+        if video_id:
+            # Pipeline mode: output_dir/{video_id}/audio.flac
+            output_subdir = output_dir / video_id
+            output_subdir.mkdir(parents=True, exist_ok=True)
+            output_path = output_subdir / "audio.flac"
+        else:
+            # Standalone mode: output_dir/{input_stem}.flac
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"{input_path.stem}.flac"
 
-    # Run ffmpeg
-    cmd = [
-        "ffmpeg",
-        "-y",  # Overwrite output if exists
-        "-i", str(input_path),
-        "-vn",  # Discard video track
-        "-acodec", TARGET_CODEC,
-        "-ar", str(TARGET_SAMPLE_RATE),
-        "-ac", str(TARGET_CHANNELS),
-        str(output_path),
-    ]
-
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600,  # 10 min timeout for large files
-        )
-    except subprocess.TimeoutExpired:
-        raise AudioExtractionError(
-            f"ffmpeg timed out after 600s processing: {input_path}"
+        logger.info(
+            "extracting_audio",
+            input_path=str(input_path),
+            output_path=str(output_path),
+            target_sample_rate=TARGET_SAMPLE_RATE,
+            target_channels=TARGET_CHANNELS,
         )
 
-    if result.returncode != 0:
-        raise AudioExtractionError(
-            f"ffmpeg failed to extract audio (exit code {result.returncode}). "
-            f"stderr: {result.stderr[-500:]}"
+        # Run ffmpeg
+        cmd = [
+            "ffmpeg",
+            "-y",  # Overwrite output if exists
+            "-i", str(input_path),
+            "-vn",  # Discard video track
+            "-acodec", TARGET_CODEC,
+            "-ar", str(TARGET_SAMPLE_RATE),
+            "-ac", str(TARGET_CHANNELS),
+            str(output_path),
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=600,  # 10 min timeout for large files
+            )
+        except subprocess.TimeoutExpired:
+            raise AudioExtractionError(
+                f"ffmpeg timed out after 600s processing: {input_path}"
+            )
+
+        if result.returncode != 0:
+            raise AudioExtractionError(
+                f"ffmpeg failed to extract audio (exit code {result.returncode}). "
+                f"stderr: {result.stderr[-500:]}"
+            )
+
+        # Verify output was created and is non-empty
+        if not output_path.exists() or output_path.stat().st_size == 0:
+            raise AudioExtractionError(
+                f"ffmpeg produced no output for: {input_path}"
+            )
+
+        # Probe the output to get duration
+        duration = _probe_duration(output_path)
+        file_size = output_path.stat().st_size
+
+        span.set_attribute("duration_seconds", duration)
+        span.set_attribute("output_codec", TARGET_CODEC)
+        span.set_attribute("file_size_bytes", file_size)
+
+        logger.info(
+            "audio_extraction_complete",
+            output_path=str(output_path),
+            duration_seconds=duration,
+            file_size_bytes=file_size,
         )
 
-    # Verify output was created and is non-empty
-    if not output_path.exists() or output_path.stat().st_size == 0:
-        raise AudioExtractionError(
-            f"ffmpeg produced no output for: {input_path}"
+        return AudioExtractionResult(
+            input_path=input_path,
+            output_path=output_path,
+            duration_seconds=duration,
+            file_size_bytes=file_size,
         )
-
-    # Probe the output to get duration
-    duration = _probe_duration(output_path)
-    file_size = output_path.stat().st_size
-
-    logger.info(
-        "audio_extraction_complete",
-        output_path=str(output_path),
-        duration_seconds=duration,
-        file_size_bytes=file_size,
-    )
-
-    return AudioExtractionResult(
-        input_path=input_path,
-        output_path=output_path,
-        duration_seconds=duration,
-        file_size_bytes=file_size,
-    )
 
 
 def _probe_duration(audio_path: Path) -> float:

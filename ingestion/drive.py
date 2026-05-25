@@ -27,6 +27,8 @@ from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.errors import HttpError
 import google.auth
 
+from ingestion.observability import get_tracer
+
 logger = structlog.get_logger(__name__)
 
 # Fields requested from the Drive API
@@ -287,6 +289,7 @@ class DriveClient:
         file_id: str,
         filename: str,
         output_dir: Path,
+        video_id: str | None = None,
     ) -> Path:
         """Download a file from Google Drive to a local directory.
 
@@ -296,6 +299,8 @@ class DriveClient:
             file_id: Google Drive file ID to download.
             filename: Name to save the file as locally.
             output_dir: Directory to save the file into. Created if it doesn't exist.
+            video_id: Optional sanitized identifier — attached as an OTel span
+                attribute so traces can be filtered by video in Cloud Trace.
 
         Returns:
             Path to the downloaded local file.
@@ -307,36 +312,44 @@ class DriveClient:
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / filename
 
-        logger.info(
-            "downloading_file",
-            file_id=file_id,
-            filename=filename,
-            output_path=str(output_path),
-        )
+        tracer = get_tracer(__name__)
+        with tracer.start_as_current_span("drive.download") as span:
+            span.set_attribute("file_id", file_id)
+            if video_id:
+                span.set_attribute("video_id", video_id)
 
-        try:
-            request = self._service.files().get_media(fileId=file_id)
-            with open(output_path, "wb") as fh:
-                downloader = MediaIoBaseDownload(fh, request)
-                done = False
-                while not done:
-                    status, done = downloader.next_chunk()
-                    if status:
-                        progress = status.progress()
-                        logger.debug(
-                            "download_progress",
-                            file_id=file_id,
-                            progress=f"{progress * 100:.1f}%",
-                        )
-        except HttpError as e:
-            raise DriveError(
-                f"Failed to download file {file_id}: {e}"
-            ) from e
+            logger.info(
+                "downloading_file",
+                file_id=file_id,
+                filename=filename,
+                output_path=str(output_path),
+            )
 
-        logger.info(
-            "download_complete",
-            file_id=file_id,
-            output_path=str(output_path),
-            size_bytes=output_path.stat().st_size,
-        )
-        return output_path
+            try:
+                request = self._service.files().get_media(fileId=file_id)
+                with open(output_path, "wb") as fh:
+                    downloader = MediaIoBaseDownload(fh, request)
+                    done = False
+                    while not done:
+                        status, done = downloader.next_chunk()
+                        if status:
+                            progress = status.progress()
+                            logger.debug(
+                                "download_progress",
+                                file_id=file_id,
+                                progress=f"{progress * 100:.1f}%",
+                            )
+            except HttpError as e:
+                raise DriveError(
+                    f"Failed to download file {file_id}: {e}"
+                ) from e
+
+            size_bytes = output_path.stat().st_size
+            span.set_attribute("size_bytes", size_bytes)
+            logger.info(
+                "download_complete",
+                file_id=file_id,
+                output_path=str(output_path),
+                size_bytes=size_bytes,
+            )
+            return output_path

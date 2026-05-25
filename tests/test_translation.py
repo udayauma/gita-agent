@@ -339,3 +339,35 @@ class TestErrorHandling:
         with patch("ingestion.translation.build_gemini_model", return_value=gemini):
             with pytest.raises(TranslationError):
                 translate(mixed_transcript, enable_fallback=False)
+
+
+# ---------------------------------------------------------------------------
+# Observability — Phase 4.7
+# ---------------------------------------------------------------------------
+
+class TestTranslationSpans:
+    """Verify the translation.translate_segments span is emitted."""
+
+    def test_emits_translate_segments_span(
+        self,
+        mixed_transcript,
+        mock_gemini_model_telugu_translated,
+        in_memory_spans,
+    ):
+        with patch(
+            "ingestion.translation.build_gemini_model",
+            return_value=mock_gemini_model_telugu_translated,
+        ):
+            translate(mixed_transcript)
+
+        spans = [
+            s
+            for s in in_memory_spans.get_finished_spans()
+            if s.name == "translation.translate_segments"
+        ]
+        assert len(spans) == 1
+        attrs = spans[0].attributes
+        assert attrs["video_id"] == mixed_transcript.video_id
+        assert attrs["segment_count"] >= 1
+        assert attrs["total_chars"] > 0
+        assert attrs["used_fallback"] is False

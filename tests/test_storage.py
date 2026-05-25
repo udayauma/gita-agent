@@ -225,3 +225,40 @@ class TestUriParsing:
         with patch("ingestion.storage.build_storage_client", return_value=mock_storage_client):
             download_json(target)
         mock_storage_client.bucket.return_value.blob.assert_called_with("a/b/c/d/e.txt")
+
+
+# ---------------------------------------------------------------------------
+# Observability — Phase 4.7
+# ---------------------------------------------------------------------------
+
+class TestStorageSpans:
+    """Verify upload_file and write_sentinel emit OTel spans."""
+
+    def test_upload_file_emits_span(
+        self, mock_storage_client, tmp_local_file, in_memory_spans
+    ):
+        target_uri = f"gs://{BUCKET}/nanna_udaya_2025_07_06/audio.flac"
+        with patch("ingestion.storage.build_storage_client", return_value=mock_storage_client):
+            upload_file(tmp_local_file, target_uri)
+
+        spans = [
+            s for s in in_memory_spans.get_finished_spans() if s.name == "storage.upload_file"
+        ]
+        assert len(spans) == 1
+        attrs = spans[0].attributes
+        assert attrs["uri"] == target_uri
+        assert attrs["size_bytes"] == tmp_local_file.stat().st_size
+
+    def test_write_sentinel_emits_span(self, mock_storage_client, in_memory_spans):
+        sentinel_uri = f"gs://{BUCKET}/nanna_udaya_2025_07_06/.indexed"
+        blob = MagicMock()
+        mock_storage_client.bucket.return_value.blob.return_value = blob
+
+        with patch("ingestion.storage.build_storage_client", return_value=mock_storage_client):
+            write_sentinel(sentinel_uri)
+
+        spans = [
+            s for s in in_memory_spans.get_finished_spans() if s.name == "storage.write_sentinel"
+        ]
+        assert len(spans) == 1
+        assert spans[0].attributes["sentinel_uri"] == sentinel_uri

@@ -29,6 +29,7 @@ from typing import Optional
 
 import structlog
 
+from ingestion.observability import get_tracer
 from ingestion.translation import TranslationResult
 
 logger = structlog.get_logger(__name__)
@@ -211,41 +212,52 @@ def split_into_chunks(
     if not translation.segments or not translation.full_text.strip():
         raise ChunkingError("Cannot chunk an empty translation")
 
-    sentences = _segments_to_sentences(translation)
-    if not sentences:
-        raise ChunkingError("Translation produced no parseable sentences")
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("chunking.split_into_chunks") as span:
+        span.set_attribute("video_id", translation.video_id)
+        span.set_attribute("chunk_size_words", chunk_size_words)
+        span.set_attribute("overlap_words", overlap_words)
 
-    chunks: list[Chunk] = []
-    current: list[_Sentence] = []
-    current_word_count = 0
-    chunk_index = 0
+        sentences = _segments_to_sentences(translation)
+        if not sentences:
+            raise ChunkingError("Translation produced no parseable sentences")
 
-    for s in sentences:
-        # Adding this sentence would exceed the budget AND we already have content → flush.
-        if current and (current_word_count + s.word_count) > chunk_size_words:
+        chunks: list[Chunk] = []
+        current: list[_Sentence] = []
+        current_word_count = 0
+        chunk_index = 0
+
+        for s in sentences:
+            # Adding this sentence would exceed the budget AND we already have content → flush.
+            if current and (current_word_count + s.word_count) > chunk_size_words:
+                chunks.append(
+                    _build_chunk(current, chunk_index, translation.video_id, video_title, session_date)
+                )
+                chunk_index += 1
+                # Seed the next chunk with overlap from the flushed one.
+                overlap = _select_overlap_sentences(current, overlap_words)
+                current = list(overlap)
+                current_word_count = sum(o.word_count for o in current)
+            current.append(s)
+            current_word_count += s.word_count
+
+        if current:
             chunks.append(
                 _build_chunk(current, chunk_index, translation.video_id, video_title, session_date)
             )
-            chunk_index += 1
-            # Seed the next chunk with overlap from the flushed one.
-            overlap = _select_overlap_sentences(current, overlap_words)
-            current = list(overlap)
-            current_word_count = sum(o.word_count for o in current)
-        current.append(s)
-        current_word_count += s.word_count
 
-    if current:
-        chunks.append(
-            _build_chunk(current, chunk_index, translation.video_id, video_title, session_date)
+        avg_chars = (sum(len(c.text) for c in chunks) / len(chunks)) if chunks else 0
+        span.set_attribute("sentence_count", len(sentences))
+        span.set_attribute("chunk_count", len(chunks))
+        span.set_attribute("avg_chunk_chars", avg_chars)
+
+        logger.info(
+            "chunking.split_complete",
+            video_id=translation.video_id,
+            chunk_count=len(chunks),
+            sentence_count=len(sentences),
         )
-
-    logger.info(
-        "chunking.split_complete",
-        video_id=translation.video_id,
-        chunk_count=len(chunks),
-        sentence_count=len(sentences),
-    )
-    return chunks
+        return chunks
 
 
 # ---------------------------------------------------------------------------
@@ -254,14 +266,21 @@ def split_into_chunks(
 
 def embed_chunks(chunks: list[Chunk], model: str = DEFAULT_EMBEDDING_MODEL) -> list[Chunk]:
     """Compute an embedding for each chunk and attach it in place."""
-    for c in chunks:
-        c.embedding = embed_text(c.text, model=model)
-        if len(c.embedding) != DEFAULT_EMBEDDING_DIM:
-            raise ChunkingError(
-                f"Embedding for {c.chunk_id} has {len(c.embedding)} dims, expected {DEFAULT_EMBEDDING_DIM}"
-            )
-    logger.info("chunking.embed_complete", chunk_count=len(chunks), model=model)
-    return chunks
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("embedding.embed_chunks") as span:
+        span.set_attribute("chunk_count", len(chunks))
+        span.set_attribute("model", model)
+
+        for c in chunks:
+            c.embedding = embed_text(c.text, model=model)
+            if len(c.embedding) != DEFAULT_EMBEDDING_DIM:
+                raise ChunkingError(
+                    f"Embedding for {c.chunk_id} has {len(c.embedding)} dims, expected {DEFAULT_EMBEDDING_DIM}"
+                )
+
+        span.set_attribute("vector_count", len(chunks))
+        logger.info("chunking.embed_complete", chunk_count=len(chunks), model=model)
+        return chunks
 
 
 # ---------------------------------------------------------------------------
@@ -276,18 +295,27 @@ def upsert_chunks(chunks: list[Chunk], index_name: str = DEFAULT_PINECONE_INDEX)
         if c.embedding is None:
             raise ChunkingError(f"Chunk {c.chunk_id} has no embedding; call embed_chunks first")
 
-    index = build_pinecone_index(index_name)
-    upserted = 0
-    for batch_start in range(0, len(chunks), PINECONE_BATCH_SIZE):
-        batch = chunks[batch_start : batch_start + PINECONE_BATCH_SIZE]
-        vectors = [
-            {"id": c.chunk_id, "values": c.embedding, "metadata": c.metadata}
-            for c in batch
-        ]
-        index.upsert(vectors=vectors)
-        upserted += len(batch)
-    logger.info("chunking.upsert_complete", count=upserted, index=index_name)
-    return upserted
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("storage.upsert_pinecone") as span:
+        span.set_attribute("index_name", index_name)
+        span.set_attribute("vector_count", len(chunks))
+
+        index = build_pinecone_index(index_name)
+        upserted = 0
+        batch_count = 0
+        for batch_start in range(0, len(chunks), PINECONE_BATCH_SIZE):
+            batch = chunks[batch_start : batch_start + PINECONE_BATCH_SIZE]
+            vectors = [
+                {"id": c.chunk_id, "values": c.embedding, "metadata": c.metadata}
+                for c in batch
+            ]
+            index.upsert(vectors=vectors)
+            upserted += len(batch)
+            batch_count += 1
+
+        span.set_attribute("batch_count", batch_count)
+        logger.info("chunking.upsert_complete", count=upserted, index=index_name)
+        return upserted
 
 
 # ---------------------------------------------------------------------------

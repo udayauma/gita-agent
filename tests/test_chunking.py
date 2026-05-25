@@ -418,3 +418,45 @@ class TestErrorHandling:
         )
         assert len(chunks) == 1
         assert chunks[0].chunk_index == 0
+
+
+# ---------------------------------------------------------------------------
+# Observability — Phase 4.7
+# ---------------------------------------------------------------------------
+
+class TestChunkingSpans:
+    """Verify chunk, embed, and upsert spans are all emitted by chunk_and_embed."""
+
+    def test_emits_chunk_embed_and_upsert_spans(
+        self, long_translation, mock_embed_fn, mock_pinecone_index, in_memory_spans
+    ):
+        with patch("ingestion.chunking.embed_text", mock_embed_fn), \
+             patch("ingestion.chunking.build_pinecone_index", return_value=mock_pinecone_index):
+            chunk_and_embed(
+                long_translation,
+                video_title=VIDEO_TITLE,
+                session_date=SESSION_DATE,
+                chunk_size_words=CHUNK_SIZE_WORDS,
+                overlap_words=OVERLAP_WORDS,
+                upsert=True,
+            )
+
+        names = {s.name for s in in_memory_spans.get_finished_spans()}
+        assert "chunking.split_into_chunks" in names
+        assert "embedding.embed_chunks" in names
+        assert "storage.upsert_pinecone" in names
+
+        by_name = {s.name: s for s in in_memory_spans.get_finished_spans()}
+        chunk_span = by_name["chunking.split_into_chunks"]
+        assert chunk_span.attributes["video_id"] == VIDEO_ID
+        assert chunk_span.attributes["chunk_count"] >= 1
+        assert chunk_span.attributes["avg_chunk_chars"] > 0
+
+        embed_span = by_name["embedding.embed_chunks"]
+        assert embed_span.attributes["chunk_count"] >= 1
+        assert embed_span.attributes["vector_count"] >= 1
+
+        upsert_span = by_name["storage.upsert_pinecone"]
+        assert upsert_span.attributes["vector_count"] >= 1
+        assert upsert_span.attributes["index_name"] == "gita-videos"
+        assert upsert_span.attributes["batch_count"] >= 1

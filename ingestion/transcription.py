@@ -28,6 +28,7 @@ from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
 
 from ingestion import storage
+from ingestion.observability import get_tracer
 
 logger = structlog.get_logger(__name__)
 
@@ -236,30 +237,40 @@ def transcribe(
     project = project_id or os.environ.get("GCP_PROJECT_ID", DEFAULT_PROJECT_ID)
     output_uri = _derive_output_uri(audio_uri, video_id)
 
-    client = build_speech_client()
-    request = _build_request(audio_uri, output_uri, project)
-    logger.info(
-        "transcription.submit",
-        video_id=video_id,
-        audio_uri=audio_uri,
-        output_uri=output_uri,
-    )
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("transcription.batch_recognize") as span:
+        span.set_attribute("video_id", video_id)
+        span.set_attribute("audio_uri", audio_uri)
+        span.set_attribute("output_uri", output_uri)
 
-    operation = client.batch_recognize(request=request)
-    try:
-        response = operation.result(timeout=timeout)
-    except Exception as e:
-        logger.error("transcription.lro_failed", video_id=video_id, error=str(e))
-        raise TranscriptionError(f"Chirp 3 BatchRecognize failed: {e}") from e
+        client = build_speech_client()
+        request = _build_request(audio_uri, output_uri, project)
+        logger.info(
+            "transcription.submit",
+            video_id=video_id,
+            audio_uri=audio_uri,
+            output_uri=output_uri,
+        )
 
-    transcript_uri = _resolve_transcript_uri(response, audio_uri)
-    payload = storage.download_json(transcript_uri)
+        operation = client.batch_recognize(request=request)
+        with tracer.start_as_current_span("transcription.poll_lro") as poll_span:
+            poll_span.set_attribute("video_id", video_id)
+            try:
+                response = operation.result(timeout=timeout)
+            except Exception as e:
+                logger.error("transcription.lro_failed", video_id=video_id, error=str(e))
+                raise TranscriptionError(f"Chirp 3 BatchRecognize failed: {e}") from e
 
-    result = _parse_results(payload, audio_uri, output_uri, video_id)
-    logger.info(
-        "transcription.complete",
-        video_id=video_id,
-        word_count=len(result.words),
-        speaker_count=result.speaker_count,
-    )
-    return result
+        transcript_uri = _resolve_transcript_uri(response, audio_uri)
+        payload = storage.download_json(transcript_uri)
+
+        result = _parse_results(payload, audio_uri, output_uri, video_id)
+        span.set_attribute("word_count", len(result.words))
+        span.set_attribute("speaker_count", result.speaker_count)
+        logger.info(
+            "transcription.complete",
+            video_id=video_id,
+            word_count=len(result.words),
+            speaker_count=result.speaker_count,
+        )
+        return result
