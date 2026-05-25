@@ -165,19 +165,19 @@ Cloud Run Jobs are purpose-built for this batch-execution shape. See `docs/techn
 - [x] Run tests → all green
 
 #### 4.6.2 Orchestrator + CLI
-- [ ] Write `tests/test_orchestrator.py::test_process_video_runs_full_pipeline_in_order`
-- [ ] Write `tests/test_orchestrator.py::test_is_already_indexed_checks_sentinel`
-- [ ] Write `tests/test_orchestrator.py::test_scan_and_process_skips_already_indexed`
-- [ ] Write `tests/test_orchestrator.py::test_force_reindex_bypasses_sentinel`
-- [ ] Write `tests/test_orchestrator.py::test_dry_run_lists_without_processing`
-- [ ] Write `tests/test_orchestrator.py::test_pipeline_step_failure_writes_no_sentinel`
-- [ ] Implement `ingestion/orchestrator.py`:
-    - [ ] `process_video(drive_file, *, force_reindex=False) -> ProcessingResult` — runs the 6-step pipeline
-    - [ ] `is_already_indexed(video_id) -> bool` — checks `gs://{bucket}/{video_id}/.indexed` GCS sentinel
-    - [ ] `scan_and_process(*, force_reindex=False, video_id_filter=None, dry_run=False)` — lists Drive folder, diffs against sentinels, processes the new set
-    - [ ] Writes the `.indexed` sentinel only after `chunk_and_embed` reports `total_vectors_upserted > 0`
-    - [ ] argparse CLI entrypoint: `python -m ingestion.orchestrator` (default: scan + process new); flags `--video-id X`, `--force-reindex`, `--dry-run`
-- [ ] Run tests → all green
+- [x] Write `tests/test_orchestrator.py::test_process_video_runs_full_pipeline_in_order`
+- [x] Write `tests/test_orchestrator.py::test_is_already_indexed_checks_sentinel`
+- [x] Write `tests/test_orchestrator.py::test_scan_and_process_skips_already_indexed`
+- [x] Write `tests/test_orchestrator.py::test_force_reindex_bypasses_sentinel`
+- [x] Write `tests/test_orchestrator.py::test_dry_run_lists_without_processing`
+- [x] Write `tests/test_orchestrator.py::test_pipeline_step_failure_writes_no_sentinel`
+- [x] Implement `ingestion/orchestrator.py`:
+    - [x] `process_video(drive_file, *, force_reindex=False) -> ProcessingResult` — runs the 6-step pipeline
+    - [x] `is_already_indexed(video_id) -> bool` — checks `gs://{bucket}/{video_id}/.indexed` GCS sentinel
+    - [x] `scan_and_process(*, force_reindex=False, video_id_filter=None, dry_run=False)` — lists Drive folder, diffs against sentinels, processes the new set
+    - [x] Writes the `.indexed` sentinel only after `chunk_and_embed` reports `total_vectors_upserted > 0`
+    - [x] argparse CLI entrypoint: `python -m ingestion.orchestrator` (default: scan + process new); flags `--video-id X`, `--force-reindex`, `--dry-run`
+- [x] Run tests → all green
 
 #### 4.6.3 Cloud Run Job artifacts
 - [ ] Write `Dockerfile.ingestion` — Python 3.13-slim, install ffmpeg, copy ingestion/, `ENTRYPOINT ["python", "-m", "ingestion.orchestrator"]`
