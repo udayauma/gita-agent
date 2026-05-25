@@ -180,10 +180,12 @@ Cloud Run Jobs are purpose-built for this batch-execution shape. See `docs/techn
 - [x] Run tests → all green
 
 #### 4.6.3 Cloud Run Job artifacts
-- [ ] Write `Dockerfile.ingestion` — Python 3.13-slim, install ffmpeg, copy ingestion/, `ENTRYPOINT ["python", "-m", "ingestion.orchestrator"]`
-- [ ] Build image locally and smoke-test: `docker build . -f Dockerfile.ingestion -t ingest:local && docker run --rm ingest:local --dry-run --help`
-- [ ] Document the `gcloud run jobs deploy ingest-recordings` invocation in `docs/SETUP_GUIDE.md` (region, service account, env vars, secret bindings for `PINECONE_API_KEY` + `GOOGLE_API_KEY`)
-- [ ] Document the manual-trigger workflow: `gcloud run jobs execute ingest-recordings --region=us-central1 --wait`
+- [x] Write `Dockerfile.ingestion` — Python 3.13-slim, install ffmpeg, copy ingestion/, `ENTRYPOINT ["python", "-m", "ingestion.orchestrator"]`
+- [x] Prune `fastapi`, `uvicorn`, `httpx` from `requirements.txt` (verified no remaining imports)
+- [x] Verify CLI entrypoint works locally via `python -m ingestion.orchestrator --help`
+- [ ] Build image locally and smoke-test (requires Docker Desktop running): `docker build . -f Dockerfile.ingestion -t gita-ingest:local && docker run --rm gita-ingest:local --help`
+- [x] Document the `gcloud run jobs deploy ingest-recordings` invocation in `docs/SETUP_GUIDE.md` § 5.2 (region, service account, env vars, secret bindings for `PINECONE_API_KEY` + `GOOGLE_API_KEY`)
+- [x] Document the manual-trigger workflow: `gcloud run jobs execute ingest-recordings --region=us-central1 --wait` (§ 5.3)
 
 ### 4.7 Observability Instrumentation (added per 2026-05-23 architecture review)
 - [ ] Add `opentelemetry-sdk`, `opentelemetry-exporter-gcp-trace`, and `opentelemetry-instrumentation` to `requirements.txt`
