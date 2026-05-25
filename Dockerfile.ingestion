@@ -1,0 +1,37 @@
+# Dockerfile for the Gita Agent ingestion Cloud Run Job.
+#
+# Build:  docker build . -f Dockerfile.ingestion -t gita-ingest:local
+# Run:    docker run --rm gita-ingest:local --help
+# Deploy: gcloud run jobs deploy ingest-recordings \
+#             --source . \
+#             --dockerfile Dockerfile.ingestion \
+#             --region us-central1 \
+#             --project gita-agent-prod
+#
+# Trigger after deploy:
+#   gcloud run jobs execute ingest-recordings --region us-central1 --wait
+#
+# Design reference: docs/detailed_technical_design.md § 3.2 + § 5.2
+
+FROM python:3.13-slim
+
+# Install ffmpeg (required by ingestion/audio.py for MP4 → FLAC extraction).
+# Combine update + install + clean in one RUN to keep the image layer small.
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python deps first — separate layer so code changes don't bust the
+# pip cache. Use --no-cache-dir to avoid bloating the image.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy ingestion source. Tests, docs, frontend, etc. are intentionally
+# excluded — the Job only needs the orchestrator and its imports.
+COPY ingestion ./ingestion
+
+# Default to running the orchestrator CLI. Flags can be appended via
+# `docker run ... <flags>` or `gcloud run jobs execute --args="..."`.
+ENTRYPOINT ["python", "-m", "ingestion.orchestrator"]
