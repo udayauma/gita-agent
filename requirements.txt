@@ -6,6 +6,7 @@ mcp>=1.0.0
 # Core - Ingestion Pipeline
 google-cloud-speech>=2.0.0
 google-cloud-storage>=2.0.0
+google-cloud-translate>=3.0.0
 google-cloud-secret-manager>=2.0.0
 google-api-python-client>=2.0.0
 google-auth>=2.0.0
