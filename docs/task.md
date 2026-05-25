@@ -156,13 +156,13 @@ Originally planned as a FastAPI service with `BackgroundTasks`. Pivoted to a CLI
 Cloud Run Jobs are purpose-built for this batch-execution shape. See `docs/technology_decisions.md` § 8.
 
 #### 4.6.1 Storage module (cashes IOU from Phase 4.3)
-- [ ] Write `tests/test_storage.py::test_upload_file_writes_to_correct_uri`
-- [ ] Write `tests/test_storage.py::test_download_json_returns_parsed_dict`
-- [ ] Write `tests/test_storage.py::test_list_blobs_returns_uris_under_prefix`
-- [ ] Write `tests/test_storage.py::test_sentinel_write_and_check`
-- [ ] Implement `ingestion/storage.py` — `upload_file`, `download_json`, `list_blobs`, `delete_prefix`, `write_sentinel`, `sentinel_exists`
-- [ ] Update `ingestion/transcription.py` to call `storage.download_json` (replace the placeholder) and to resolve the actual Chirp 3 output filename from `BatchRecognizeResponse.results[uri].uri` instead of the hardcoded `transcript.json`
-- [ ] Run tests → all green
+- [x] Write `tests/test_storage.py::test_upload_file_writes_to_correct_uri`
+- [x] Write `tests/test_storage.py::test_download_json_returns_parsed_dict`
+- [x] Write `tests/test_storage.py::test_list_blobs_returns_uris_under_prefix`
+- [x] Write `tests/test_storage.py::test_sentinel_write_and_check`
+- [x] Implement `ingestion/storage.py` — `upload_file`, `download_json`, `list_blobs`, `delete_prefix`, `write_sentinel`, `sentinel_exists`
+- [x] Update `ingestion/transcription.py` to call `storage.download_json` (replace the placeholder) and to resolve the actual Chirp 3 output filename from `BatchRecognizeResponse.results[uri].uri` instead of the hardcoded `transcript.json`
+- [x] Run tests → all green
 
 #### 4.6.2 Orchestrator + CLI
 - [ ] Write `tests/test_orchestrator.py::test_process_video_runs_full_pipeline_in_order`
