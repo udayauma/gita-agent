@@ -19,15 +19,15 @@ Usage:
     print(f"{len(result.words)} words across {result.speaker_count} speakers")
 """
 
-import json
 import os
 from dataclasses import dataclass
 from typing import Optional
 
 import structlog
-from google.cloud import storage
 from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
+
+from ingestion import storage
 
 logger = structlog.get_logger(__name__)
 
@@ -75,14 +75,36 @@ def build_speech_client() -> SpeechClient:
     return SpeechClient()
 
 
-def _fetch_transcript_json(gcs_uri: str) -> dict:
-    """Fetch a JSON blob from GCS and return its parsed dict. Patched in unit tests."""
-    if not gcs_uri.startswith("gs://"):
-        raise TranscriptionError(f"Expected gs:// URI, got: {gcs_uri}")
-    bucket_name, _, blob_path = gcs_uri[len("gs://"):].partition("/")
-    client = storage.Client()
-    blob = client.bucket(bucket_name).blob(blob_path)
-    return json.loads(blob.download_as_bytes())
+def _resolve_transcript_uri(response, audio_uri: str) -> str:
+    """Extract the transcript JSON's GCS URI from a BatchRecognizeResponse.
+
+    Chirp 3 writes one JSON file per input under `gcs_output_config.uri` with
+    an auto-generated filename. The exact path is returned in the LRO response
+    keyed by the input audio URI. We submit one file at a time, so we take
+    whichever single result is present.
+    """
+    results = getattr(response, "results", None)
+    if not results:
+        raise TranscriptionError(
+            "BatchRecognize response had no results — cannot resolve transcript URI"
+        )
+    # Real proto: dict-like keyed by audio_uri. Mocks: also dict-like.
+    try:
+        file_result = results[audio_uri]
+    except (KeyError, TypeError):
+        # Fall back to whichever single result is present.
+        try:
+            file_result = next(iter(results.values()))
+        except (StopIteration, AttributeError) as e:
+            raise TranscriptionError(
+                f"BatchRecognize response had no per-file results: {e}"
+            ) from e
+    transcript_uri = getattr(file_result, "uri", None)
+    if not transcript_uri or not isinstance(transcript_uri, str):
+        raise TranscriptionError(
+            f"BatchRecognize file result has no usable .uri (got {transcript_uri!r})"
+        )
+    return transcript_uri
 
 
 # ---------------------------------------------------------------------------
@@ -225,16 +247,13 @@ def transcribe(
 
     operation = client.batch_recognize(request=request)
     try:
-        operation.result(timeout=timeout)
+        response = operation.result(timeout=timeout)
     except Exception as e:
         logger.error("transcription.lro_failed", video_id=video_id, error=str(e))
         raise TranscriptionError(f"Chirp 3 BatchRecognize failed: {e}") from e
 
-    # Chirp 3 writes one JSON file per input under the gcs_output_config prefix.
-    # Phase 4.7 will inspect the LRO response for the exact output path; for now
-    # we rely on the conventional location.
-    transcript_uri = output_uri.rstrip("/") + "/transcript.json"
-    payload = _fetch_transcript_json(transcript_uri)
+    transcript_uri = _resolve_transcript_uri(response, audio_uri)
+    payload = storage.download_json(transcript_uri)
 
     result = _parse_results(payload, audio_uri, output_uri, video_id)
     logger.info(

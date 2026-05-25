@@ -95,11 +95,20 @@ SAMPLE_TELUGU_TRANSCRIPT_JSON = {
 
 @pytest.fixture
 def mock_speech_client():
-    """Mocked SpeechClient with a BatchRecognize LRO that resolves immediately."""
+    """Mocked SpeechClient with a BatchRecognize LRO that resolves immediately.
+
+    The LRO response carries `results` (a dict keyed by input audio URI) where
+    each value has a `uri` pointing at the actual transcript JSON output. We
+    return a single canonical entry; the transcription module's single-input
+    fast path falls back to the only value present regardless of key.
+    """
     client = MagicMock()
     operation = MagicMock()
     operation.done.return_value = True
-    operation.result.return_value = MagicMock()  # batch result proto, unused after we read GCS
+    file_result = MagicMock(uri="gs://gita-agent-prod-audio/test_video/transcript/auto_named.json")
+    response = MagicMock()
+    response.results = {"test-input": file_result}
+    operation.result.return_value = response
     client.batch_recognize.return_value = operation
     return client
 
@@ -117,7 +126,7 @@ def transcribe_with_mocks(mock_speech_client, mock_transcript_json):
     then invoke transcribe() with canonical inputs.
     """
     with patch("ingestion.transcription.build_speech_client", return_value=mock_speech_client), \
-         patch("ingestion.transcription._fetch_transcript_json", return_value=mock_transcript_json):
+         patch("ingestion.transcription.storage.download_json", return_value=mock_transcript_json):
         result = transcribe(
             audio_uri="gs://gita-agent-prod-audio/test_video/audio.flac",
             video_id="test_video",
@@ -219,7 +228,7 @@ class TestBatchRecognizeRequest:
 
     def test_request_uses_chirp_3_model(self, mock_speech_client, mock_transcript_json):
         with patch("ingestion.transcription.build_speech_client", return_value=mock_speech_client), \
-             patch("ingestion.transcription._fetch_transcript_json", return_value=mock_transcript_json):
+             patch("ingestion.transcription.storage.download_json", return_value=mock_transcript_json):
             transcribe(audio_uri="gs://b/a.flac", video_id="test_video")
         call_args = mock_speech_client.batch_recognize.call_args
         request = call_args.kwargs.get("request") or call_args.args[0]
@@ -227,7 +236,7 @@ class TestBatchRecognizeRequest:
 
     def test_request_includes_telugu_and_english(self, mock_speech_client, mock_transcript_json):
         with patch("ingestion.transcription.build_speech_client", return_value=mock_speech_client), \
-             patch("ingestion.transcription._fetch_transcript_json", return_value=mock_transcript_json):
+             patch("ingestion.transcription.storage.download_json", return_value=mock_transcript_json):
             transcribe(audio_uri="gs://b/a.flac", video_id="test_video")
         call_args = mock_speech_client.batch_recognize.call_args
         request = call_args.kwargs.get("request") or call_args.args[0]
@@ -236,7 +245,7 @@ class TestBatchRecognizeRequest:
 
     def test_request_enables_word_timestamps_and_diarization(self, mock_speech_client, mock_transcript_json):
         with patch("ingestion.transcription.build_speech_client", return_value=mock_speech_client), \
-             patch("ingestion.transcription._fetch_transcript_json", return_value=mock_transcript_json):
+             patch("ingestion.transcription.storage.download_json", return_value=mock_transcript_json):
             transcribe(audio_uri="gs://b/a.flac", video_id="test_video")
         call_args = mock_speech_client.batch_recognize.call_args
         request = call_args.kwargs.get("request") or call_args.args[0]
@@ -245,7 +254,7 @@ class TestBatchRecognizeRequest:
 
     def test_request_points_at_supplied_audio_uri(self, mock_speech_client, mock_transcript_json):
         with patch("ingestion.transcription.build_speech_client", return_value=mock_speech_client), \
-             patch("ingestion.transcription._fetch_transcript_json", return_value=mock_transcript_json):
+             patch("ingestion.transcription.storage.download_json", return_value=mock_transcript_json):
             transcribe(audio_uri="gs://my-bucket/some_video/audio.flac", video_id="some_video")
         call_args = mock_speech_client.batch_recognize.call_args
         request = call_args.kwargs.get("request") or call_args.args[0]
@@ -273,6 +282,6 @@ class TestErrorHandling:
         operation.result.side_effect = RuntimeError("Chirp 3 internal error")
         client.batch_recognize.return_value = operation
         with patch("ingestion.transcription.build_speech_client", return_value=client), \
-             patch("ingestion.transcription._fetch_transcript_json", return_value=mock_transcript_json):
+             patch("ingestion.transcription.storage.download_json", return_value=mock_transcript_json):
             with pytest.raises(TranscriptionError):
                 transcribe(audio_uri="gs://b/a.flac", video_id="v1")
