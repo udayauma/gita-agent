@@ -59,12 +59,23 @@ so that v2 attaches without rework, but v1 does not build any of it.
 
 | Persona | Who | What they need |
 |---|---|---|
-| **Learner** | Udaya, and later people like her: curious, busy, no Sanskrit, wants English | A lesson that arrives, is short, is accurate, and shows its sources |
-| **Operator** | Udaya, running the service | Add and remove learners, choose content, see that it is working, know what it costs |
-| **Reviewer** | Udaya's father, informally | A way to spot-check that a lesson is faithful to the verse and the teacher |
+| **Learner** | Udaya, and later people like her: curious, busy, no Sanskrit, wants English | A lesson that arrives, is short, is accurate, shows its sources, and links to the original recording and to a longer form for anyone who wants to go deeper |
+| **Operator** | Udaya, running the service | Add and remove learners and reviewers, choose content, see that it is working, know what it costs |
+| **Reviewer** | People more learned than the learner: Udaya's father first, then others she trusts, such as scholars at the local temple | The same lesson plus the source material behind it, so they can judge whether it is faithful to the verse and to the teacher, and a simple way to say so |
 
-The Reviewer persona has no product surface in v1. It exists because accuracy
-review is how v1 earns the right to become v2.
+**Reviewer is a role, not a person.** The operator keeps a review list. Anyone on
+it receives the *review edition* of each lesson: the learner's lesson followed by
+an appendix the learner never sees, with the teacher's original Telugu passage,
+the transcript excerpt it was drawn from, and the exact canon record for the
+verse. A person can be both a learner and a reviewer.
+
+In v1, a reviewer gives feedback by replying to the email. The operator reads the
+reply and records it in the fidelity audit log. In v2 the agent reads reviewer
+replies itself. The role carries forward unchanged.
+
+**Timing.** v1.0 sends to Udaya alone. Reviewers and additional learners are
+added in v1.1, once thirty days of clean delivery have shown the lesson is worth
+a reviewer's time.
 
 ## 4. Goals
 
@@ -112,12 +123,31 @@ Every lesson has the same five parts, in this order.
    claims.
 4. **From the teacher.** A short passage, roughly 100 to 200 words, of the
    teacher explaining this verse or its idea, translated to English. Paraphrased
-   from the transcript, with the video title and a timestamped link to the
-   original so the learner can hear it in the teacher's voice.
+   from the transcript, with the video title and a **timestamped link to the
+   original YouTube recording** so the learner can hear it in the teacher's
+   voice. The link is mandatory; a lesson without it is not sent.
 5. **A question to carry.** One reflective question for the day. Generated.
    Short.
 
-Then a footer: the sources used, the learner's progress, and an unsubscribe link.
+Then a footer: the sources used, the learner's progress, a **"read more" link**
+to the lesson's long-form page (see §6.5), and an unsubscribe link.
+
+### 6.1.1 Short form and long form
+
+The email is deliberately the short form. It is what a busy learner reads in
+five minutes. For the learner who wants to go deeper that day, the lesson
+points outward in two ways:
+
+- **To the source.** The timestamped YouTube link in "From the teacher."
+- **To the long form.** A page for the same lesson with the full teacher
+  passage in English and Telugu, every transcript segment that touched this
+  verse with its timestamp, the neighboring verses, and more than one
+  translation. The long form is generated from the same material as the email;
+  it is not a different lesson.
+
+In v1.0 the email carries the source link only, and every lesson is minted with
+a stable ID and a URL slot so that the long-form page can be attached in v1.1
+without changing anything already sent.
 
 ### 6.2 What a lesson never does
 
@@ -149,6 +179,38 @@ Plain, warm, unhurried. The lesson speaks to one person. It does not preach,
 does not hedge every sentence, and does not use the words "journey" or "unlock."
 Sanskrit terms appear with their meaning the first time they are used in a
 lesson.
+
+### 6.5 The long-form page (v1.1)
+
+Each lesson has a long-form page, reachable from the "read more" link in the
+email footer. It exists for the learner who has time that day, and for
+reviewers. It contains:
+
+- The verse record in full: Devanagari, transliteration, word-by-word meaning
+  where the canon has it, and every translation in the dataset, each named.
+- The neighboring verses, so the idea is seen in context.
+- The teacher's full passage on this idea, English and Telugu side by side,
+  with a timestamped link for each transcript segment.
+- The same reflective question.
+
+It is a static page, generated at the same time as the email from the same
+material, and it never changes after publication. There is no login. In v1.1
+it is hosted with the service; when Udaya's website exists it can move there.
+
+### 6.6 The review edition
+
+Reviewers receive the learner's lesson unchanged, followed by a clearly marked
+appendix:
+
+- The teacher's original Telugu passage that "From the teacher" was drawn from,
+  and the English translation the service produced, verbatim.
+- The transcript segments used, each with video ID and timestamp.
+- The exact canon record for the verse, including the translator's name and
+  the dataset version.
+- A one-line instruction: reply to this email with anything that is wrong.
+
+The review edition is a rendering option on the same lesson, not a separate
+lesson. Nothing in the appendix is generated; it is the raw material.
 
 ## 7. Content
 
@@ -233,7 +295,22 @@ whom, failures, new videos ingested, tokens used, and estimated spend for the
 week and month to date. This is the primary operational surface in v1. There is
 no dashboard.
 
-### 8.5 New teacher content appears
+### 8.5 Reviewer receives and answers (v1.1)
+
+1. The operator adds a reviewer with an email address. A reviewer is not
+   required to be a learner.
+2. Each morning the reviewer receives the review edition of that day's lesson,
+   at the same time as the learners on the same pack.
+3. If something is wrong, the reviewer replies to the email in plain language.
+   No form, no account.
+4. The operator reads the reply and records it in the fidelity audit log, with
+   the lesson ID. If the lesson needs correcting, the correction goes into the
+   content pack so that the next learner to reach that lesson gets the fixed
+   version.
+
+Reviewers can stop the same way learners do, with the unsubscribe link.
+
+### 8.6 New teacher content appears
 
 Once a week, the service checks each configured playlist for videos it has not
 yet processed, processes them, and mentions them in the next ops digest. No
@@ -261,6 +338,8 @@ operator action is needed. Already-processed videos are never reprocessed.
 
 | ID | Requirement | Notes |
 |---|---|---|
+| P1-0 | Reviewer role and review edition per §3, §6.6, §8.5 | Operator-managed review list; review edition is a rendering option on the same lesson; feedback by email reply, logged manually. |
+| P1-0b | Long-form lesson page per §6.5, linked from every email footer | Static, generated with the email, never edited after publication. |
 | P1-1 | Per-learner pace options: weekdays only, every other day | Schema supports it in v1; UI is a config field. |
 | P1-2 | Second default pack: Srimad Bhagavatam as a "story" track | Requires a lesson type that is not verse-anchored. |
 | P1-3 | Operator-triggered "resend today's lesson" and "skip to lesson N" | For recovery and testing. |
@@ -271,7 +350,9 @@ operator action is needed. Already-processed videos are never reprocessed.
 
 | ID | Requirement | Design constraint on v1 |
 |---|---|---|
+| P2-0 | Every lesson has a stable ID and a reserved long-form URL from v1.0 | Required so v1.1's long-form page and v2's reply threading attach to lessons already sent. |
 | P2-1 | Reply to a lesson and converse (the v2 agent) | Every lesson carries a stable lesson ID and thread reference in headers. Transcript chunks are retrievable by verse and by semantic query. |
+| P2-1b | Reviewer replies read and triaged by the agent | Review edition emails carry the lesson ID in headers; the audit log format is machine-readable from day one. |
 | P2-2 | SMS and other channels | Delivery is a channel abstraction with one adapter. Lesson content is channel-neutral text with a rendering step. |
 | P2-3 | Self-serve signup and public launch | Learner records carry a status and a consent timestamp from day one. |
 | P2-4 | Multiple operators / multi-tenant | Every record is scoped to an operator ID even though v1 has one. |
@@ -308,7 +389,7 @@ with no fabricated content. Meeting it is the signal to start v2.
 | Phase | Delivers | Proves |
 |---|---|---|
 | **v1.0** | Ingestion of the default Gita pack; canon loaded; lesson composition; email delivery to Udaya; unsubscribe; ops digest | The lesson is accurate and delivery is reliable |
-| **v1.1** | Additional learners added by the operator; P1 items as chosen | The service works for more than one person |
+| **v1.1** | Reviewer role and review edition; long-form lesson page; additional learners added by the operator; other P1 items as chosen | The lesson survives expert review, and the service works for more than one person |
 | **v2** | Reply-to-lesson conversation (ADK agent); self-serve signup; SMS; public announcement via Udaya's website | The service works for people who do not know the operator |
 
 ## 13. Glossary
@@ -321,5 +402,8 @@ with no fabricated content. Meeting it is the signal to start v2.
 | **Lesson** | One email: verse, meaning, teacher passage, question, footer |
 | **Idea** | The unit of a lesson: one verse or a short run of verses forming one thought |
 | **Learner** | A person receiving lessons |
-| **Operator** | The person running a deployment and managing learners |
+| **Reviewer** | A person on the operator's review list who receives the review edition and replies with corrections |
+| **Review edition** | The learner's lesson plus an appendix of the raw source material behind it |
+| **Long form** | The static page for a lesson with the full verse record, context, and the teacher's complete passage |
+| **Operator** | The person running a deployment and managing learners and reviewers |
 | **Ops digest** | The weekly operator email summarizing sends, failures, ingestion, and cost |
