@@ -109,7 +109,7 @@ a reviewer's time.
 | Telugu-language lessons | English is the whole point for the first learner. The Telugu transcript is stored alongside the English translation in the operator's own storage (§7.2), so a Telugu track is possible later without re-ingesting anything. |
 | Choosing your own path through the Gita | v1 walks the text in order. Topic-based or question-driven paths are v2 territory. |
 | Multiple teachers per learner | One teacher pack per learner keeps the lesson coherent. Blending teachers is a later design question. |
-| A web or mobile app | Email is the interface. There is nothing to log in to. |
+| A web or mobile app | Email is the interface. There is nothing to log in to. In v2 a minimal web surface arrives for self-serve signup, onboarding, and preferences (P2-3, §12), announced from Udaya's website. Even then the lesson and the conversation stay in email; a full app is not planned for any version. |
 | Rendering audio or video | Lessons are text. Links to the source video are included for anyone who wants to listen. |
 
 ## 6. The lesson
