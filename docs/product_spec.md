@@ -105,11 +105,11 @@ a reviewer's time.
 |---|---|
 | Replying to a lesson and getting an answer | This is the v2 agent. It needs a conversational runtime, session state, and evaluation infrastructure that v1 does not. |
 | Public signup or a landing page | v1 is private by decision. Udaya's website is a separate project and will announce the service when v2 is ready. |
-| Channels other than email | Email is the simplest reliable channel. SMS is next, then others, once the lesson format is proven. |
+| Channels other than email | Email is the simplest reliable channel for a daily push. SMS is next, then Slack and others. In v2 these matter more than in v1: replying to a text or a Slack message is lower friction than replying to an email, so the interactive mode should meet the learner on the lowest-friction surface they have. v1 builds the channel abstraction two-way so that adding a channel adds both delivery and reply routing. |
 | Telugu-language lessons | English is the whole point for the first learner. The Telugu transcript is stored alongside the English translation in the operator's own storage (§7.2), so a Telugu track is possible later without re-ingesting anything. |
 | Choosing your own path through the Gita | v1 walks the text in order. Topic-based or question-driven paths are v2 territory. |
 | Multiple teachers per learner | One teacher pack per learner keeps the lesson coherent. Blending teachers is a later design question. |
-| A web or mobile app | Email is the interface. There is nothing to log in to. In v2 a minimal web surface arrives for self-serve signup, onboarding, and preferences (P2-3, §12), announced from Udaya's website. Even then the lesson and the conversation stay in email; a full app is not planned for any version. |
+| A web or mobile app | Email is the interface. There is nothing to log in to. In v2 a minimal web surface arrives for self-serve signup, onboarding, and preferences (P2-3, §12), announced from Udaya's website. Even then the lesson and the conversation happen on messaging channels the learner already uses, such as email, SMS, or Slack, not in an app of ours. A full app is not planned for any version. |
 | Rendering audio or video | Lessons are text. Links to the source video are included for anyone who wants to listen. |
 
 ## 6. The lesson
@@ -366,9 +366,9 @@ operator action is needed. Already-processed videos are never reprocessed.
 | ID | Requirement | Design constraint on v1 |
 |---|---|---|
 | P2-0 | Every lesson has a stable ID and a reserved long-form URL from v1.0 | Required so v1.1's long-form page and v2's reply threading attach to lessons already sent. |
-| P2-1 | Reply to a lesson and converse (the v2 agent) | Every lesson carries a stable lesson ID and thread reference in headers. Transcript chunks are retrievable by verse and by semantic query. |
-| P2-1b | Reviewer replies read and triaged by the agent | Review edition emails carry the lesson ID in headers; the audit log format is machine-readable from day one. |
-| P2-2 | SMS and other channels | Delivery is a channel abstraction with one adapter. Lesson content is channel-neutral text with a rendering step. |
+| P2-1 | Reply to a lesson and converse (the v2 agent), on whichever channel the lesson arrived | Every lesson carries a stable lesson ID and a channel-specific thread reference (email headers, SMS conversation, Slack thread). Transcript chunks are retrievable by verse and by semantic query. |
+| P2-1b | Reviewer replies read and triaged by the agent | Review edition messages carry the lesson ID; the audit log format is machine-readable from day one. |
+| P2-2 | SMS, Slack, and other channels, for delivery and for replies | The channel abstraction is two-way from v1: each adapter defines outbound send and inbound reply routing keyed by lesson ID, even though v1 implements only email outbound. Lesson content is channel-neutral text with a per-channel rendering step, so a text-length rendering exists as a design case from the start. |
 | P2-3 | Self-serve signup and public launch | Learner records carry a status and a consent timestamp from day one. |
 | P2-4 | Multiple operators / multi-tenant | Every record is scoped to an operator ID even though v1 has one. |
 | P2-5 | Telugu-language lessons | Telugu transcript is stored verbatim next to the English. |
@@ -405,7 +405,7 @@ with no fabricated content. Meeting it is the signal to start v2.
 |---|---|---|
 | **v1.0** | Ingestion of the default Gita pack; canon loaded; lesson composition; email delivery to Udaya; unsubscribe; ops digest | The lesson is accurate and delivery is reliable |
 | **v1.1** | Reviewer role and review edition; long-form lesson page; additional learners added by the operator; other P1 items as chosen | The lesson survives expert review, and the service works for more than one person |
-| **v2** | Reply-to-lesson conversation (ADK agent); self-serve signup; SMS; public announcement via Udaya's website | The service works for people who do not know the operator |
+| **v2** | Reply-to-lesson conversation (ADK agent) on low-friction channels: SMS and Slack alongside email; self-serve signup and preferences web surface; public announcement via Udaya's website | The service works for people who do not know the operator, and talking to it is as easy as answering a text |
 
 ## 13. Glossary
 
