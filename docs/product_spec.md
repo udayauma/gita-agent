@@ -87,8 +87,15 @@ a reviewer's time.
    who checks twenty lessons finds no fabricated content.
 3. **Be readable.** A learner with no background reads a lesson in under five
    minutes and can say in one sentence what the verse means.
-4. **Be sustainable.** The operator can see what the service costs each week
-   without opening a billing console, and the cost stays within a known ceiling.
+4. **Be sustainable.** Two distinct mechanisms, both required:
+   - *Visibility* is built into the service. Every Gemini call's token usage is
+     recorded and priced, and the weekly ops digest email (§8.4, P0-10) reports
+     spend for the week and month to date. The operator never opens a billing
+     console to know what the service cost.
+   - *The ceiling* is a GCP budget alert on the project, set by the operator as
+     a one-time setup step at an amount well above expected spend. It is a
+     backstop against a runaway job between digests, not the primary cost
+     view. The amount is open question 5.
 5. **Be honest about sources.** Every lesson names the translator, the teacher,
    and the recording it drew from, so a learner can go deeper on their own.
 
