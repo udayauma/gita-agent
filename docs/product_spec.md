@@ -171,7 +171,7 @@ The email is deliberately the short form. It is what a busy learner reads in
 five minutes. For the learner who wants to go deeper that day, the lesson
 points outward in two ways:
 
-- **To the source.** The timestamped YouTube link in "From the teacher."
+- **To the source.** The timestamped YouTube link in "From {teacher}."
 - **To the long form.** A page for the same lesson with the full teacher
   passage in English and Telugu, every transcript segment that touched this
   verse with its timestamp, the neighboring verses, and more than one
@@ -616,7 +616,7 @@ all recommended by Udaya's father, and all part of v1:
 | Sampoorna Srimad Bhagavatam | 40 videos, 68 h | Discourse on the Bhagavata Purana: Krishna's life and the devotional stories | Secondary lens for verse lessons from v1.0; its own story track from v1.1 |
 
 **v1.0: all four series are ingested, and verse lessons retrieve across all of them.**
-When a verse lesson looks for "From the teacher," it searches the whole pack.
+When a verse lesson looks for its "From {teacher}" passage, it searches the whole pack.
 The three Gita series are searched together as the primary lens. The
 Bhagavatam discourses speak constantly about karma, devotion, and Krishna, so
 for some verses the most relevant passage will come from there.
