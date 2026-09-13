@@ -1011,6 +1011,24 @@ Labels: **Got it** · **Unclear** · **Loved it**. Thank-you page, one line:
 "Noted, thank you." followed by an optional single-line box labeled "One
 sentence more, if you like" and a Send button. Nothing else on the page.
 
+### 7.8 Subject lines
+
+Subject lines carry information, not a slogan, so a learner can find a
+lesson later. `{service_name}` is the pack setting, provisionally
+"Today's Gita" (C5). *Gita* is used as the short form throughout;
+*Bhagavad* alone is an adjective and is never used on its own.
+
+| Message | Subject |
+|---|---|
+| Daily verse lesson | `{service_name}: Day {n} · Chapter {c}, Verse {v}` (or `Verses {v1}–{v2}`) |
+| Story-track lesson (v1.1) | `{service_name}, stories: {n} · {episode_title}` |
+| Welcome | `Welcome to {service_name}` |
+| Review edition (v1.1) | `[Review] {service_name}: Day {n} · Chapter {c}, Verse {v}` |
+| Reviewer welcome (v1.1) | `Reviewing {service_name}: what to expect` |
+| Correction note (v1.1) | `{service_name}: a correction to Day {n}` |
+| Unsubscribe confirmation | `{service_name}: you have been unsubscribed` |
+| Ops digest | `{service_name} ops digest, week of {date}` |
+
 ## 8. Audit log and golden set
 
 The audit log is one JSON record per line, in the repository under
@@ -1055,7 +1073,7 @@ from the log, never edited by hand.
 | C2 | Chapter openings and the primer: Udaya edits the drafts in §3.4 and §7.1 before the first send? | Udaya | Yes, before day 1 |
 | C3 | Relevance threshold and series-preference margin: tuned on which twenty verses? Proposal: the first lesson of each chapter plus 2.47 and 18.66. | Operator | No; set during phase 1 |
 | C4 | Reaction labels: keep "Got it / Unclear / Loved it"? | Udaya | No |
-| C5 | Service display name as learners see it in the welcome email and the sender line. "Gita Agent" is the repository name, not a name for a learner. Proposals: "Daily Gita", "Gita, a little each day", or simply Udaya's own name as sender with no service name at all. | Udaya | Yes, before the first welcome email |
+| C5 | ~~Service display name as learners see it.~~ **Resolved 2026-09-13: "Today's Gita"**, provisional, expected to be revisited during v1.0 testing. It is a pack setting (`service_name`), so changing it is a config edit, not code. The subject-line format is in §7.8. | Udaya | Resolved (provisional) |
 
 ## Appendix A. Composition prompt, v1 draft
 
