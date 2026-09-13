@@ -678,7 +678,7 @@ send and is reported to the operator with the lesson ID.
 | Retrieval-only | If the teacher section is present, the selected span has confidence `high` or `medium`, and every segment ID the paraphrase cites exists in the store within the selected span |
 | Trace present | The composition trace (§4.6) is stored with the lesson and records an outcome and, for canon-only, a reason code |
 | Generated boundaries | Generated fields contain no straight or curly double quotation marks |
-| Banned words | No banned word or phrase appears in any generated field, case-insensitive, whole-word |
+| Banned words | No **hard-tier** banned word appears in any generated field after up to two regenerations (§5.5). Soft-tier hits are logged, never block. |
 | Length | Per-send generated fields within their hard limits; body under roughly 400 words. Reviewed artifacts (chapter openings) only warn on length, never block |
 | Provenance | Model ID, prompt version, canon pin, pack version, sequence version present |
 | Links | Only the source link, the reaction links, and the unsubscribe link; every non-source link is a signed first-party URL |
@@ -707,16 +707,40 @@ sent. Everything subtler is what reviewers and reactions are for.
 means," "A question to carry," and the story-track equivalents. Whole
 words and phrases, case-insensitive, including simple inflections
 (`journey`, `journeys`; `transform`, `transformative`, `transformation`).
-A hit blocks the send and reports the word and the field.
+
+**Two tiers, so the list does not gate lessons it should not.**
+
+| Tier | What is in it | On a hit |
+|---|---|---|
+| **Hard** | Words that carry a claim the lesson must never make: `unlock`, `secret`, `transform` (and inflections), `awaken`, `manifest`, `empower`, `journey`, `ancient wisdom`, `life-changing`, `unleash` | Regenerate (below). Blocks only if regeneration fails. |
+| **Soft** | Everything else on the list: the vague-register words and the filler phrases | Never blocks. Logged on the lesson, counted in the ops digest per word, reviewed when a word keeps appearing. |
+
+Reviewer feedback in v1.1 can promote a soft word to hard or demote a hard
+one; either is a pack version bump with the audit entry that justified it.
+
+**Regenerate before refusing.** A hard hit does not block the send by
+itself. Composition is retried, up to two more times, with the offending
+words named: "your draft used *X*; rewrite the same content without it."
+The model was never attached to the word, so the first retry almost always
+succeeds. Each attempt and its hits are recorded in the composition trace
+(§4.6). Only if the third attempt still contains a hard word does the
+lesson take the ordinary failure path: it is not sent, the operator is
+notified the same day with the words and the drafts, the learner's
+progress does not advance, and the same lesson is composed again tomorrow.
+That is the fidelity-over-completeness rule applied honestly, and with
+regeneration in front of it the gate should almost never close. The ops
+digest reports how many lessons needed a retry and how many were blocked,
+so if the list is too aggressive it shows up as a number, not a feeling.
 
 ```
-journey, unlock, empower, transform, embrace, mindful, mindfulness,
-elevate, awaken, manifest, secret, powerful, profound, timeless,
-ancient wisdom, life-changing, game-changer, unleash, harness,
-tap into, dive deep, deep dive, at the end of the day, in today's world,
-in our fast-paced lives, resonate, vibration, energy (in the spiritual
-sense), authentic self, inner peace (as a promise), true self,
-sacred journey, spiritual growth, level up, hack, superpower
+HARD:  journey, unlock, empower, transform, awaken, manifest, secret,
+       ancient wisdom, life-changing, unleash
+SOFT:  embrace, mindful, mindfulness, elevate, powerful, profound,
+       timeless, game-changer, harness, tap into, dive deep, deep dive,
+       at the end of the day, in today's world, in our fast-paced lives,
+       resonate, vibration, energy (in the spiritual sense),
+       authentic self, inner peace (as a promise), true self,
+       sacred journey, spiritual growth, level up, hack, superpower
 ```
 
 **Why these words and not others.** The seed list came from the product
