@@ -543,6 +543,14 @@ The teacher's work is never redistributed by this project.
   else, that a GCP project with billing is a prerequisite. In v1 there is one
   operator.
 
+**Operator identity.** Every message the service sends is sent as the
+operator: the welcome, the lessons, the correction notes, the unsubscribe
+confirmation, the review editions, and the ops digest. Learners and
+reviewers see a person, not a service. In v1.0 and v1.1 the operator is
+Udaya and the identity is her own Google account address. In v2 the operator
+identity is whatever the person running the deployment configures, and it is
+a required setup step.
+
 **Who may bring content.** In v1, only the operator adds packs, into their
 own project. In v2, learners on the hosted deployment do **not** add their
 own content: doing so would place a stranger's content, cost, and rights
@@ -752,7 +760,7 @@ acceptance criterion is not a requirement.
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| P0-1 | Daily lesson delivery by email at the learner's local time, from one named, consistent sender (§8.2, §6.2 reach, open question 4) | Given an active learner with delivery time 07:00 Asia/Kolkata, when 07:00 IST arrives, then a lesson email is sent within 5 minutes from the configured sender. When the day's send has already succeeded, no second email is sent that day. No email is ever sent outside the learner's configured window. |
+| P0-1 | Daily lesson delivery by email at the learner's local time, sent as the operator identity (§8.2, §6.2 reach, §7.2) | Given an active learner with delivery time 07:00 Asia/Kolkata, when 07:00 IST arrives, then a lesson email is sent within 5 minutes from the configured sender. When the day's send has already succeeded, no second email is sent that day. No email is ever sent outside the learner's configured window. |
 | P0-2 | Sequential progress per learner, following the pack's fixed sequence (§6.3, §8.2) | Two learners on the same pack at different start dates each receive the identical sequence from lesson 1. Progress is stored per learner and survives restarts. The sequence is a pack artifact, not computed per send. |
 | P0-3 | Failure visibility and no silent skips (§8.2, §6.2 delivery) | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance, so the same lesson is sent next day. |
 | P0-4 | Unsubscribe (§8.3, §6.5) | Every email has an unsubscribe link. Clicking it stops all future email within one minute, sends exactly one confirmation, preserves progress, and revokes every signed token issued to that learner. |
@@ -811,7 +819,7 @@ acceptance criterion is not a requirement.
 | P1-7 | Per-learner pace options | Weekdays only, every other day. Schema supports it from v1.0. |
 | P1-8 | Telugu passage alongside the English in "From the teacher" | Stored already; a rendering option. |
 | P1-9 | Alternate translation per learner | Each translation is its own record with provenance; the lesson names whichever is used. |
-| P1-10 | Operator setup guide (§7.2 whose cloud) | States the GCP prerequisite first, the budget-alert step, the sender-identity step, and the rights warning verbatim. |
+| P1-10 | Operator setup guide (§7.2 whose cloud) | States the GCP prerequisite first, the budget-alert step, the operator-identity step, and the rights warning verbatim. |
 
 ### P2 — design for in v1, build in v2
 
@@ -885,7 +893,7 @@ design toward them.
 | 1 | ~~Lesson unit: one verse per day, or one idea (1–3 verses) per day as proposed in §6.3?~~ **Resolved 2026-09-12: one idea per lesson.** How ideas are grouped and reviewed is defined in the content spec. | Udaya | Resolved |
 | 2 | ~~Should the Telugu original appear in v1 lessons by default, or stay P1?~~ **Resolved 2026-09-12: no. English only in v1 lessons; the Telugu stays stored and appears only in the review edition (v1.1) and as the P1-8 rendering option.** | Udaya | Resolved |
 | 3 | ~~Is Udaya's father willing to be the fidelity reviewer for the audit?~~ **Resolved 2026-09-12: yes. He is the first reviewer in v1.1.** | Udaya | Resolved |
-| 4 | Sender identity: which address and domain do lessons come from? Affects deliverability and is a setup step. | Udaya, technical spec | Yes, before first send |
+| 4 | ~~Sender identity: which address and domain do lessons come from?~~ **Resolved 2026-09-12, and renamed *operator identity*.** Every message is sent as the operator. In v1.0 and v1.1 the operator is Udaya and lessons come from her own Google account address, which is also the account behind the GCP project. In v2 the operator is whoever runs a deployment, and their identity is a required setup step; the v2 spec decides whether a hosted public deployment needs a dedicated domain, since a personal Gmail address has daily sending limits that a private circle never reaches. The sending mechanism is a technical-spec decision. | Udaya | Resolved |
 | 5 | Monthly cost ceiling for the GCP budget alert. | Udaya | No |
 | 6 | Default English translation for v2 public use: Purohit Swami (1935) or Sivananda (1942), and whether the three later translators are offered at all. Needs a rights check, not a taste call. | Udaya, content spec | Not for v1; yes before v2 |
 | 7 | ~~Story track cadence (§7.4): weekend lessons alongside the verse track, or a daily opt-in second track?~~ **Resolved 2026-09-12: a daily second track, opt-in, default off, sent as its own email.** Composition cost is a fraction of a cent per lesson; the constraint is learner attention, hence opt-in. | Udaya | Resolved |
@@ -967,6 +975,7 @@ and this document's status changes to "v1, superseded for v2 planning."
 | **Review edition** | The learner's lesson plus an appendix of the raw source material behind it |
 | **Long form** | The static page for a lesson with the full verse record, context, and the teacher's complete passage |
 | **Operator** | The person running a deployment and managing learners and reviewers |
+| **Operator identity** | The address every message is sent from: the operator's own. Udaya's Google account address in v1 |
 | **Ops digest** | The weekly operator email summarizing sends, failures, ingestion, and cost |
 
 ## 14. How this spec changes
