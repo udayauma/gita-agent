@@ -284,8 +284,8 @@ per chapter, plus one for lesson one that introduces the text itself: who is
 speaking, to whom, where, and why. They are drafted by the model from the
 chapter summary in `chapters.json` and the first lesson's verses, then
 edited by the operator, stored in the pack as `chapter_openings.json`, and
-versioned and reviewed like the sequence. Length: 60 to 120 words. Tone
-rules and the banned-word list apply. They never quote a verse; the verse
+versioned and reviewed like the sequence. Length guidance: 60 to 120
+words, a soft bound (§5.2). Tone rules and the banned-word list apply. They never quote a verse; the verse
 follows immediately below.
 
 ## 4. Teacher content packs
@@ -529,11 +529,19 @@ rendered lesson. Generated fields are the only fields the model writes.
 
 | Part | Length | Must | Must not |
 |---|---|---|---|
-| Where this sits | 60–120 words (chapter openings only) | Come from the pack file, not generated per send | Appear on any other lesson |
+| Where this sits | Guidance: 60–120 words (chapter openings only). Soft bound; see note below | Come from the pack file, not generated per send | Appear on any other lesson |
 | What it means | 2–4 sentences | Restate the translation and the teacher's point in plain modern English; define any Sanskrit term used | Add claims absent from both; quote; give advice; mention the learner |
 | A question to carry | 1 sentence, a question | Follow from the verse or the teacher's point | Instruct; assume anything about the learner's life |
 
 Every generated field passes the checks in §5.4 before the lesson is sent.
+
+**Soft bounds for reviewed content, hard bounds for per-send content.** The
+chapter openings and the primer are drafted once, edited by the operator,
+and marked reviewed; a human has already judged them. For those, the length
+figures are guidance for the draft, and the validator only *warns* when one
+runs long. It never blocks a reviewed artifact on length. "What it means"
+and "A question to carry" are generated at send time with no human in
+between, so their bounds are hard and the validator is their only reviewer.
 
 ### 5.3 Prompt principles
 
@@ -557,7 +565,7 @@ send and is reported to the operator with the lesson ID.
 | Retrieval-only | If the teacher section is present, the selected span has confidence `high` or `medium` |
 | Generated boundaries | Generated fields contain no straight or curly double quotation marks |
 | Banned words | No banned word or phrase appears in any generated field, case-insensitive, whole-word |
-| Length | Body under roughly 400 words; generated fields within their limits |
+| Length | Per-send generated fields within their hard limits; body under roughly 400 words. Reviewed artifacts (chapter openings) only warn on length, never block |
 | Provenance | Model ID, prompt version, canon pin, pack version, sequence version present |
 | Links | Only the source link, the reaction links, and the unsubscribe link; every non-source link is a signed first-party URL |
 
