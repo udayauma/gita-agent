@@ -265,10 +265,26 @@ other day" or "weekdays only" can be added without a schema change.
 
 ### 6.4 Tone
 
-Plain, warm, unhurried. The lesson speaks to one person. It does not preach,
-does not hedge every sentence, and does not use the words "journey" or "unlock."
-Sanskrit terms appear with their meaning the first time they are used in a
-lesson.
+**Factual first.** The lesson reports what the verse says and what the
+teacher said. It does not embellish, does not add emotional color, and does
+not tell the learner how to feel. "What it means" restates; it does not
+inspire. The only place the lesson addresses the learner directly is the
+closing question, and even there it asks rather than tells.
+
+**Then plain, warm, unhurried.** Warmth comes from plainness and patience, not
+from adjectives. The lesson speaks to one person in short sentences. It does
+not preach. It does not hedge every sentence. Sanskrit terms appear with their
+meaning the first time they are used in a lesson.
+
+**Banned words.** Certain words are what a model reaches for when asked to be
+encouraging, and each carries a claim the lesson must not make: that the
+learner is being guided somewhere, that a secret is being revealed, that
+transformation is on offer. They never appear in generated text. The seed list
+is *journey, unlock, empower, transform, embrace, mindful, elevate, awaken,
+manifest, secret, powerful, profound, timeless, ancient wisdom*. The content
+spec owns the full list; it is a one-line test, not a judgment call. Words in
+this list may still appear inside a quoted translation or the teacher's
+translated passage, because those are sources, not generated text.
 
 ### 6.5 The long-form page (v1.1)
 
