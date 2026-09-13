@@ -120,12 +120,12 @@ version, text, and rights status. A lesson uses exactly one and names it.
 
 | Translator | Year | Where from | Style | Rights status | Use |
 |---|---|---|---|---|---|
-| Swami Sivananda | 1942 | `gita/gita` originals | Prose, some `thy`/`thou` | Very likely public domain in India (author d. 1963, India term life+60 ended 2024); US status not verified | **v1 provisional default** |
+| Swami Sivananda | 1942 | `gita/gita` originals | Prose, some `thy`/`thou` | Very likely public domain in India (author d. 1963, India term life+60 ended 2024); US status not verified | **v1 default** (confirmed 2026-09-13) |
 | Shri Purohit Swami | 1935 | `gita/gita` originals | Prose, `thou`, freer | Very likely public domain (author d. 1941) | Alternate |
 | Swami Gambirananda | 1984 | `gita/gita` originals | Literal, scholarly | Advaita Ashrama; likely copyrighted | Review appendix only; never in a public lesson |
 | Swami Adidevananda | c. 1990s | `gita/gita` originals | Ramanuja tradition | Sri Ramakrishna Math; likely copyrighted | Review appendix only |
 | Dr. S. Sankaranarayan | 1985 | `gita/gita` originals | Literal, Abhinavagupta tradition | Likely copyrighted | Review appendix only |
-| Annie Besant | 1895 (4th ed. 1922) | Wikisource, `Bhagavad-Gita (Besant 4th)` | Prose, `thy`/`thou`, close to the Sanskrit | Public domain; Wikisource transcription CC BY-SA | Candidate default for v2 public use |
+| Annie Besant | 1895 (4th ed. 1922) | Wikisource, `Bhagavad-Gita (Besant 4th)` | Prose, `thy`/`thou`, close to the Sanskrit | Public domain; Wikisource transcription CC BY-SA | Leading candidate for v2 public use; decided in the v2 spec |
 | K. T. Telang | 1882 | Wikisource, Sacred Books of the East vol. 8 | Prose with parenthetical glosses | Public domain; Wikisource transcription CC BY-SA | Candidate; heavier to read |
 | Edwin Arnold | 1885 | Wikisource | Verse | Public domain | Not for lessons; verse form fights the "factual first" tone |
 
@@ -182,10 +182,13 @@ default. Sanskrit and transliteration are from the verse record.
   not modernize any of them: the quotation is the quotation. "What it means"
   is where plain modern English lives.
 
-**Provisional decision (product spec §7.3): Sivananda for v1.** Recommended
-resolution of open question 6: **Besant for v2 public use**, with Sivananda
-kept as an alternate, because Besant reads as well and carries no rights
-doubt at all. Udaya decides after reading the three verses above.
+**Decision (2026-09-13): Sivananda is the v1 default.** Confirmed by Udaya
+after reading the three verses above. The v2 public-use default (product
+spec open question 6) is deliberately **not decided now**: it will be made
+when the v2 product spec is written, with v1 experience and reviewer
+feedback in hand. Besant is the leading candidate for that decision because
+it reads as well as Sivananda and carries no rights doubt; Sivananda stays
+an alternate either way.
 
 ## 3. The lesson sequence
 
@@ -620,7 +623,7 @@ from the log, never edited by hand.
 
 | # | Question | Who | Blocking? |
 |---|---|---|---|
-| C1 | Default translation: keep Sivananda for v1, and adopt Besant for v2 public use as recommended in §2.6? | Udaya | v1: no. v2: yes (this is product spec open question 6) |
+| C1 | ~~Default translation for v1?~~ **Resolved 2026-09-13: Sivananda.** The v2 public-use default is deferred to the v2 product spec (product spec open question 6); Besant is the leading candidate, Sivananda the alternate. | Udaya | Resolved for v1 |
 | C2 | Chapter openings and the primer: Udaya edits the drafts in §3.4 and §7.1 before the first send? | Udaya | Yes, before day 1 |
 | C3 | Relevance threshold and series-preference margin: tuned on which twenty verses? Proposal: the first lesson of each chapter plus 2.47 and 18.66. | Operator | No; set during phase 1 |
 | C4 | Reaction labels: keep "Got it / Unclear / Loved it"? | Udaya | No |
