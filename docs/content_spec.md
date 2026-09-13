@@ -231,14 +231,27 @@ The sequence is produced once per pack version, not per send. Rules:
 - **Check:** a deterministic validator enforces rules 1 and 2, reports the
   count per chapter and in total against the rule 6 expectation without
   failing on it, and lists every group of size 3 or more for a human eye.
-- **Review:** the operator reads every chapter's grouping once, in a single
-  sitting per chapter, and edits by hand. This is a few hours of work for
-  the whole Gita and it is done once. Reviewers (v1.1) can raise a grouping
-  objection like any other feedback; the fix is a new sequence version.
+- **Review:** the operator reads a chapter's grouping in one sitting and
+  edits by hand. In v1 this is Udaya. Review status is **per chapter**, and
+  composition requires only that the chapter of the next lesson is
+  reviewed, so the operator reviews ahead of the learner rather than the
+  whole Gita up front: chapters 1 and 2 before day one, then a chapter
+  ahead. The whole text is a few hours of review in total, spread over the
+  first weeks.
+- **It is not frozen.** A reviewer's grouping objection (v1.1), or the
+  operator's own second thoughts after living with a chapter, produces a
+  new sequence version. Because a learner's position is the last verse
+  delivered (§3.4), a regrouping never skips or repeats a verse for anyone
+  part-way through.
+- **It ships with the repository.** The sequence, the chapter openings, and
+  the primer for the default pack are derived from the public-domain canon
+  and written by the operator, not from the teacher's content, so they are
+  committed under `packs/<pack_id>/`. A self-hosting operator inherits the
+  reviewed sequence and does not redo the review.
 - **Store:** `sequence.json` in the pack: an ordered list of lessons, each
-  with a lesson index, chapter, first and last verse, and the reason. The
-  file carries a version and a review status. Composition refuses an
-  unreviewed sequence (P0-27).
+  with a lesson index, chapter, first and last verse, and the reason; a
+  file version; and a review status per chapter with the reviewer and
+  date. Composition refuses a lesson whose chapter is unreviewed (P0-27).
 
 ### 3.4 Chapter openings and the "Where we are" line
 
