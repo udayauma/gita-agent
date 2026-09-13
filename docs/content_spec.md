@@ -471,8 +471,14 @@ Selection, in order:
    keeps the Gita discourses as the usual lens and lets the Bhagavatam speak
    when it clearly does.
 4. **Adjacent segments** from the same video around the winner are pulled
-   in so the passage has its full context; the passage is then 100 to 200
-   words of English drawn from that span.
+   in so the passage has its full context. This step is **positional, not
+   semantic**: the segments immediately before and after the winner by
+   timestamp are read from the store, because a teacher's thought runs
+   across marker boundaries in time. Two bounds apply: a time window of
+   roughly one minute before and two minutes after the winner, and a soft
+   on-topic check that drops a neighbor whose similarity to the query falls
+   far below the winner's, so a story that begins mid-window is not dragged
+   in. The passage is then 100 to 200 words of English drawn from that span.
 5. **Nothing above threshold, or only `low` confidence:** the lesson is sent
    canon-only, says so in one plain sentence in place of the teacher
    section, and is flagged (P0-11).
