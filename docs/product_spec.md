@@ -80,8 +80,8 @@ change (§6.2, model independence). Reviewers stop being people on a list and
 become the test suite.
 
 **Timing.** v1.0 sends to Udaya alone. Reviewers and additional learners are
-added in v1.1, once thirty days of clean delivery have shown the lesson is worth
-a reviewer's time.
+added in v1.1, once gate 1 (§10.1) has been passed and thirty days of clean
+delivery have shown the lesson is worth a reviewer's time.
 
 ## 4. Goals
 
@@ -805,7 +805,7 @@ acceptance criterion is not a requirement.
 | P1-1 | Reviewer role and review edition (§3, §6.6, §8.5) | Operator-managed list; email only; reviewer welcome email; banner on every review edition; appendix of raw sources; narrow yes-or-no questions; feedback by email reply, verified against a source before any correction, logged in the machine-readable audit log. Retired at v2. |
 | P1-2 | Long-form lesson page (§6.5) | Recipient-signed link in every footer; static; generated with the email; served only with a valid token; no unsigned URL; not indexed; tokens revoked on unsubscribe. v1 only; taken down at v2 launch. |
 | P1-3 | Bhagavatam story track (§7.4) | Daily, opt-in, off by default, its own email, separate progress. Content is already ingested in v1.0; this adds a template, an episode sequence, and a schedule. |
-| P1-4 | Additional learners added by the operator (§3 timing) | After thirty clean days for the first learner. |
+| P1-4 | Additional learners added by the operator (§3 timing) | After gate 1 (§10.1) is passed. |
 | P1-5 | Correction note (§6.2 delivery) | Operator-triggered short note sent the next morning to learners who received a lesson with a material error. Never a resend, never an edit. |
 | P1-6 | Operator recovery commands | "Resend today's lesson" and "skip to lesson N" for testing and recovery. |
 | P1-7 | Per-learner pace options | Weekdays only, every other day. Schema supports it from v1.0. |
@@ -826,22 +826,57 @@ acceptance criterion is not a requirement.
 | P2-7 | Telugu-language lessons (§5) | The Telugu transcript is stored verbatim next to the English. |
 | P2-8 | The agent is not a counselor (§6.2 reserved) | Defined in the v2 spec before any external learner is added. |
 
-## 10. Success metrics
+## 10. Success metrics and exit criteria
 
 v1 is private, so the metrics are about reliability and fidelity, not growth.
+They are split by version because v1.0 and v1.1 prove different things, and
+**both gates must be passed before v2 starts.** Meeting v1.0 alone is not a
+signal to begin v2.
+
+### 10.1 v1.0 metrics: one learner, is the machine right?
 
 | Metric | Target | How measured | When |
 |---|---|---|---|
-| Delivery reliability | 30 consecutive days, 0 missed, 0 duplicate sends per learner | Delivery records | 30 days after first send |
-| Fidelity audit | 20 lessons reviewed by Udaya and her father; 0 fabricated verses, 0 misattributed teacher passages, ≤1 meaning error | Manual review log in the repo | Days 15 and 30 |
-| Readability | Udaya can state the verse's meaning in one sentence after reading, for ≥18 of 20 audited lessons | Same review log | Days 15 and 30 |
-| Engagement (self-reported) | Udaya reads ≥5 of 7 lessons each week | Weekly note | Weekly |
-| Reaction signal | ≥4 of 7 lessons each week receive a reaction; "Unclear" on any lesson is reviewed within the week | Reaction records via ops digest | Weekly |
-| Ingestion completeness | Default Gita pack fully ingested; every video has transcript, translation, and completion marker | Ops digest | End of phase 1 |
-| Cost | Weekly spend visible in the digest; monthly total under the agreed ceiling | Ops digest, GCP budget | Monthly |
+| Delivery reliability (P0-1, P0-3) | 30 consecutive days, 0 missed, 0 duplicate sends, 0 sends outside the window | Delivery records | Day 30 |
+| Ingestion completeness (P0-20, P0-21) | Both default series fully ingested; every video has segments in both languages, timestamps, a source reference, and a completion marker | Ops digest and store inspection | Before day 1 |
+| Structural validity (P0-7, P0-8, P0-12) | 100% of sent lessons pass the structure check; 0 banned words in generated text; 0 lessons over the length bound | Automated pre-send validation log | Continuous |
+| Provenance completeness (P0-13, P0-14) | 100% of lessons carry model ID, prompt version, canon commit, pack version, and a unique lesson ID | Lesson records | Continuous |
+| Canon-only fallback rate (P0-11) | Under 20% of lessons fall back to canon-only for lack of a relevant teacher passage; every fallback is flagged | Lesson records, ops digest | Day 30 |
+| Self fidelity audit (§6.2) | Udaya checks 20 lessons against the review appendix material: 0 fabricated verses, 0 misattributed teacher passages, at most 1 meaning error | Audit log | Days 15 and 30 |
+| Readability (goal 3) | Udaya can state the verse's meaning in one sentence after reading, for at least 18 of 20 audited lessons | Audit log | Days 15 and 30 |
+| Reaction signal (P0-16) | At least 4 of 7 lessons each week receive a reaction; every "Unclear" is reviewed within the week | Ops digest | Weekly |
+| Cost visibility (P0-24, P0-25) | Weekly digest arrives every week with a spend figure reproducible from call records; monthly total under the ceiling in open question 5 | Ops digest, GCP budget | Weekly, monthly |
+| Unsubscribe correctness (P0-4) | A test unsubscribe stops email within one minute, sends one confirmation, revokes tokens, and preserves progress | Manual test | Once, before day 1 |
 
-**Exit criterion for v1:** thirty days of clean delivery and a fidelity audit
-with no fabricated content. Meeting it is the signal to start v2.
+**Gate 1, v1.0 to v1.1:** every row above met, and no open item in the
+fidelity audit. Passing gate 1 permits adding reviewers and more learners. It
+does not permit starting v2.
+
+### 10.2 v1.1 metrics: more people, is the content right?
+
+| Metric | Target | How measured | When |
+|---|---|---|---|
+| Multi-learner reliability (P0-2) | 30 consecutive days across at least 3 learners with different start dates and at least 2 timezones: 0 missed, 0 duplicates, 0 cross-learner leaks | Delivery records | Day 30 of v1.1 |
+| Reviewer fidelity audit (P1-1, §8.5) | At least 2 reviewers; at least 40 lessons reviewed; every fidelity or translation claim verified against a source and logged with a decision; 0 confirmed fabrications | Audit log | Day 30 of v1.1 |
+| Reviewer response rate | Reviewers reply, with a yes or a correction, to at least half of the narrow questions asked | Audit log | Weekly |
+| Golden set exists (P2-2) | At least 40 lessons in the golden set, each marked confirmed-good or corrected, machine-readable, keyed by lesson ID | Repo | Day 30 of v1.1 |
+| Golden set runs (§6.2 model independence) | The fidelity evals run against the golden set on demand and pass on the current model and prompt version | CI | Before gate 2 |
+| Long-form privacy (P1-2) | A forwarded long-form link opens for no one but the recipient; tokens revoked on unsubscribe; pages not indexed | Manual test | Once |
+| Story track (P1-3) | At least one learner opts in; 14 consecutive days delivered on its own email with separate progress; same structural validity as verse lessons | Delivery records | Day 14 after opt-in |
+| Correction note (P1-5) | Exercised at least once, deliberately, end to end | Manual test | Once |
+| Cost at scale | Per-learner monthly cost measured and recorded; total under the ceiling | Ops digest | Monthly |
+
+**Gate 2, v1.1 to v2:** every row in 10.1 still holding, every row in 10.2
+met, open question 6 (default translation for public use) resolved with a
+confirmed rights status, and the Google personal-project release check
+complete so the repository can be public under its license. Passing gate 2 is
+the signal to write the v2 spec. It is not a commitment to any v2 date.
+
+### 10.3 What the metrics do not measure
+
+Growth, retention beyond the private circle, and any comparison to other
+products. Those are v2 questions, and measuring them in v1 would pull the
+design toward them.
 
 ## 11. Open questions
 
@@ -859,8 +894,8 @@ with no fabricated content. Meeting it is the signal to start v2.
 
 | Phase | Delivers | Proves |
 |---|---|---|
-| **v1.0** | Ingestion of the default Gita pack; canon loaded; lesson composition; email delivery to Udaya; unsubscribe; ops digest | The lesson is accurate and delivery is reliable |
-| **v1.1** | Reviewer role and review edition; long-form lesson page; additional learners added by the operator; other P1 items as chosen | The lesson survives expert review, and the service works for more than one person |
+| **v1.0** | Ingestion of both default series; canon loaded; lesson composition; email delivery to Udaya; reactions; unsubscribe; ops digest | The lesson is accurate and delivery is reliable. Exit: gate 1 (§10.1) |
+| **v1.1** | Reviewer role and review edition; long-form lesson page; additional learners added by the operator; other P1 items as chosen | The lesson survives expert review, the service works for more than one person, and a golden set exists. Exit: gate 2 (§10.2), which is the only gate to v2 |
 | **v2** | Reply-to-lesson conversation (ADK agent) on low-friction channels: SMS and Slack alongside email; long form offered by the agent in conversation instead of a page link (§6.5); self-serve signup and preferences web surface; public announcement via Udaya's website | The service works for people who do not know the operator, and talking to it is as easy as answering a text |
 
 ### 12.1 What carries into v2
