@@ -147,9 +147,10 @@ Every lesson has the same five parts, in this order.
 5. **A question to carry.** One reflective question for the day. Generated.
    Short.
 
-Then a footer: the sources used, a **"read more" link** to the lesson's
-long-form page (see §6.5), and an unsubscribe link. Progress is not repeated in
-the footer; the "Where we are" line is the single place it appears.
+Then a footer: the sources used, a **reaction row** of three tap targets (see
+§6.7), a **"read more" link** to the lesson's long-form page (see §6.5), and an
+unsubscribe link. Progress is not repeated in the footer; the "Where we are"
+line is the single place it appears.
 
 ### 6.1.1 Short form and long form
 
@@ -230,6 +231,33 @@ appendix:
 
 The review edition is a rendering option on the same lesson, not a separate
 lesson. Nothing in the appendix is generated; it is the raw material.
+
+### 6.7 Learner feedback in v1
+
+Every lesson email ends with a **reaction row**: three tap targets, each one
+link. The default labels are *Got it*, *Unclear*, and *Loved it*. Three is
+deliberate: enough to distinguish "worked", "did not work", and "worth more
+of", and few enough that a weekly digest can show them per lesson without
+becoming noise.
+
+- Tapping a reaction records it against the lesson and the learner, then shows
+  a one-line thank-you page. That page offers an optional single text box for
+  one more sentence. Nothing else is asked.
+- Each link carries a signed, single-purpose token identifying the lesson and
+  learner. No email address or learner identifier appears in any URL.
+- A learner can change their reaction by tapping another; the latest wins.
+- Free-form feedback beyond one sentence is a plain email reply, read by the
+  operator, the same path reviewers use.
+- Reactions and any one-sentence notes appear in the weekly ops digest per
+  lesson, so the operator sees which lessons landed and which confused.
+
+The reaction endpoint and the unsubscribe endpoint are the same small web
+surface; both receive a signed link and record an event. This is the only web
+surface in v1.
+
+The reaction row is channel-neutral in design: on SMS in v2 it becomes "reply
+1, 2, or 3", and in Slack it becomes emoji reactions on the message, routed
+through the same two-way channel abstraction (P2-2).
 
 ## 7. Content
 
@@ -328,8 +356,8 @@ case they return. No further email is sent for any reason.
 ### 8.4 Operator checks on the service
 
 Once a week the operator receives an **ops digest** email: lessons sent and to
-whom, failures, new videos ingested, tokens used, and estimated spend for the
-week and month to date. This is the primary operational surface in v1. There is
+whom, failures, reactions and one-sentence notes per lesson, new videos
+ingested, tokens used, and estimated spend for the week and month to date. This is the primary operational surface in v1. There is
 no dashboard.
 
 ### 8.5 Reviewer receives and answers (v1.1)
@@ -369,6 +397,7 @@ operator action is needed. Already-processed videos are never reprocessed.
 | P0-8 | Failure visibility | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance. |
 | P0-9 | Teacher content ingestion from a public YouTube playlist | Given a playlist manifest, when ingestion runs, then every video is transcribed and translated, stored, and marked complete. Running ingestion again processes nothing. |
 | P0-10 | Weekly ops digest | Every week the operator receives one email with sends, failures, videos ingested, tokens used, and estimated cost. |
+| P0-12 | Reaction row per §6.7 | Every lesson email has three reaction links. Tapping one records the reaction for that lesson and learner within one minute and shows a thank-you page with an optional one-sentence box. No learner identifier appears in the URL. The latest reaction wins. Reactions appear in the next ops digest. |
 | P0-11 | Welcome email per §8.1 | A newly added learner receives a welcome email before their first lesson. It contains the primer (Vedas, Upanishads, Mahabharata, Gita) in no more than two paragraphs, and the mechanics. The primer text is part of the content pack and is identical for every learner. |
 
 ### P1 — should follow soon after
@@ -405,6 +434,7 @@ v1 is private, so the metrics are about reliability and fidelity, not growth.
 | Fidelity audit | 20 lessons reviewed by Udaya and her father; 0 fabricated verses, 0 misattributed teacher passages, ≤1 meaning error | Manual review log in the repo | Days 15 and 30 |
 | Readability | Udaya can state the verse's meaning in one sentence after reading, for ≥18 of 20 audited lessons | Same review log | Days 15 and 30 |
 | Engagement (self-reported) | Udaya reads ≥5 of 7 lessons each week | Weekly note | Weekly |
+| Reaction signal | ≥4 of 7 lessons each week receive a reaction; "Unclear" on any lesson is reviewed within the week | Reaction records via ops digest | Weekly |
 | Ingestion completeness | Default Gita pack fully ingested; every video has transcript, translation, and completion marker | Ops digest | End of phase 1 |
 | Cost | Weekly spend visible in the digest; monthly total under the agreed ceiling | Ops digest, GCP budget | Monthly |
 
