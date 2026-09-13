@@ -597,7 +597,7 @@ tie-break. Whatever the channel, a learner who provides nothing beyond a
 contact and a timezone still receives a complete lesson using every other
 default.
 
-### 7.4 The default teacher's two series
+### 7.4 The default teacher's series
 
 The default teacher pack contains Sri Chaganti Koteswara Rao's Gita
 discourses, all three series the channel carries, and his Bhagavatam series,
@@ -921,7 +921,7 @@ design toward them.
 
 | Phase | Delivers | Proves |
 |---|---|---|
-| **v1.0** | Ingestion of both default series; canon loaded; lesson composition; email delivery to Udaya; reactions; unsubscribe; ops digest | The lesson is accurate and delivery is reliable. Exit: gate 1 (§10.1) |
+| **v1.0** | Ingestion of all default series; canon loaded; lesson composition; email delivery to Udaya; reactions; unsubscribe; ops digest | The lesson is accurate and delivery is reliable. Exit: gate 1 (§10.1) |
 | **v1.1** | Reviewer role and review edition; long-form lesson page; Bhagavatam story track; correction note; additional learners added by the operator; other P1 items as chosen | The lesson survives expert review, the service works for more than one person, and a golden set exists. Exit: gate 2 (§10.2), which is the only gate to v2 |
 | **v2** | Reply-to-lesson conversation (ADK agent) on low-friction channels: SMS and Slack alongside email; long form offered by the agent in conversation instead of a page link (§6.5); self-serve signup and preferences web surface; public announcement via Udaya's website | The service works for people who do not know the operator, and talking to it is as easy as answering a text |
 
