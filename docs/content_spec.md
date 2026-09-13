@@ -807,6 +807,106 @@ rules apply unchanged.
 These are content, not code. They live in the pack, carry a version, and
 are reviewed. Drafts follow; Udaya edits them in place.
 
+### 7.0 Knowledge of Hinduism: a reference for the primer and the chapter openings
+
+This section is background, codified so that the primer, the chapter
+openings, and the operator's own understanding rest on the same account.
+It is **not** a source for generated lesson text: "What it means" and the
+question draw only on the verse and the teacher (§5.3). It is a source for
+the operator when drafting and reviewing pack artifacts, and for the
+reviewer when judging whether an opening paragraph is sound.
+
+Provenance is marked. Statements marked **[T]** are what the default
+teacher, Sri Chaganti Koteswara Rao, says in "Sampoorna Srimad Bhagavatam
+part 1" (video `GAC7WRgkXfc`, roughly 2:00 to 7:30), as transcribed and
+translated in the 2026-09-12 probe. Everything else is general scholarship
+and the tradition's own self-description.
+
+**The Vedas.** Four collections of Sanskrit, composed roughly 1500 to 500
+BCE and transmitted orally with exceptional exactness before being written.
+The tradition calls them *śruti*, "what was heard": revealed to seers, not
+authored, and therefore the highest authority in Hinduism. Everything else,
+including the Gita, is *smṛti*, "what is remembered," and answers to them.
+**[T]** Sage Vyāsa divided the one mass of Vedic knowledge into four, seeing
+that people of this age, short-lived and distracted by wealth and desire,
+could not study the whole.
+
+| Veda | What it holds | Who used it |
+|---|---|---|
+| Ṛgveda | 1,028 hymns of praise and invocation: to Agni, the fire that carries offerings to the gods; to Indra, Soma, Varuṇa and others. The oldest layer. Alongside the praise are hymns that ask the largest questions, such as the Nāsadīya hymn on whether even the gods know how the world began, and the Puruṣa hymn on the cosmos as one being. | The *hotṛ*, who recites |
+| Sāmaveda | The same hymns set to melody for singing at the sacrifice | The *udgātṛ*, who sings |
+| Yajurveda | The prose formulas spoken while the rites are performed | The *adhvaryu*, who performs |
+| Atharvaveda | Hymns for daily life: healing, protection, marriage, the household; also speculative hymns | The *brahman* priest, who oversees |
+
+**The four layers in each Veda.** Every Veda grows through four kinds of
+text, in this order: *Saṃhitā* (the hymns themselves), *Brāhmaṇa*
+(explanation of the rites), *Āraṇyaka* (the "forest" texts that read the
+rites symbolically), and *Upaniṣad* (philosophy). So the Upanishads are not
+a separate body of writing. They are the end of the Veda, which is what
+*Vedānta* means.
+
+**The two halves.** The tradition divides the whole into *karma-kāṇḍa*,
+the portion on action and rite, and *jñāna-kāṇḍa*, the portion on
+knowledge. **[T]** The teacher calls these the *pūrva bhāga*, the former
+part, which explains the rites and procedures and the worldly and heavenly
+rewards they bring, and the *uttara bhāga*, the latter part, which explains
+the knowledge by which one need not enter a womb again: *jñānāt kevala
+kaivalyam*, liberation through knowledge alone. **[T]** Through his
+disciple Jaimini, Vyāsa had the former part systematized as *Pūrva
+Mīmāṃsā*; he himself composed the *Brahma Sūtras*, the *Uttara Mīmāṃsā*, on
+the latter.
+
+**What the Vedas are about.** Three things held together: the relationship
+between people, the gods, and the cosmos, maintained through *yajña*, the
+fire sacrifice, with Agni as go-between; *ṛta*, the order that keeps the
+cosmos, the seasons, and right conduct aligned, which the sacrifice sustains
+and which later becomes *dharma*; and a growing set of questions about
+origins, the one behind the many, and the power in the sacred word,
+*brahman*, which the Upanishads take up as the ground of everything.
+
+**The Upanishads.** The philosophical core: what the self (*ātman*) is,
+what *brahman* is, and the teaching that they are not two. The oldest
+dozen or so are the ones the Gita draws on most.
+
+**Itihāsa and Purāṇa: the stories.** *Itihāsa*, "thus it was," names the
+two epics, the *Rāmāyaṇa* and the *Mahābhārata*. The *Purāṇas*, "the
+ancient," are the eighteen great narrative scriptures. **[T]** Vyāsa
+composed the eighteen Purāṇas, and a Purāṇa must have five marks: *sarga*
+(primary creation), *pratisarga* (secondary creation), *vaṃśa* (lineages),
+*manvantara* (the ages of the Manus), and *vaṃśānucarita* (the history of
+the lineages). **[T]** The elders gave a mnemonic for the eighteen:
+*ma-dvayaṃ bha-dvayaṃ caiva bra-trayaṃ va-catuṣṭayam, a-nā-pa-liṅga-kū-skāni
+purāṇāni pṛthak pṛthak*: two beginning with *Ma* (Mārkaṇḍeya, Matsya), two
+with *Bha* (Bhāgavata, Bhaviṣya), three with *Bra* (Brahma, Brahmāṇḍa,
+Brahmavaivarta), four with *Va* (Varāha, Viṣṇu, Vāmana, Vāyu), and then one
+each for *A* (Agni), *Nā* (Nārada), *Pa* (Padma), *Liṅga*, *Ga* (Garuḍa),
+*Kū* (Kūrma), *Ska* (Skanda). **[T]** The Bhāgavata, the teacher says,
+stands apart from the other Purāṇas on a higher pedestal. It is the text of
+the story track (§6).
+
+**Where the Gita sits.** Inside the *Mahābhārata*, in the *Bhīṣma Parva*,
+as the conversation between Arjuna and Krishna on the morning the war
+begins: eighteen chapters, seven hundred verses. With the Upanishads and
+the *Brahma Sūtras* it forms the *prasthāna-trayī*, the three foundations
+on which every major school of Vedānta wrote its commentary. That is why
+so many translators and commentators exist for it and why a lesson must
+name which one it is using.
+
+**What the Gita teaches, and why a lesson every day.** Arjuna's crisis is
+concrete: family on both sides of the field, a duty he cannot see how to
+carry out, fear, and grief, all on one morning. He is not a renunciant; he
+is a person in the middle of his life who has to act and cannot see the
+outcome. Krishna's answer runs through the whole text: act, because action
+is unavoidable, but act without clinging to the result (*karma yoga*);
+learn to tell the lasting from the passing (*jñāna*); hold steady in gain
+and loss, praise and blame (*samatva*); and give the whole of it to
+something larger than yourself (*bhakti*). It is a teaching about how to
+work, how to hold relationships and obligations, how to meet difficulty,
+and how to keep one's footing, addressed to someone who has to get up
+tomorrow and do it again. That is why it is read a little at a time, every
+day, rather than once. The daily lesson is not a summary of the Gita; it is
+the Gita's own method.
+
 ### 7.1 Welcome primer (draft)
 
 > The Bhagavad Gita is one conversation inside the much larger body of
@@ -823,12 +923,21 @@ are reviewed. Drafts follow; Udaya edits them in place.
 > Upanishads' questions into one exchange between a person in trouble and a
 > teacher who will not let him look away.
 >
+> Arjuna is not a monk. He has family on both sides of the field, a duty
+> he cannot see how to carry out, fear, and grief, all at once, and he
+> still has to act. That is why the Gita is read by people in the middle
+> of their lives: it is about how to work without clinging to results, how
+> to hold obligations and relationships, how to meet difficulty, and how to
+> keep one's footing, told to someone who has to get up tomorrow and do it
+> again.
+>
 > Hinduism, which its own texts call Sanātana Dharma, the enduring way, is
 > vast and deep, and no one takes it in at once. This service walks one
 > text slowly: one idea from the Gita each morning, in plain English, with
 > the verse itself and a short passage from a teacher explaining it. Depth
-> comes from the daily habit, not from any single lesson. Read it in five
-> minutes, carry the question for the day, and let the rest go.
+> comes from the daily habit, not from any single lesson, which is also how
+> the Gita itself asks to be practised. Read it in five minutes, carry the
+> question for the day, and let the rest go.
 
 ### 7.2 Welcome mechanics (template)
 

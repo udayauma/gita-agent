@@ -645,7 +645,7 @@ content work.
    timezone. Optional: name, delivery time, pace, pack, and, from v1.1, the
    story-track opt-in.
 2. The learner receives a **welcome email** the same day. It has two parts:
-   - **A primer**, one or two paragraphs, orienting the learner in
+   - **A primer**, two or three short paragraphs, orienting the learner in
      Hinduism before the first lesson arrives: the Vedas as the root, the
      Upanishads as their philosophical core, the Mahabharata as the epic, and
      the Gita as the conversation inside it that distils the whole. It names
@@ -785,7 +785,7 @@ acceptance criterion is not a requirement.
 | P0-2 | Sequential progress per learner, following the pack's fixed sequence (§6.3, §8.2) | Two learners on the same pack at different start dates each receive the identical sequence from lesson 1. Progress is stored per learner and survives restarts. The sequence is a pack artifact, not computed per send. |
 | P0-3 | Failure visibility and no silent skips (§8.2, §6.2 delivery) | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance, so the same lesson is sent next day. |
 | P0-4 | Unsubscribe (§8.3, §6.5) | Every email has an unsubscribe link. Clicking it stops all future email within one minute, sends exactly one confirmation, preserves progress, and revokes every signed token issued to that learner. |
-| P0-5 | Welcome email with primer (§8.1) | A newly added learner receives a welcome email before their first lesson. It contains the primer (Vedas, Upanishads, Mahabharata, Gita) in no more than two paragraphs, plus the mechanics. The primer is pack content, identical for every learner. |
+| P0-5 | Welcome email with primer (§8.1) | A newly added learner receives a welcome email before their first lesson. It contains the primer (Vedas, Upanishads, Mahabharata, Gita, and why the Gita is read a little every day) in no more than three short paragraphs, plus the mechanics. The primer is pack content, identical for every learner. |
 | P0-6 | Fixed list of message types per audience (§6.2 reach) | In v1.0 the service can send, to a learner: welcome, daily verse lesson, correction note, unsubscribe confirmation; to the operator: failure notification, weekly ops digest. v1.1 adds the story-track lesson, the reviewer welcome, and the review edition. Every outbound message carries a type from this list; any other type is a test failure. |
 
 **The lesson**
