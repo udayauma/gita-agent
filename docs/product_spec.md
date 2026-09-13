@@ -149,7 +149,9 @@ Every lesson has the same five parts, in this order.
    teacher explaining this verse or its idea, translated to English. Paraphrased
    from the transcript, with the video title and a **timestamped link to the
    original YouTube recording** so the learner can hear it in the teacher's
-   voice. The link is mandatory; a lesson without it is not sent.
+   voice. For sources that have a public address, which is every v1.0 source, the
+link is mandatory and a lesson without it is not sent. For source types
+without one (§7.2), the lesson names the recording and its timestamp instead.
 5. **A question to carry.** One reflective question for the day. Generated.
    Short.
 
@@ -480,10 +482,31 @@ default and records the reasoning; this is open question 6.
 
 ### 7.2 Teacher content packs
 
-A **pack** is a named set of recordings by one teacher, plus the transcripts and
+A **pack** is a named set of sources by one teacher, plus the transcripts and
 translations the service produces from them. Packs are the "bring your own
-content" mechanism: an operator can point the service at any public YouTube
-playlist.
+content" mechanism.
+
+**Source types.** A pack lists one or more sources, each with a type. The pack
+format and the transcript store are source-agnostic from v1.0: a stored
+segment holds text, language, timestamps, and a reference to its source, and
+neither the store nor the lesson depends on where the segment came from.
+Only the ingestion step is per type, and v1.0 implements exactly one.
+
+| Source type | Example | How it is ingested | Version |
+|---|---|---|---|
+| Public YouTube playlist or video | The default teacher's playlists | Sent to the model directly from the URL, in windows | **v1.0, the only type implemented** |
+| Audio or video files the operator owns | Recordings in the operator's own cloud storage | Same model call with the file instead of the URL | P1 |
+| Podcast feed | An RSS feed of discourses | Feed poll, then the file path above | P2 |
+| Text | A transcript, PDF, or book the operator has rights to | No transcription; chunked and stored directly | P2 |
+| Other video hosts, unlisted or private videos | Vimeo, a teacher's private upload | Not planned; depends on each host's access rules | Not planned |
+
+The "listen to the source" link in a lesson (§6.1) is mandatory for YouTube
+sources and optional for source types that have no public address.
+
+**Rights travel with the pack.** Every manifest carries a one-line attestation
+that the operator has the right to use the listed content for this purpose.
+The service does not verify it, but it will not ingest a pack without it.
+"Bring your own content" means your own.
 
 **The repository ships manifests, never content.** A manifest lists the
 playlist and video IDs and describes the pack. The transcripts and translations
@@ -615,7 +638,7 @@ operator action is needed. Already-processed videos are never reprocessed.
 | P0-6 | Mandatory defaults per §7.3 | A learner configured with only email and timezone receives a complete lesson using the default canon and pack. |
 | P0-7 | Unsubscribe | Every email has an unsubscribe link. Clicking it stops all future email within one minute and preserves progress. |
 | P0-8 | Failure visibility | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance. |
-| P0-9 | Teacher content ingestion from a public YouTube playlist | Given a playlist manifest, when ingestion runs, then every video is transcribed and translated, stored, and marked complete. Running ingestion again processes nothing. |
+| P0-9 | Teacher content ingestion from a pack whose sources are public YouTube playlists or videos (the only v1.0 source type, §7.2) | Given a pack manifest with the rights attestation, when ingestion runs, then every video is transcribed and translated, stored with its source reference, and marked complete. Running ingestion again processes nothing. A manifest without the attestation is refused. |
 | P0-10 | Weekly ops digest | Every week the operator receives one email with sends, failures, videos ingested, tokens used, and estimated cost. |
 | P0-12 | Reaction row per §6.7 | Every lesson email has three reaction links. Tapping one records the reaction for that lesson and learner within one minute and shows a thank-you page with an optional one-sentence box. No learner identifier appears in the URL. The latest reaction wins. Reactions appear in the next ops digest. |
 | P0-11 | Welcome email per §8.1 | A newly added learner receives a welcome email before their first lesson. It contains the primer (Vedas, Upanishads, Mahabharata, Gita) in no more than two paragraphs, and the mechanics. The primer text is part of the content pack and is identical for every learner. |
