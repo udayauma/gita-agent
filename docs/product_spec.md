@@ -312,7 +312,8 @@ email footer. It exists for the learner who has time that day, and for
 reviewers. It contains:
 
 - The verse record in full: Devanagari, transliteration, word-by-word meaning
-  where the canon has it, and every translation in the dataset, each named.
+  where the canon has it, and every translation cleared for learner display
+  (content spec §2.5), each named.
 - The neighboring verses, so the idea is seen in context.
 - The teacher's full passage on this idea, English and Telugu side by side,
   with a timestamped link for each transcript segment.
@@ -690,10 +691,12 @@ case they return. No further email is sent for any reason.
 ### 8.4 Operator checks on the service (v1.0 onward)
 
 Once a week the operator receives an **ops digest** email: lessons sent and to
-whom, failures, reactions and one-sentence notes per lesson, new videos
-ingested, tokens used, estimated spend for the week and month to date, and,
-once a month, whether the canon's upstream has moved past the pinned commit
-(§7.1). This is the primary operational surface in v1. There is no dashboard.
+whom, failures, reactions and one-sentence notes per lesson, lessons that
+went out canon-only and why, lessons that leaned on a medium-confidence
+passage, banned-word retries and blocks, new videos ingested with their
+transcription quality, tokens used, estimated spend for the week and month
+to date, and, once a month, whether the canon's upstream has moved past the
+pinned commit (§7.1). The exact contents are P0-24. This is the primary operational surface in v1. There is no dashboard.
 
 Failures do not wait for the digest: a send that fails after retry produces
 an operator notification the same day (P0-3). The digest is the weekly
@@ -827,7 +830,7 @@ acceptance criterion is not a requirement.
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| P0-24 | Weekly ops digest (§8.4, §4 goal 4, §7.1) | Every week the operator receives one email with: lessons sent per learner, failures, reactions and one-sentence notes per lesson, videos ingested, tokens used per model call summed, estimated spend for the week and month to date, and, once a month, whether the canon's upstream has moved past the pinned commit. |
+| P0-24 | Weekly ops digest (§8.4, §4 goal 4, §7.1, content spec §4.4, §4.6, §5.5) | Every week the operator receives one email with: lessons sent per learner; failures; reactions and one-sentence notes per lesson; canon-only lessons with their reason codes; lessons that used a medium-confidence passage; banned-word regenerations and blocks, and soft-word counts; videos ingested and per-video confidence distribution, with any playlist that grew or shrank; tokens used per model call summed; estimated spend for the week and month to date; and, once a month, whether the canon's upstream has moved past the pinned commit. |
 | P0-25 | Per-call cost accounting (§4 goal 4) | Every model call records input and output tokens and is priced from a configurable table; the digest's spend figure is the sum, and a test can reproduce it from the records. |
 | P0-26 | Review appendix on demand (§6.6, §10.1) | The operator can render, for any lesson ID, the review appendix: the Telugu passage, the English translation verbatim, the transcript segments with video ID and timestamp, and the canon record. Nothing in it is generated. This is what the v1.0 self-audit uses; the reviewer role that emails it is v1.1. |
 | P0-27 | Pack content artifacts are reviewed and versioned (§6.1, §6.3, §8.1) | The lesson sequence (idea grouping), the chapter-opening paragraphs, and the welcome primer are produced once per pack version, stored with the pack, carry a version and a review status, and are identical for every learner. Review status is per chapter; a lesson is composed only when its chapter's sequence and opening are marked reviewed, so the operator can review ahead of the learner rather than all at once. |
@@ -993,7 +996,7 @@ and this document's status changes to "v1, superseded for v2 planning."
 | Term | Meaning |
 |---|---|
 | **Canon** | The Bhagavad Gita text and translations from the `gita/gita` dataset |
-| **Pack** | A named set of one teacher's recordings plus their generated transcripts and translations |
+| **Pack** | A named set of one teacher's sources (public YouTube playlists in v1.0; other types later) plus the transcripts and translations generated from them and the reviewed artifacts that ship with it |
 | **Manifest** | The file in the repo that describes a pack by playlist and video IDs, without content |
 | **Lesson** | One email: verse, meaning, teacher passage, question, footer |
 | **Idea** | The unit of a lesson: one verse or a short run of verses forming one thought |

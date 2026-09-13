@@ -254,8 +254,9 @@ The sequence is produced once per pack version, not per send. Rules:
   delivered (§3.4), a regrouping never skips or repeats a verse for anyone
   part-way through.
 - **It ships with the repository.** The sequence, the chapter openings, and
-  the primer for the default pack are derived from the public-domain canon
-  and written by the operator, not from the teacher's content, so they are
+  the primer for the default pack are derived from the canon's Sanskrit
+  text and chapter structure and written by the operator, not from the
+  teacher's content, so they are
   committed under `packs/<pack_id>/`. A self-hosting operator inherits the
   reviewed sequence and does not redo the review.
 - **Store:** `sequence.json` in the pack: an ordered list of lessons, each
@@ -978,7 +979,7 @@ question C5); it is not the repository name.
 > loses his nerve and asks his charioteer, Krishna, what he should do.
 > Krishna's answer is the Gita: seven hundred verses that gather the
 > Upanishads' questions into one exchange between a person in trouble and a
-> teacher who will not let him look away.
+> friend who will not let him look away.
 >
 > Arjuna is not a monk. He has family on both sides of the field, a duty
 > he cannot see how to carry out, fear, and grief, all at once, and he
@@ -1081,6 +1082,7 @@ lesson later. `{service_name}` is the pack setting, provisionally
 | Correction note (v1.1) | `{service_name}: a correction to Day {n}` |
 | Unsubscribe confirmation | `{service_name}: you have been unsubscribed` |
 | Ops digest | `{service_name} ops digest, week of {date}` |
+| Failure notification (operator, same day) | `{service_name}: {count} lesson(s) not sent on {date}` |
 
 ## 8. Audit log and golden set
 
