@@ -214,7 +214,13 @@ The sequence is produced once per pack version, not per send. Rules:
    in the text where they occur.
 5. Verses that only make sense in context, such as the second half of a
    sentence, are never a lesson on their own.
-6. Target is 350 to 400 lessons. The rules produce roughly 380.
+6. The lesson count is an outcome of rules 1 to 5, not a constraint on
+   them. The rules are expected to produce roughly 350 to 400 lessons, and
+   that expectation is used only as a sanity check: the validator reports
+   the count and flags a chapter whose count looks far from expected for a
+   human to look at. There is no programmatic cutoff, and no verse is ever
+   merged into a neighbor to hit a number. If the text has 420 ideas, there
+   are 420 lessons.
 
 ### 3.3 How the grouping is made and reviewed
 
@@ -222,8 +228,9 @@ The sequence is produced once per pack version, not per send. Rules:
   given the chapter's verses with translation and word meanings, the rules
   above, and the target. Output is a list of `[first_verse, last_verse,
   one-line reason]`.
-- **Check:** a deterministic validator enforces rules 1, 2, and 6 and lists
-  every group of size 3 or more for a human eye.
+- **Check:** a deterministic validator enforces rules 1 and 2, reports the
+  count per chapter and in total against the rule 6 expectation without
+  failing on it, and lists every group of size 3 or more for a human eye.
 - **Review:** the operator reads every chapter's grouping once, in a single
   sitting per chapter, and edits by hand. This is a few hours of work for
   the whole Gita and it is done once. Reviewers (v1.1) can raise a grouping

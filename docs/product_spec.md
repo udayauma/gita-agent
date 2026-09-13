@@ -269,7 +269,9 @@ The unit of a lesson is **one idea**, which is one verse or a small run of
 consecutive verses that form a single thought. The Gita has 700 verses, so one
 verse a day would take almost two years, and many verses only make sense in
 pairs or triples. Grouping by idea yields roughly 350 to 400 lessons, about a
-year at one a day.
+year at one a day. That number is an outcome of the grouping rules, not a
+target: no verse is ever merged into a neighbor to hit a count (content spec
+§3.2).
 
 The grouping is fixed in advance as part of the content pack, not decided each
 morning. Two learners on the same pack see the same sequence.
