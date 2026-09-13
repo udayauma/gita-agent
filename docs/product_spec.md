@@ -359,6 +359,21 @@ clearly marked appendix:
 The review edition is a rendering option on the same lesson, not a separate
 lesson. Nothing in the appendix is generated; it is the raw material.
 
+**How reviewers give feedback.** There is exactly one mechanism:
+
+1. The reviewer replies to the review-edition email in plain language. No
+   form, no account, no reaction row on the review edition. Silence means no
+   objection.
+2. The operator reads the reply and records it in the fidelity audit log
+   against the lesson ID: what was wrong, which part of the lesson, and the
+   correction if there is one. Lessons a reviewer explicitly confirms as
+   faithful are recorded too.
+3. Corrections go into the content pack for learners who have not yet
+   reached that lesson. Lessons already sent are never edited (§6.2).
+4. The audit log is machine-readable and is the source of the fidelity
+   golden set (P2-1b). Nothing about reviewer feedback is automated in v1 or
+   v1.1; the operator is the loop.
+
 ### 6.7 Learner feedback in v1
 
 Every lesson email ends with a **reaction row**: three tap targets, each one
