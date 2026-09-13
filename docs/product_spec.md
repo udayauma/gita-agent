@@ -447,6 +447,23 @@ sentence to Swami Sivananda would be exactly the misattribution §6.2 forbids.
 The loader strips the leading verse-number prefix present in the original
 records and does nothing else to the text.
 
+**Why this dataset, and what else exists.** `gita/gita` was chosen as the
+structural spine because it is the only open source found with all of:
+verse-level JSON, Devanagari, IAST transliteration, word meanings, chapter
+metadata, and several named English translations, under a permissive license.
+A survey on 2026-09-12 found no better spine, but it found better
+*translation* sources, and the canon is therefore layered: the Sanskrit,
+transliteration, and word meanings come from the spine; each English
+translation is a separate record with its own provenance and rights status,
+whichever source it came from. The alternatives and their trade-offs are
+recorded in the content spec. In brief: `vedicscriptures/bhagavad-gita` has
+the same lineage with more commentators but is GPL-3.0, which would bind this
+project's license; Wikisource carries three verified public-domain
+translations (Telang 1882, Arnold 1885, Besant 1895) under CC BY-SA; GRETIL
+carries a scholarly Sanskrit e-text derived from the critical edition with no
+stated reuse terms; Gita Supersite (IIT Kanpur) is the academic origin of
+most of these but publishes no license.
+
 **Translator rights are not uniform.** The dataset is Unlicense, but that
 covers the compilation, not the translators' copyright. Of the five English
 translators, Shri Purohit Swami (1935) and Swami Sivananda (1942) are the
