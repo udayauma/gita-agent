@@ -503,10 +503,24 @@ Only the ingestion step is per type, and v1.0 implements exactly one.
 The "listen to the source" link in a lesson (§6.1) is mandatory for YouTube
 sources and optional for source types that have no public address.
 
-**Rights travel with the pack.** Every manifest carries a one-line attestation
-that the operator has the right to use the listed content for this purpose.
-The service does not verify it, but it will not ingest a pack without it.
-"Bring your own content" means your own.
+**Rights travel with the pack, and the warning is explicit.** Every manifest
+carries a one-line attestation that the person adding it has the right to use
+the listed content for this purpose. The service will not ingest a pack
+without it, and it never verifies it. That second fact is stated to the
+person, in plain words, at the moment they add content, in every version:
+
+> This service does not verify your right to use the content you add. By
+> adding it you confirm that you hold that right. Generated transcripts and
+> lessons will be delivered to whoever you enroll, so treat this as
+> publishing.
+
+In v1 the warning appears in the operator documentation and in the
+ingestion command's output when a new pack is registered. In v2, when a
+learner or operator can add content through the signup surface or in
+conversation with the agent, the same warning is shown and must be
+acknowledged before the content is accepted. The wording is fixed in the
+content spec so that every surface says the same thing. "Bring your own
+content" means your own, and the service says so out loud.
 
 **The repository ships manifests, never content.** A manifest lists the
 playlist and video IDs and describes the pack. The transcripts and translations
