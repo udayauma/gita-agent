@@ -807,6 +807,35 @@ rules apply unchanged.
 These are content, not code. They live in the pack, carry a version, and
 are reviewed. Drafts follow; Udaya edits them in place.
 
+### Placeholder legend
+
+Every `{placeholder}` in this section is filled from exactly one place.
+Nothing is defined twice, and the v1 value is recorded here so the rendered
+texts can be read without guessing.
+
+| Placeholder | Filled from | v1 value |
+|---|---|---|
+| `{service_name}` | Pack manifest, `service_name` | Today's Gita (provisional, C5) |
+| `{operator_name}` | Operator config | Udaya |
+| `{operator_email}` | Operator config, the operator identity (product spec §7.2) | Udaya's Google account address |
+| `{teacher_name}` | Pack manifest, `teacher.name` | Sri Chaganti Koteswara Rao |
+| `{teacher_honorific}` | Pack manifest, `teacher.honorific`; used after first mention | Chaganti garu |
+| `{series_list}` | Pack manifest, the `title` of each source, joined | Bhagavad Gita; Bhagavad Gita Bhakti Yogam; Geeta Vaibhavam; Sampoorna Srimad Bhagavatam |
+| `{pack_name}` | Pack manifest, `pack_id` rendered as a title | Chaganti Gita (Telugu) |
+| `{name}` | Learner record, optional; when absent the greeting is "Welcome" alone | Udaya |
+| `{timezone}` | Learner record | America/New_York |
+| `{delivery_time}` | Learner record, default 07:00 | 07:00 |
+| `{first_lesson_date}` | Computed: the first delivery time after the welcome is sent | per learner |
+| `{n}`, `{total}` | Learner position and sequence length (§3.4) | per lesson |
+| `{c}`, `{v}`, `{v1}`, `{v2}` | The lesson's chapter and verse or verse range from `sequence.json` | per lesson |
+| `{episode_title}` | `episodes.json` (story track, v1.1) | per lesson |
+| `{video_title}`, `{start}`, `{end}` | The selected span's segment records (§4.4) | per lesson |
+| `{date}`, `{reference}`, `{citation}` | Correction note (§7.6): the affected lesson's send date, its "Where we are" line, and the source that justified the correction | per note |
+
+Operator config is one small file in the deployment, not in the pack, so
+a self-hosting operator changes it without touching the pack. The
+technical spec names the file.
+
 ### 7.0 Knowledge of Hinduism: a reference for the primer and the chapter openings
 
 This section is background, codified so that the primer, the chapter
