@@ -403,7 +403,7 @@ One record per marker-delimited paragraph within a window:
 | `start_s`, `end_s` | Offsets in seconds; the source link is `https://www.youtube.com/watch?v={video_id}&t={start_s}s` |
 | `te` | Telugu text, verbatim |
 | `en` | English translation, verbatim from the model output |
-| `confidence` | `high` / `medium` / `low`, plus reason |
+| `confidence` | `high` / `medium` / `low`, the minimum across the signals below, plus the individual signal values and the model's stated reason |
 | `refs` | Scripture references detected in this segment |
 | `model_id`, `prompt_version`, `ingested_at` | Provenance |
 
@@ -411,9 +411,32 @@ The store is the system of record. The vector index holds the English text
 of each segment with its identifying fields as metadata and can be rebuilt
 from the store at any time.
 
+**How confidence is assigned.** The model's self-reported confidence (§4.3
+item 3) is the starting point, never the whole answer, because models are
+poorly calibrated about their own transcription. It is combined with
+deterministic checks, and the strongest of those uses the window overlap:
+
+| Signal | What it measures | Effect |
+|---|---|---|
+| Overlap agreement | The 30-second overlap between windows is transcribed twice, independently. Similarity of the two Telugu texts (character-level) and of the two English texts is computed for the overlapping region. This is the one objective measure of transcription stability we have. | Below a fixed floor: the affected segments are capped at `low`. Between floor and ceiling: capped at `medium`. |
+| Parse integrity | Markers present and monotonic; Telugu and English sections both present; segment count roughly matches speech duration | Any failure: `low` for the whole window |
+| Script check | Fraction of characters in the Telugu section that are Telugu script (code-switched English words are expected and allowed) | Far outside the expected range: `low` |
+| Length ratio | English word count against Telugu character count, per segment, compared with the pack's running median | Far outside the range: `medium` at most |
+| Degeneration | Repeated phrases, truncated output, or a window shorter than expected | `low` |
+| Model self-report | `high` / `medium` / `low` with reason | Can only lower the result, never raise it above what the checks allow |
+
+The final grade is the **minimum** across the signals. Thresholds are pack
+settings, set once on the first ingested video by hand-checking twenty
+segments of each grade, and recorded in the manifest with the date. The
+individual signal values are stored on the segment alongside the grade so
+that a reviewer or the ops digest can see why a segment was graded as it
+was.
+
 **Confidence handling.** `low` segments are stored and indexed but are never
 selected for a lesson. `medium` segments may be selected; when one is, the
-lesson is flagged in the ops digest so the operator can spot-check it.
+lesson is flagged in the ops digest so the operator can spot-check it. The
+ops digest also reports the grade distribution per video, so a video that
+transcribed badly, say because of poor audio, is visible as a whole.
 
 ### 4.5 Retrieval: how a verse finds its passage
 
