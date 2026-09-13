@@ -101,7 +101,7 @@ delivery have shown the lesson is worth a reviewer's time.
    - *The ceiling* is a GCP budget alert on the project, set by the operator as
      a one-time setup step at an amount well above expected spend. It is a
      backstop against a runaway job between digests, not the primary cost
-     view. The amount is open question 5.
+     view. The amount is $100 per month (open question 5, resolved).
 5. **Be honest about sources.** Every lesson names the translator, the teacher,
    and the recording it drew from, so a learner can go deeper on their own.
 
@@ -894,7 +894,7 @@ design toward them.
 | 2 | ~~Should the Telugu original appear in v1 lessons by default, or stay P1?~~ **Resolved 2026-09-12: no. English only in v1 lessons; the Telugu stays stored and appears only in the review edition (v1.1) and as the P1-8 rendering option.** | Udaya | Resolved |
 | 3 | ~~Is Udaya's father willing to be the fidelity reviewer for the audit?~~ **Resolved 2026-09-12: yes. He is the first reviewer in v1.1.** | Udaya | Resolved |
 | 4 | ~~Sender identity: which address and domain do lessons come from?~~ **Resolved 2026-09-12, and renamed *operator identity*.** Every message is sent as the operator. In v1.0 and v1.1 the operator is Udaya and lessons come from her own Google account address, which is also the account behind the GCP project. In v2 the operator is whoever runs a deployment, and their identity is a required setup step; the v2 spec decides whether a hosted public deployment needs a dedicated domain, since a personal Gmail address has daily sending limits that a private circle never reaches. The sending mechanism is a technical-spec decision. | Udaya | Resolved |
-| 5 | Monthly cost ceiling for the GCP budget alert. | Udaya | No |
+| 5 | ~~Monthly cost ceiling for the GCP budget alert.~~ **Resolved 2026-09-12: $100 per month on `gita-agent-prod`, with alerts at 50%, 90%, and 100%.** Setting it is an operator setup step (P1-10). | Udaya | Resolved |
 | 6 | Default English translation for v2 public use: Purohit Swami (1935) or Sivananda (1942), and whether the three later translators are offered at all. Needs a rights check, not a taste call. | Udaya, content spec | Not for v1; yes before v2 |
 | 7 | ~~Story track cadence (§7.4): weekend lessons alongside the verse track, or a daily opt-in second track?~~ **Resolved 2026-09-12: a daily second track, opt-in, default off, sent as its own email.** Composition cost is a fraction of a cent per lesson; the constraint is learner attention, hence opt-in. | Udaya | Resolved |
 
