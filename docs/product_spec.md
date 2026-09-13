@@ -33,8 +33,9 @@ plain English, at the learner's pace, with every claim traceable to its source.
 
 Each lesson is built from two layers:
 
-- **The canon.** The verse itself, in Sanskrit, transliteration, and a
-  public-domain English translation. Sequenced in order, chapter by chapter.
+- **The canon.** The verse itself, in Sanskrit, transliteration, and a named
+  English translation from the canon dataset (§7.1). Sequenced in order,
+  chapter by chapter.
 - **The lens.** A teacher's explanation of that verse, drawn from recorded
   discourses that have been transcribed and translated. The default teacher is
   Sri Chaganti Koteswara Rao, whose Telugu discourses are the content Udaya's
@@ -141,8 +142,8 @@ Every lesson has the same five parts, in this order.
    as part of the content pack, reviewed like any other content, and is the
    same for every learner.
 2. **The verse.** Sanskrit in Devanagari, then transliteration, then one
-   public-domain English translation. Verbatim from the canon dataset, never
-   generated. The translator is named.
+   named English translation from the canon (§7.1). Verbatim from the canon
+   record, never generated. The translator is named.
 3. **What it means.** Two to four plain-English sentences. Generated, but
    constrained to restate the translation and the teacher's explanation. No new
    claims.
@@ -237,8 +238,12 @@ operator has never met are on the list.
   long-form page, the reaction row, and unsubscribe. All but the recording are
   first-party.
 - Never sends outside the learner's configured delivery window.
-- Never sends anything other than the welcome email, the daily lesson, a
-  correction note when one is needed, and the unsubscribe confirmation. No
+- Never sends anything outside the fixed list of message types, per
+  audience. To a learner: the welcome email, the daily verse lesson, the
+  story-track lesson if opted in (v1.1), a correction note when one is
+  needed, and the unsubscribe confirmation. To a reviewer (v1.1): the
+  reviewer welcome and the review edition. To the operator: the same-day
+  failure notification and the weekly ops digest. Nothing else, ever: no
   promotions, no re-engagement messages, no surveys beyond the reaction row.
 
 **Delivery and immutability**
@@ -345,7 +350,7 @@ never published at a URL.
 
 | Version | Reviewers |
 |---|---|
-| v1.0 | None. Udaya is the only learner and does her own checking. |
+| v1.0 | None. Udaya is the only learner and does her own checking, using the same review appendix rendered on demand for any lesson (P0-26). |
 | v1.1 | Reviewers added by the operator receive the review edition by email. |
 | v2 | Retired. The review edition is no longer produced. The golden set built from v1 reviewer feedback runs as automated evals instead. |
 
@@ -409,7 +414,7 @@ becoming noise.
 
 The reaction endpoint and the unsubscribe endpoint are the same small web
 surface; both receive a signed link and record an event. This is the only web
-surface in v1.
+surface in v1.0; the v1.1 long-form page (§6.5) is served from the same one.
 
 The reaction row is channel-neutral in design: on SMS in v2 it becomes "reply
 1, 2, or 3", and in Slack it becomes emoji reactions on the message, routed
@@ -574,8 +579,8 @@ If an operator configures nothing, the service works. The defaults are:
 | Layer | Default |
 |---|---|
 | Canon | `gita/gita` dataset, pinned version |
-| Teacher pack | Sri Chaganti Koteswara Rao: the "Bhagavad Gita" playlist (8 videos, 8.5 h) and the "Sampoorna Srimad Bhagavatam" series (40 videos, 68 h), see §7.4 |
-| Translation | The dataset's default English translation, named in every lesson |
+| Teacher pack | Sri Chaganti Koteswara Rao: the three Bhagavad Gita series (17 videos, 17.5 h) and the "Sampoorna Srimad Bhagavatam" series (40 videos, 68 h), see §7.4 |
+| Translation | Swami Sivananda's, from the original translator text (§7.1), named in every lesson. Provisional: the content spec's side-by-side confirms or changes it for v1; open question 6 governs v2 public use |
 | Pace | One lesson per day |
 | Delivery time | 07:00 in the learner's timezone |
 | Channel | The channel matching the contact the learner provided. In v1 that is always email, because the operator adds learners by email address. |
@@ -594,20 +599,24 @@ default.
 
 ### 7.4 The default teacher's two series
 
-The default teacher pack contains two of Sri Chaganti Koteswara Rao's series,
-both recommended by Udaya's father, and both are part of v1:
+The default teacher pack contains Sri Chaganti Koteswara Rao's Gita
+discourses, all three series the channel carries, and his Bhagavatam series,
+all recommended by Udaya's father, and all part of v1:
 
 | Series | Size | What it is | Role in lessons |
 |---|---|---|---|
-| Bhagavad Gita playlist | 8 videos, 8.5 h | Discourse on the Gita itself | Primary lens for verse lessons. Ingested first. |
+| Bhagavad Gita | 8 videos, 8.5 h | Discourse on the Gita itself | Primary lens for verse lessons. Ingested first. |
+| Bhagavad Gita Bhakti Yogam | 8 videos, 7.1 h | Discourse centred on chapter 12, the yoga of devotion | Primary lens; ingested second |
+| Geeta Vaibhavam | 1 video, 1.9 h | A single discourse on the glory of the Gita | Primary lens; ingested third |
 | Sampoorna Srimad Bhagavatam | 40 videos, 68 h | Discourse on the Bhagavata Purana: Krishna's life and the devotional stories | Secondary lens for verse lessons from v1.0; its own story track from v1.1 |
 
-**v1.0: both series are ingested, and verse lessons retrieve across both.**
+**v1.0: all four series are ingested, and verse lessons retrieve across all of them.**
 When a verse lesson looks for "From the teacher," it searches the whole pack.
-The Bhagavatam discourses speak constantly about karma, devotion, and
-Krishna, so for many verses the most relevant passage will come from there.
+The three Gita series are searched together as the primary lens. The
+Bhagavatam discourses speak constantly about karma, devotion, and Krishna, so
+for some verses the most relevant passage will come from there.
 The lesson names the series, video, and timestamp it drew from, as always.
-Where no passage in either series is relevant enough, the retrieval threshold
+Where no passage in any series is relevant enough, the retrieval threshold
 does not select one, and the lesson carries the canon layer only (§6.2). The
 Bhagavatam is never forced onto a verse it does not speak to.
 
@@ -629,7 +638,8 @@ content work.
 ### 8.1 Operator adds a learner (v1.0 onward)
 
 1. The operator adds a learner with, at minimum, an email address and a
-   timezone. Optional: name, delivery time, pace, pack.
+   timezone. Optional: name, delivery time, pace, pack, and, from v1.1, the
+   story-track opt-in.
 2. The learner receives a **welcome email** the same day. It has two parts:
    - **A primer**, one or two paragraphs, orienting the learner in the
      tradition before the first lesson arrives: the Vedas as the root, the
@@ -673,14 +683,20 @@ case they return. No further email is sent for any reason.
 
 Once a week the operator receives an **ops digest** email: lessons sent and to
 whom, failures, reactions and one-sentence notes per lesson, new videos
-ingested, tokens used, and estimated spend for the week and month to date. This is the primary operational surface in v1. There is
-no dashboard.
+ingested, tokens used, estimated spend for the week and month to date, and,
+once a month, whether the canon's upstream has moved past the pinned commit
+(§7.1). This is the primary operational surface in v1. There is no dashboard.
+
+Failures do not wait for the digest: a send that fails after retry produces
+an operator notification the same day (P0-3). The digest is the weekly
+roll-up, not the alarm.
 
 ### 8.5 Reviewer receives and answers (v1.1 only, email only)
 
-1. The operator adds a reviewer with an email address. A reviewer is not
-   required to be a learner. Email is the only channel for reviewers; the
-   role does not extend to SMS or Slack and is retired at v2.
+1. The operator adds a reviewer with an email address, a timezone, and a
+   delivery time, the same fields as a learner. A reviewer is not required to
+   be a learner. Email is the only channel for reviewers; the role does not
+   extend to SMS or Slack and is retired at v2.
 2. The reviewer receives a **reviewer welcome email** the same day. It says,
    in plain terms: you have been asked to review daily Bhagavad Gita lessons
    for accuracy; each morning you will receive the lesson as a learner sees
@@ -765,19 +781,19 @@ acceptance criterion is not a requirement.
 | P0-3 | Failure visibility and no silent skips (§8.2, §6.2 delivery) | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance, so the same lesson is sent next day. |
 | P0-4 | Unsubscribe (§8.3, §6.5) | Every email has an unsubscribe link. Clicking it stops all future email within one minute, sends exactly one confirmation, preserves progress, and revokes every signed token issued to that learner. |
 | P0-5 | Welcome email with primer (§8.1) | A newly added learner receives a welcome email before their first lesson. It contains the primer (Vedas, Upanishads, Mahabharata, Gita) in no more than two paragraphs, plus the mechanics. The primer is pack content, identical for every learner. |
-| P0-6 | Only four message types are ever sent (§6.2 reach) | The service can send the welcome email, the daily lesson, a correction note, and the unsubscribe confirmation, and nothing else. Any other outbound message is a test failure. |
+| P0-6 | Fixed list of message types per audience (§6.2 reach) | In v1.0 the service can send, to a learner: welcome, daily verse lesson, correction note, unsubscribe confirmation; to the operator: failure notification, weekly ops digest. v1.1 adds the story-track lesson, the reviewer welcome, and the review edition. Every outbound message carries a type from this list; any other type is a test failure. |
 
 **The lesson**
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| P0-7 | Lesson structure (§6.1) | Every lesson contains, in order: "Where we are" as position and scale with no percentage or streak; the verse; "What it means"; "From the teacher"; "A question to carry"; then a footer with sources, reaction row, and unsubscribe. A lesson missing any part is not sent and is reported. |
+| P0-7 | Verse lesson structure (§6.1) | Every verse lesson contains, in order: "Where we are" as position and scale with no percentage or streak; the verse; "What it means"; "From the teacher"; "A question to carry"; then a footer with sources, reaction row, and unsubscribe. A lesson missing any part is not sent and is reported. |
 | P0-8 | Chapter openings (§6.1) | Lesson one and the first lesson of every chapter carry the "Where this sits" paragraph from the pack. Any other lesson does not. |
 | P0-9 | Verse fidelity (§6.2 fidelity, §7.1) | The Sanskrit, transliteration, and translation in a lesson are byte-identical to the canon store record, and the translation is from the original translator text, never the machine-edited file. The translator and canon version are named in the footer. |
 | P0-10 | Teacher attribution and source link (§6.2, §6.1, §7.4) | Every "From the teacher" passage cites a series, video ID, and timestamp at which the transcript store contains the source material, and carries a timestamped link to the public recording. A lesson without the link is not sent. |
 | P0-11 | Retrieval-only teacher content with canon fallback (§6.2 fidelity, §7.4) | The teacher passage is drawn from the transcript store by retrieval across the whole pack. If no segment clears the relevance threshold, or the best segment's confidence is low, the lesson is sent with the canon layer only, says so, and is flagged to the operator. No teacher content is ever produced from model knowledge; a test that removes the transcript store must yield canon-only lessons, never a teacher passage. |
 | P0-12 | Generated text is labeled and bounded (§6.2 fidelity, §6.4) | "Where this sits," "What it means," and "A question to carry" are the only generated parts. They are labeled as such, contain no quotation marks around generated text, and contain none of the banned words. The body is at most roughly 400 words. |
-| P0-13 | Provenance on every lesson (§6.2 model independence, §7.1) | Every lesson record stores the model ID, prompt version, canon commit hash, and pack version that produced it. A model or prompt change cannot reach a learner without a recorded fidelity audit run against the golden set. |
+| P0-13 | Provenance on every lesson (§6.2 model independence, §7.1) | Every lesson record stores the model ID, prompt version, canon commit hash, and pack version that produced it. A model or prompt change cannot reach a learner without a recorded fidelity audit: against the golden set once it exists (v1.1 onward), and against the operator's self-audit sample before then. |
 | P0-14 | Stable lesson ID (§6.1.1, §12.1) | Every lesson is minted with a permanent, random, unguessable ID before it is sent, carried in the email headers, and never reused. |
 | P0-15 | Immutability (§6.2 delivery) | A lesson record is never modified after send. Corrections are applied to the pack and reach only learners who have not yet received that lesson. |
 
@@ -795,7 +811,7 @@ acceptance criterion is not a requirement.
 |---|---|---|
 | P0-19 | Canon loaded from a pinned commit, originals only (§7.1) | The canon store is built from a recorded `gita/gita` commit hash, using `archive/translation_old.json` with the verse-number prefix stripped and no other change. Loading the same commit twice yields byte-identical stores. |
 | P0-20 | Pack ingestion from public YouTube sources with rights attestation (§7.2) | Given a pack manifest with the attestation, ingestion transcribes and translates every video, stores each segment with text in both languages, timestamps, and its source reference, and marks the video complete. Running ingestion again processes nothing. A manifest without the attestation is refused, and the unverified-rights warning is printed when a pack is registered. |
-| P0-21 | Both default series ingested (§7.4, §7.3) | With no configuration, the default pack ingests the Bhagavad Gita playlist first and the Sampoorna Srimad Bhagavatam series second, and verse-lesson retrieval spans both. |
+| P0-21 | All default series ingested (§7.4, §7.3) | With no configuration, the default pack ingests the three Gita series first, in the order listed in §7.4, then the Sampoorna Srimad Bhagavatam series, and verse-lesson retrieval spans all of them. |
 | P0-22 | Mandatory defaults (§7.3) | A learner configured with only an email address and a timezone receives a complete, correct lesson the next morning using the default canon, pack, translation, pace, and delivery time. |
 | P0-23 | Weekly content poll (§8.6) | Once a week each configured source is checked for videos not yet processed; new ones are ingested with the same idempotency; nothing already complete is reprocessed. |
 
@@ -805,6 +821,8 @@ acceptance criterion is not a requirement.
 |---|---|---|
 | P0-24 | Weekly ops digest (§8.4, §4 goal 4, §7.1) | Every week the operator receives one email with: lessons sent per learner, failures, reactions and one-sentence notes per lesson, videos ingested, tokens used per model call summed, estimated spend for the week and month to date, and, once a month, whether the canon's upstream has moved past the pinned commit. |
 | P0-25 | Per-call cost accounting (§4 goal 4) | Every model call records input and output tokens and is priced from a configurable table; the digest's spend figure is the sum, and a test can reproduce it from the records. |
+| P0-26 | Review appendix on demand (§6.6, §10.1) | The operator can render, for any lesson ID, the review appendix: the Telugu passage, the English translation verbatim, the transcript segments with video ID and timestamp, and the canon record. Nothing in it is generated. This is what the v1.0 self-audit uses; the reviewer role that emails it is v1.1. |
+| P0-27 | Pack content artifacts are reviewed and versioned (§6.1, §6.3, §8.1) | The lesson sequence (idea grouping), the chapter-opening paragraphs, and the welcome primer are produced once per pack version, stored with the pack, carry a version and a review status, and are identical for every learner. A lesson is composed only from a pack version marked reviewed. |
 
 ### P1 — v1.1
 
@@ -833,6 +851,7 @@ acceptance criterion is not a requirement.
 | P2-6 | Multiple operators (§7.2) | Every record is scoped to an operator ID even though v1 has one. |
 | P2-7 | Telugu-language lessons (§5) | The Telugu transcript is stored verbatim next to the English. |
 | P2-8 | The agent is not a counselor (§6.2 reserved) | Defined in the v2 spec before any external learner is added. |
+| P2-9 | A learner can have their data erased on request (§8.3) | Unsubscribe preserves progress by design; erasure is a separate, explicit act. From v1.0, every record about a learner is reachable and deletable by learner ID, so that v2 can offer erasure without a migration. |
 
 ## 10. Success metrics and exit criteria
 
@@ -846,14 +865,14 @@ signal to begin v2.
 | Metric | Target | How measured | When |
 |---|---|---|---|
 | Delivery reliability (P0-1, P0-3) | 30 consecutive days, 0 missed, 0 duplicate sends, 0 sends outside the window | Delivery records | Day 30 |
-| Ingestion completeness (P0-20, P0-21) | Both default series fully ingested; every video has segments in both languages, timestamps, a source reference, and a completion marker | Ops digest and store inspection | Before day 1 |
+| Ingestion completeness (P0-20, P0-21) | All three Gita series fully ingested before day 1; the Bhagavatam series fully ingested within the first week; every video has segments in both languages, timestamps, a source reference, and a completion marker | Ops digest and store inspection | Day 1 and day 7 |
 | Structural validity (P0-7, P0-8, P0-12) | 100% of sent lessons pass the structure check; 0 banned words in generated text; 0 lessons over the length bound | Automated pre-send validation log | Continuous |
 | Provenance completeness (P0-13, P0-14) | 100% of lessons carry model ID, prompt version, canon commit, pack version, and a unique lesson ID | Lesson records | Continuous |
 | Canon-only fallback rate (P0-11) | Under 20% of lessons fall back to canon-only for lack of a relevant teacher passage; every fallback is flagged | Lesson records, ops digest | Day 30 |
 | Self fidelity audit (§6.2) | Udaya checks 20 lessons against the review appendix material: 0 fabricated verses, 0 misattributed teacher passages, at most 1 meaning error | Audit log | Days 15 and 30 |
 | Readability (goal 3) | Udaya can state the verse's meaning in one sentence after reading, for at least 18 of 20 audited lessons | Audit log | Days 15 and 30 |
 | Reaction signal (P0-16) | At least 4 of 7 lessons each week receive a reaction; every "Unclear" is reviewed within the week | Ops digest | Weekly |
-| Cost visibility (P0-24, P0-25) | Weekly digest arrives every week with a spend figure reproducible from call records; monthly total under the ceiling in open question 5 | Ops digest, GCP budget | Weekly, monthly |
+| Cost visibility (P0-24, P0-25) | Weekly digest arrives every week with a spend figure reproducible from call records; monthly total under the $100 ceiling | Ops digest, GCP budget | Weekly, monthly |
 | Unsubscribe correctness (P0-4) | A test unsubscribe stops email within one minute, sends one confirmation, revokes tokens, and preserves progress | Manual test | Once, before day 1 |
 
 **Gate 1, v1.0 to v1.1:** every row above met, and no open item in the
@@ -865,7 +884,7 @@ does not permit starting v2.
 | Metric | Target | How measured | When |
 |---|---|---|---|
 | Multi-learner reliability (P0-2) | 30 consecutive days across at least 3 learners with different start dates and at least 2 timezones: 0 missed, 0 duplicates, 0 cross-learner leaks | Delivery records | Day 30 of v1.1 |
-| Reviewer fidelity audit (P1-1, §8.5) | At least 2 reviewers; at least 40 lessons reviewed; every fidelity or translation claim verified against a source and logged with a decision; 0 confirmed fabrications | Audit log | Day 30 of v1.1 |
+| Reviewer fidelity audit (P1-1, §8.5) | At least 1 reviewer, 2 preferred; at least 40 lessons reviewed; every fidelity or translation claim verified against a source and logged with a decision; 0 confirmed fabrications | Audit log | Day 30 of v1.1 |
 | Reviewer response rate | Reviewers reply, with a yes or a correction, to at least half of the narrow questions asked | Audit log | Weekly |
 | Golden set exists (P2-2) | At least 40 lessons in the golden set, each marked confirmed-good or corrected, machine-readable, keyed by lesson ID | Repo | Day 30 of v1.1 |
 | Golden set runs (§6.2 model independence) | The fidelity evals run against the golden set on demand and pass on the current model and prompt version | CI | Before gate 2 |
@@ -903,7 +922,7 @@ design toward them.
 | Phase | Delivers | Proves |
 |---|---|---|
 | **v1.0** | Ingestion of both default series; canon loaded; lesson composition; email delivery to Udaya; reactions; unsubscribe; ops digest | The lesson is accurate and delivery is reliable. Exit: gate 1 (§10.1) |
-| **v1.1** | Reviewer role and review edition; long-form lesson page; additional learners added by the operator; other P1 items as chosen | The lesson survives expert review, the service works for more than one person, and a golden set exists. Exit: gate 2 (§10.2), which is the only gate to v2 |
+| **v1.1** | Reviewer role and review edition; long-form lesson page; Bhagavatam story track; correction note; additional learners added by the operator; other P1 items as chosen | The lesson survives expert review, the service works for more than one person, and a golden set exists. Exit: gate 2 (§10.2), which is the only gate to v2 |
 | **v2** | Reply-to-lesson conversation (ADK agent) on low-friction channels: SMS and Slack alongside email; long form offered by the agent in conversation instead of a page link (§6.5); self-serve signup and preferences web surface; public announcement via Udaya's website | The service works for people who do not know the operator, and talking to it is as easy as answering a text |
 
 ### 12.1 What carries into v2
@@ -976,7 +995,12 @@ and this document's status changes to "v1, superseded for v2 planning."
 | **Long form** | The static page for a lesson with the full verse record, context, and the teacher's complete passage |
 | **Operator** | The person running a deployment and managing learners and reviewers |
 | **Operator identity** | The address every message is sent from: the operator's own. Udaya's Google account address in v1 |
-| **Ops digest** | The weekly operator email summarizing sends, failures, ingestion, and cost |
+| **Ops digest** | The weekly operator email summarizing sends, failures, reactions, ingestion, and cost |
+| **Story track** | The opt-in second daily lesson that walks the Bhagavatam series in order (v1.1) |
+| **Canon-only fallback** | A lesson sent without a teacher passage because nothing in the pack was relevant enough; always flagged to the operator |
+| **Audit log** | The machine-readable record of every fidelity check: claim, source checked, decision, decider, keyed by lesson ID |
+| **Golden set** | Lessons marked confirmed-good or corrected in the audit log, used as automated fidelity evals from v1.1 onward |
+| **Gate** | An exit criterion between versions: gate 1 from v1.0 to v1.1, gate 2 from v1.1 to v2 (§10) |
 
 ## 14. How this spec changes
 
