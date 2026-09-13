@@ -147,7 +147,10 @@ Every lesson has the same five parts, in this order.
 3. **What it means.** Two to four plain-English sentences. Generated, but
    constrained to restate the translation and the teacher's explanation. No new
    claims.
-4. **From the teacher.** A short passage, roughly 100 to 200 words, of the
+4. **From {teacher}.** Labeled with the teacher's honorific from the pack,
+   so the default pack reads "From Chaganti garu"; the word "teacher" is
+   an internal role name and never appears in a lesson. A short passage,
+   roughly 100 to 200 words, of the
    teacher explaining this verse or its idea, translated to English. Paraphrased
    from the transcript, with the video title and a **timestamped link to the
    original YouTube recording** so the learner can hear it in the teacher's
@@ -370,7 +373,7 @@ them (§8.5), which explains the role once, in full.
 Below the banner, reviewers receive the learner's lesson unchanged, followed
 by a clearly marked appendix:
 
-- The teacher's original Telugu passage that "From the teacher" was drawn from,
+- The teacher's original Telugu passage that "From {teacher}" was drawn from,
   and the English translation the service produced, verbatim.
 - The transcript segments used, each with video ID and timestamp.
 - The exact canon record for the verse, including the translator's name and
@@ -792,10 +795,10 @@ acceptance criterion is not a requirement.
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| P0-7 | Verse lesson structure (§6.1) | Every verse lesson contains, in order: "Where we are" as position and scale with no percentage or streak; the verse; "What it means"; "From the teacher"; "A question to carry"; then a footer with sources, reaction row, and unsubscribe. A lesson missing any part is not sent and is reported. |
+| P0-7 | Verse lesson structure (§6.1) | Every verse lesson contains, in order: "Where we are" as position and scale with no percentage or streak; the verse; "What it means"; "From {teacher}"; "A question to carry"; then a footer with sources, reaction row, and unsubscribe. A lesson missing any part is not sent and is reported. |
 | P0-8 | Chapter openings (§6.1) | Lesson one and the first lesson of every chapter carry the "Where this sits" paragraph from the pack. Any other lesson does not. |
 | P0-9 | Verse fidelity (§6.2 fidelity, §7.1) | The Sanskrit, transliteration, and translation in a lesson are byte-identical to the canon store record, and the translation is from the original translator text, never the machine-edited file. The translator and canon version are named in the footer. |
-| P0-10 | Teacher attribution and source link (§6.2, §6.1, §7.4) | Every "From the teacher" passage cites a series, video ID, and timestamp at which the transcript store contains the source material, and carries a timestamped link to the public recording. A lesson without the link is not sent. |
+| P0-10 | Teacher attribution and source link (§6.2, §6.1, §7.4) | Every "From {teacher}" passage cites a series, video ID, and timestamp at which the transcript store contains the source material, and carries a timestamped link to the public recording. A lesson without the link is not sent. |
 | P0-11 | Retrieval-only teacher content with canon fallback (§6.2 fidelity, §7.4) | The teacher passage is drawn from the transcript store by retrieval across the whole pack. If no segment clears the relevance threshold, or the best segment's confidence is low, the lesson is sent with the canon layer only, says so, and is flagged to the operator. No teacher content is ever produced from model knowledge; a test that removes the transcript store must yield canon-only lessons, never a teacher passage. |
 | P0-12 | Generated text is labeled and bounded (§6.2 fidelity, §6.4) | "Where this sits," "What it means," and "A question to carry" are the only generated parts. They are labeled as such, contain no quotation marks around generated text, and contain none of the banned words. The body is at most roughly 400 words. |
 | P0-13 | Provenance on every lesson (§6.2 model independence, §7.1) | Every lesson record stores the model ID, prompt version, canon commit hash, and pack version that produced it. A model or prompt change cannot reach a learner without a recorded fidelity audit: against the golden set once it exists (v1.1 onward), and against the operator's self-audit sample before then. |
@@ -840,7 +843,7 @@ acceptance criterion is not a requirement.
 | P1-5 | Correction note (§6.2 delivery) | Operator-triggered short note sent the next morning to learners who received a lesson with a material error. Never a resend, never an edit. |
 | P1-6 | Operator recovery commands | "Resend today's lesson" and "skip to lesson N" for testing and recovery. |
 | P1-7 | Per-learner pace options | Weekdays only, every other day. Schema supports it from v1.0. |
-| P1-8 | Telugu passage alongside the English in "From the teacher" | Stored already; a rendering option. |
+| P1-8 | Telugu passage alongside the English in "From {teacher}" | Stored already; a rendering option. |
 | P1-9 | Alternate translation per learner | Each translation is its own record with provenance; the lesson names whichever is used. |
 | P1-10 | Operator setup guide (§7.2 whose cloud) | States the GCP prerequisite first, the budget-alert step, the operator-identity step, and the rights warning verbatim. |
 

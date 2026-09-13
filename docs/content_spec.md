@@ -552,7 +552,7 @@ Selection, in order:
    canon-only, says so in one plain sentence in place of the teacher
    section, and is flagged (P0-11).
 
-"From the teacher" is a **paraphrase** of the selected span, not a
+The "From {teacher}" section is a **paraphrase** of the selected span, not a
 quotation: the model condenses the translated span to 100 to 200 words in
 the teacher's own line of thought, keeps the teacher's examples, and adds
 nothing. The review appendix shows the span verbatim so the paraphrase can
@@ -622,7 +622,7 @@ only fields the model writes at send time.
 | What it means | 2–4 sentences | Restate the translation and the teacher's point in plain modern English; define any Sanskrit term used | Add claims absent from both; quote; give advice; mention the learner |
 | A question to carry | 1 sentence, a question | Follow from the verse or the teacher's point | Instruct; assume anything about the learner's life |
 
-"From the teacher" is not in this table because it is not generated in the
+"From {teacher}" (the lesson section, rendered "From Chaganti garu" for the default pack) is not in this table because it is not generated in the
 fidelity sense: it is the selected span **condensed** by a separate
 paraphrase step whose only input is the span (§4.5, Appendix A). Its rules
 are: 100 to 200 words, the teacher's own line of thought, his examples and
@@ -814,7 +814,7 @@ then a video ahead.
 ### 6.2 Template
 
 A story lesson has four parts: **Where we are** (`Story {n} of about
-{total} · Part {video_number}, {episode_title}`), **From the teacher** (a
+{total} · Part {video_number}, {episode_title}`), **From {teacher}** (a
 150 to 250 word paraphrase of the episode span with the timestamped link),
 **What it means** (2–4 sentences), **A question to carry**. No verse
 section, because there is no Gita verse. All fidelity, tone, and validation
@@ -837,7 +837,7 @@ texts can be read without guessing.
 | `{operator_name}` | Operator config | Udaya |
 | `{operator_email}` | Operator config, the operator identity (product spec §7.2) | Udaya's Google account address |
 | `{teacher_name}` | Pack manifest, `teacher.name` | Sri Chaganti Koteswara Rao |
-| `{teacher_honorific}` | Pack manifest, `teacher.honorific`; used after first mention | Chaganti garu |
+| `{teacher_honorific}` | Pack manifest, `teacher.honorific`; used after first mention, and as the lesson section label "From {teacher}" | Chaganti garu |
 | `{series_list}` | Pack manifest, the `title` of each source, joined | Bhagavad Gita; Bhagavad Gita Bhakti Yogam; Geeta Vaibhavam; Sampoorna Srimad Bhagavatam |
 | `{pack_name}` | Pack manifest, `pack_id` rendered as a title | Chaganti Gita (Telugu) |
 | `{name}` | Learner record, optional; when absent the greeting is "Welcome" alone | Udaya |
@@ -1024,9 +1024,9 @@ question C5); it is not the repository name.
 
 Rendered for the default pack, `{teacher_name}` is "Sri Chaganti Koteswara
 Rao" on first mention and the honorific "Chaganti garu" after, both from
-the manifest. The word "teacher" does not appear in reviewer-facing text
-except when quoting the lesson's own section label, "From the teacher"
-(open question C6).
+the manifest. The word "teacher" does not appear in reviewer-facing or
+learner-facing text; the lesson's section label is "From {teacher}",
+rendered from the manifest honorific (C6).
 
 ### 7.4 Reviewer banner and questions (v1.1)
 
@@ -1040,7 +1040,7 @@ Banner, above every review edition:
 
 Questions, after the appendix, each answerable with yes or no:
 
-1. Is the passage under "From the teacher" a fair account of what
+1. Is the passage under "From {teacher_honorific}" a fair account of what
    {teacher_honorific} says between {start} and {end} in "{video_title}"?
 2. Does the English translation in the appendix match the Telugu above it?
 3. Does "What it means" say anything the verse and {teacher_honorific} do not?
@@ -1126,11 +1126,11 @@ from the log, never edited by hand.
 | # | Question | Who | Blocking? |
 |---|---|---|---|
 | C1 | ~~Default translation for v1?~~ **Resolved 2026-09-13: Sivananda.** The v2 public-use default is deferred to the v2 product spec (product spec open question 6); Besant is the leading candidate, Sivananda the alternate. | Udaya | Resolved for v1 |
-| C4 | Reaction labels: keep "Got it / Unclear / Loved it"? | Udaya | No; a pack setting, changeable any time |
+| C4 | ~~Reaction labels?~~ **Resolved 2026-09-13: keep "Got it / Unclear / Loved it" for now.** Udaya may switch to a more formal set such as "Understood / Unclear / Love" during v1.0 testing; it is a pack setting. | Udaya | Resolved (provisional) |
 | C5 | ~~Service display name as learners see it.~~ **Resolved 2026-09-13: "Today's Gita"**, provisional, expected to be revisited during v1.0 testing. A pack setting (`service_name`); the subject-line format is in §7.8. | Udaya | Resolved (provisional) |
-| C6 | The learner-facing section label is "From the teacher" (product spec §6.1). Udaya removed "teacher" from the primer and the reviewer texts. Should the lesson label change too, for example to the teacher's name ("From Chaganti garu") rendered from the manifest, or stay as a role word? | Udaya | No, but before day 1 since it is in every lesson |
-| C7 | Chapter 13 numbering (§2.3): keep the dataset's 1–35 in the "Where we are" line, or renumber the store to the standard 0–34 so citations match printed editions? Recommendation: keep the dataset's numbering and let the resolver handle both; renumbering the store breaks byte-identity with the pinned source. | Udaya | No |
-| C8 | Confirm the v1 legend values (§7): timezone America/New_York, delivery time 07:00, pack name "Chaganti Gita (Telugu)". | Udaya | No |
+| C6 | ~~Lesson section label "From the teacher"?~~ **Resolved 2026-09-13: the label is "From {teacher}", rendered from the manifest honorific, so the default pack reads "From Chaganti garu".** The word "teacher" no longer appears in any learner- or reviewer-facing text. "Teacher" remains the internal role name in these documents and in prompts. | Udaya | Resolved |
+| C7 | ~~Chapter 13 numbering?~~ **Resolved 2026-09-13: keep the dataset's 1–35; the resolver accepts both numberings (§2.3, §4.5).** | Udaya | Resolved |
+| C8 | ~~Legend values?~~ **Resolved 2026-09-13: timezone America/New_York (US Eastern, DST-aware), delivery 07:00, pack name "Chaganti Gita (Telugu)".** | Udaya | Resolved |
 
 ### 10.2 Pre-day-one checklist (operator tasks, not decisions)
 
