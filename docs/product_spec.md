@@ -416,10 +416,46 @@ through the same two-way channel abstraction (P2-2).
 
 ### 7.1 Canon
 
-The Bhagavad Gita text, translations, and verse metadata come from the open
-`gita/gita` dataset (Unlicense), the same data behind bhagavadgita.io. It is
-loaded once into the service's own store and versioned there, so a change
-upstream never silently changes a lesson.
+The Bhagavad Gita text, transliteration, translations, and verse metadata come
+from the open `gita/gita` dataset on GitHub (Unlicense), the same data behind
+bhagavadgita.io: 18 chapters, 701 verse records, and five English
+translations by named translators.
+
+**Pinned, not frozen.** The canon is loaded from a specific upstream commit,
+recorded by hash, into the service's own store and versioned there. A lesson
+always names the canon version it was built from. Upstream changes are picked
+up deliberately, never silently:
+
+- Upstream is close to static. Its main branch has not changed since January
+  2023 (checked 2026-09-12); unmerged feature branches exist for new
+  translations and languages.
+- The ops digest reports, once a month, whether upstream main has moved past
+  the pinned commit.
+- Upgrading the pin is an operator action. It runs a canon diff that lists
+  every verse record that would change and every lesson in the pack that
+  depends on one, and it goes through the same review as content. Lessons
+  already sent are unaffected (§6.2, immutability).
+
+**Which translation text is used.** The dataset's current
+`data/translation.json` is not the translators' text. In January 2023 every
+English entry was rewritten by an OpenAI model (text-davinci-003) with a
+"fix grammar" prompt; all 3,505 English entries changed, including
+modernizing "thy" to "your" and rewording sentences. The originals are
+preserved in the dataset at `archive/translation_old.json`. This service loads
+the **originals** and never the rewritten file. Attributing a machine-edited
+sentence to Swami Sivananda would be exactly the misattribution §6.2 forbids.
+The loader strips the leading verse-number prefix present in the original
+records and does nothing else to the text.
+
+**Translator rights are not uniform.** The dataset is Unlicense, but that
+covers the compilation, not the translators' copyright. Of the five English
+translators, Shri Purohit Swami (1935) and Swami Sivananda (1942) are the
+oldest and the safest to treat as public domain; Swami Gambirananda, Swami
+Adidevananda, and Dr. S. Sankaranarayan are late-twentieth-century
+publications whose rights likely remain with their publishers. For a private
+v1 this is not a blocker. Before v2 sends lessons to the public, the default
+translation must be one whose status is confirmed. The content spec names the
+default and records the reasoning; this is open question 6.
 
 ### 7.2 Teacher content packs
 
@@ -613,6 +649,7 @@ with no fabricated content. Meeting it is the signal to start v2.
 | 3 | Is Udaya's father willing to be the fidelity reviewer for the 20-lesson audit? | Udaya | No, but it shapes the audit plan |
 | 4 | Sender identity: which address and domain do lessons come from? Affects deliverability and is a setup step. | Udaya, technical spec | Yes, before first send |
 | 5 | Monthly cost ceiling for the GCP budget alert. | Udaya | No |
+| 6 | Default English translation for v2 public use: Purohit Swami (1935) or Sivananda (1942), and whether the three later translators are offered at all. Needs a rights check, not a taste call. | Udaya, content spec | Not for v1; yes before v2 |
 
 ## 12. Phasing
 
