@@ -931,6 +931,28 @@ store, under the same §6.2 rules:
   nothing relevant, rather than answering from model memory.
 - Is not a counselor (§6.2, reserved for v2).
 
+### 12.2 The v2 product spec
+
+v2 gets its own product specification, `docs/product_spec_v2.md`, written
+after gate 2 (§10.2) is passed and reviewed section by section the way this
+document was. It does not exist yet, on purpose: it should be written with
+thirty days of v1.1 evidence in hand, not before.
+
+What this document holds about v2, and why it stays here:
+
+- **Constraints on v1's design** (the P2 rows in §9, the two-way channel
+  abstraction, the stable lesson ID, operator scoping, consent timestamps).
+  These are v1 requirements. They exist so v2 can attach without migration,
+  and they are tested in v1.
+- **Sketches** (§8.7 journeys, §12.1 what carries forward, the v2 paragraphs
+  in §6.2, §6.5, §6.6, §7.2, §7.3). These are the starting picture for the v2
+  spec and nothing more. The v2 spec is expected to contradict them where
+  evidence says so (§14).
+
+When the v2 spec is published, the sketches in this document are replaced by
+one-line pointers to it, the P2 rows stay as the record of what v1 promised,
+and this document's status changes to "v1, superseded for v2 planning."
+
 ## 13. Glossary
 
 | Term | Meaning |
