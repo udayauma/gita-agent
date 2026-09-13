@@ -810,10 +810,13 @@ are reviewed. Drafts follow; Udaya edits them in place.
 ### 7.1 Welcome primer (draft)
 
 > The Bhagavad Gita is one conversation inside the much larger body of
-> Hindu scripture. At the root are the Vedas, the oldest texts of
-> Hinduism, concerned mostly with ritual and the order of the world. Their
-> closing portions, the Upanishads, turn inward and ask what the self is
-> and what lasts. Much later comes the Mahabharata, an epic about a family
+> Hindu scripture. At the root are the four Vedas, the oldest texts of
+> Hinduism, held to be heard by seers rather than composed: hymns of praise
+> to the gods, the words and melodies of the fire sacrifice that kept the
+> world in order, and, growing out of them, the first great questions about
+> where everything comes from and what holds it together. Their closing
+> portions, the Upanishads, turn those questions inward and ask what the
+> self is and what lasts. Much later comes the Mahabharata, an epic about a family
 > at war with itself. On the eve of its great battle, the warrior Arjuna
 > loses his nerve and asks his charioteer, Krishna, what he should do.
 > Krishna's answer is the Gita: seven hundred verses that gather the
