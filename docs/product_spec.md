@@ -95,7 +95,7 @@ a reviewer's time.
    minutes and can say in one sentence what the verse means.
 4. **Be sustainable.** Two distinct mechanisms, both required:
    - *Visibility* is built into the service. Every Gemini call's token usage is
-     recorded and priced, and the weekly ops digest email (§8.4, P0-10) reports
+     recorded and priced, and the weekly ops digest email (§8.4, P0-24) reports
      spend for the week and month to date. The operator never opens a billing
      console to know what the service cost.
    - *The ceiling* is a GCP budget alert on the project, set by the operator as
@@ -115,7 +115,7 @@ a reviewer's time.
 | Telugu-language lessons | English is the whole point for the first learner. The Telugu transcript is stored alongside the English translation in the operator's own storage (§7.2), so a Telugu track is possible later without re-ingesting anything. |
 | Choosing your own path through the Gita | v1 walks the text in order. Topic-based or question-driven paths are v2 territory. |
 | Multiple teachers per learner | One teacher pack per learner keeps the lesson coherent. Blending teachers is a later design question. |
-| A web or mobile app | Email is the interface. There is nothing to log in to. In v2 a minimal web surface arrives for self-serve signup, onboarding, and preferences (P2-3, §12), announced from Udaya's website. Even then the lesson and the conversation happen on messaging channels the learner already uses, such as email, SMS, or Slack, not in an app of ours. A full app is not planned for any version. |
+| A web or mobile app | Email is the interface. There is nothing to log in to. In v2 a minimal web surface arrives for self-serve signup, onboarding, and preferences (P2-4, §12), announced from Udaya's website. Even then the lesson and the conversation happen on messaging channels the learner already uses, such as email, SMS, or Slack, not in an app of ours. A full app is not planned for any version. |
 | Rendering audio or video | Lessons are text. Links to the source video are included for anyone who wants to listen. |
 | Running on any cloud other than Google Cloud | The stack is Gemini on Vertex AI, Cloud Run, Cloud Scheduler, and Cloud Storage. Abstracting all four for AWS or Azure is a large tax for a hypothetical operator. GCP only, by design, in every version (§7.2). |
 
@@ -385,7 +385,7 @@ lesson. Nothing in the appendix is generated; it is the raw material.
 3. Corrections go into the content pack for learners who have not yet
    reached that lesson. Lessons already sent are never edited (§6.2).
 4. The audit log is machine-readable and is the source of the fidelity
-   golden set (P2-1b). Nothing about reviewer feedback is automated in v1 or
+   golden set (P2-3). Nothing about reviewer feedback is automated in v1 or
    v1.1; the operator is the loop.
 
 ### 6.7 Learner feedback in v1
@@ -413,7 +413,7 @@ surface in v1.
 
 The reaction row is channel-neutral in design: on SMS in v2 it becomes "reply
 1, 2, or 3", and in Slack it becomes emoji reactions on the message, routed
-through the same two-way channel abstraction (P2-2).
+through the same two-way channel abstraction (P2-3).
 
 ## 7. Content
 
@@ -704,7 +704,7 @@ transcript segments with timestamps, and the canon record are right there.
 | Interpretive disagreement | "I think the verse means something else." | None needed. The lesson reports the teacher's reading, not the reviewer's. | n/a | Log as commentary; change nothing. |
 
 Every audit-log entry records the claim, the source checked, the decision,
-and who decided. This is what makes the golden set (P2-1b) trustworthy: it
+and who decided. This is what makes the golden set (P2-2) trustworthy: it
 holds verified corrections, not opinions.
 
 **Ask narrow questions.** The review edition asks specific, answerable
@@ -742,46 +742,89 @@ gets its full treatment in the v2 spec.
 
 ## 9. Requirements
 
-### P0 — v1 does not ship without these
+Every requirement cites the section it comes from. Acceptance criteria are
+written so that a test can be derived from each one. A requirement with no
+acceptance criterion is not a requirement.
+
+### P0 — v1.0 does not ship without these
+
+**Delivery**
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| P0-1 | Daily lesson delivery by email at the learner's local time | Given an active learner with delivery time 07:00 Asia/Kolkata, when 07:00 IST arrives, then a lesson email is sent within 5 minutes. Given the same learner, when the day's send has already succeeded, then no second email is sent that day. |
-| P0-2 | Lesson structure per §6.1 | Every lesson contains all five parts in order, plus the footer. A lesson missing any part is not sent and is reported. |
-| P0-3 | Verse fidelity | The Sanskrit, transliteration, and translation in a lesson are byte-identical to the canon store for that verse. |
-| P0-4 | Teacher attribution | Every "From the teacher" passage links to a video ID and a timestamp at which the transcript contains the source material. |
-| P0-5 | Sequential progress per learner | Two learners on the same pack at different start dates each receive the sequence from lesson 1. Progress is stored per learner and survives restarts. |
-| P0-6 | Mandatory defaults per §7.3 | A learner configured with only email and timezone receives a complete lesson using the default canon and pack. |
-| P0-7 | Unsubscribe | Every email has an unsubscribe link. Clicking it stops all future email within one minute and preserves progress. |
-| P0-8 | Failure visibility | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance. |
-| P0-9 | Teacher content ingestion from a pack whose sources are public YouTube playlists or videos (the only v1.0 source type, §7.2) | Given a pack manifest with the rights attestation, when ingestion runs, then every video is transcribed and translated, stored with its source reference, and marked complete. Running ingestion again processes nothing. A manifest without the attestation is refused. |
-| P0-10 | Weekly ops digest | Every week the operator receives one email with sends, failures, videos ingested, tokens used, and estimated cost. |
-| P0-12 | Reaction row per §6.7 | Every lesson email has three reaction links. Tapping one records the reaction for that lesson and learner within one minute and shows a thank-you page with an optional one-sentence box. No learner identifier appears in the URL. The latest reaction wins. Reactions appear in the next ops digest. |
-| P0-11 | Welcome email per §8.1 | A newly added learner receives a welcome email before their first lesson. It contains the primer (Vedas, Upanishads, Mahabharata, Gita) in no more than two paragraphs, and the mechanics. The primer text is part of the content pack and is identical for every learner. |
+| P0-1 | Daily lesson delivery by email at the learner's local time, from one named, consistent sender (§8.2, §6.2 reach, open question 4) | Given an active learner with delivery time 07:00 Asia/Kolkata, when 07:00 IST arrives, then a lesson email is sent within 5 minutes from the configured sender. When the day's send has already succeeded, no second email is sent that day. No email is ever sent outside the learner's configured window. |
+| P0-2 | Sequential progress per learner, following the pack's fixed sequence (§6.3, §8.2) | Two learners on the same pack at different start dates each receive the identical sequence from lesson 1. Progress is stored per learner and survives restarts. The sequence is a pack artifact, not computed per send. |
+| P0-3 | Failure visibility and no silent skips (§8.2, §6.2 delivery) | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance, so the same lesson is sent next day. |
+| P0-4 | Unsubscribe (§8.3, §6.5) | Every email has an unsubscribe link. Clicking it stops all future email within one minute, sends exactly one confirmation, preserves progress, and revokes every signed token issued to that learner. |
+| P0-5 | Welcome email with primer (§8.1) | A newly added learner receives a welcome email before their first lesson. It contains the primer (Vedas, Upanishads, Mahabharata, Gita) in no more than two paragraphs, plus the mechanics. The primer is pack content, identical for every learner. |
+| P0-6 | Only four message types are ever sent (§6.2 reach) | The service can send the welcome email, the daily lesson, a correction note, and the unsubscribe confirmation, and nothing else. Any other outbound message is a test failure. |
 
-### P1 — should follow soon after
+**The lesson**
+
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| P0-7 | Lesson structure (§6.1) | Every lesson contains, in order: "Where we are" as position and scale with no percentage or streak; the verse; "What it means"; "From the teacher"; "A question to carry"; then a footer with sources, reaction row, and unsubscribe. A lesson missing any part is not sent and is reported. |
+| P0-8 | Chapter openings (§6.1) | Lesson one and the first lesson of every chapter carry the "Where this sits" paragraph from the pack. Any other lesson does not. |
+| P0-9 | Verse fidelity (§6.2 fidelity, §7.1) | The Sanskrit, transliteration, and translation in a lesson are byte-identical to the canon store record, and the translation is from the original translator text, never the machine-edited file. The translator and canon version are named in the footer. |
+| P0-10 | Teacher attribution and source link (§6.2, §6.1, §7.4) | Every "From the teacher" passage cites a series, video ID, and timestamp at which the transcript store contains the source material, and carries a timestamped link to the public recording. A lesson without the link is not sent. |
+| P0-11 | Retrieval-only teacher content with canon fallback (§6.2 fidelity, §7.4) | The teacher passage is drawn from the transcript store by retrieval across the whole pack. If no segment clears the relevance threshold, or the best segment's confidence is low, the lesson is sent with the canon layer only, says so, and is flagged to the operator. No teacher content is ever produced from model knowledge; a test that removes the transcript store must yield canon-only lessons, never a teacher passage. |
+| P0-12 | Generated text is labeled and bounded (§6.2 fidelity, §6.4) | "Where this sits," "What it means," and "A question to carry" are the only generated parts. They are labeled as such, contain no quotation marks around generated text, and contain none of the banned words. The body is at most roughly 400 words. |
+| P0-13 | Provenance on every lesson (§6.2 model independence, §7.1) | Every lesson record stores the model ID, prompt version, canon commit hash, and pack version that produced it. A model or prompt change cannot reach a learner without a recorded fidelity audit run against the golden set. |
+| P0-14 | Stable lesson ID (§6.1.1, §12.1) | Every lesson is minted with a permanent, random, unguessable ID before it is sent, carried in the email headers, and never reused. |
+| P0-15 | Immutability (§6.2 delivery) | A lesson record is never modified after send. Corrections are applied to the pack and reach only learners who have not yet received that lesson. |
+
+**Feedback and privacy**
+
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| P0-16 | Reaction row (§6.7) | Every lesson email has exactly three reaction links. Tapping one records the reaction for that lesson and learner within one minute and shows a thank-you page with an optional one-sentence box. The latest reaction wins. |
+| P0-17 | No learner data in links, no third-party tracking (§6.7, §6.2 reach) | Every link the service issues carries a signed, single-purpose token; no email address or learner identifier appears in any URL. Lesson emails contain no tracking pixels, external scripts, or third-party links other than the source recording. |
+| P0-18 | Learner isolation (§6.2 reach) | No lesson, page, or digest ever exposes one learner's existence, address, progress, or reactions to another learner. |
+
+**Content and ingestion**
+
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| P0-19 | Canon loaded from a pinned commit, originals only (§7.1) | The canon store is built from a recorded `gita/gita` commit hash, using `archive/translation_old.json` with the verse-number prefix stripped and no other change. Loading the same commit twice yields byte-identical stores. |
+| P0-20 | Pack ingestion from public YouTube sources with rights attestation (§7.2) | Given a pack manifest with the attestation, ingestion transcribes and translates every video, stores each segment with text in both languages, timestamps, and its source reference, and marks the video complete. Running ingestion again processes nothing. A manifest without the attestation is refused, and the unverified-rights warning is printed when a pack is registered. |
+| P0-21 | Both default series ingested (§7.4, §7.3) | With no configuration, the default pack ingests the Bhagavad Gita playlist first and the Sampoorna Srimad Bhagavatam series second, and verse-lesson retrieval spans both. |
+| P0-22 | Mandatory defaults (§7.3) | A learner configured with only an email address and a timezone receives a complete, correct lesson the next morning using the default canon, pack, translation, pace, and delivery time. |
+| P0-23 | Weekly content poll (§8.6) | Once a week each configured source is checked for videos not yet processed; new ones are ingested with the same idempotency; nothing already complete is reprocessed. |
+
+**Operations**
+
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| P0-24 | Weekly ops digest (§8.4, §4 goal 4, §7.1) | Every week the operator receives one email with: lessons sent per learner, failures, reactions and one-sentence notes per lesson, videos ingested, tokens used per model call summed, estimated spend for the week and month to date, and, once a month, whether the canon's upstream has moved past the pinned commit. |
+| P0-25 | Per-call cost accounting (§4 goal 4) | Every model call records input and output tokens and is priced from a configurable table; the digest's spend figure is the sum, and a test can reproduce it from the records. |
+
+### P1 — v1.1
 
 | ID | Requirement | Notes |
 |---|---|---|
-| P1-0 | Reviewer role and review edition per §3, §6.6, §8.5 | Operator-managed review list; email only; review edition is a rendering option on the same lesson; feedback by email reply, logged manually into the golden set. Retired at v2. |
-| P1-0b | Long-form lesson page per §6.5, linked from every email footer via a recipient-signed link | Static, generated with the email, never edited after publication. Served only with a valid token; no unsigned URL; not indexed; tokens revoked on unsubscribe. v1 only; retired at v2 launch. |
-| P1-1 | Per-learner pace options: weekdays only, every other day | Schema supports it in v1; UI is a config field. |
-| P1-2 | Bhagavatam story track per §7.4: a second lesson type walking the series in order | Content is already ingested in v1.0; this adds a template, an episode sequence, and a schedule. Cadence is open question 7. |
-| P1-3 | Operator-triggered "resend today's lesson" and "skip to lesson N" | For recovery and testing. |
-| P1-4 | Include the original Telugu passage alongside the English in "From the teacher" | Stored already; a rendering option. |
-| P1-5 | Alternate translation choice per learner | Dataset has several; lesson names whichever is used. |
+| P1-1 | Reviewer role and review edition (§3, §6.6, §8.5) | Operator-managed list; email only; reviewer welcome email; banner on every review edition; appendix of raw sources; narrow yes-or-no questions; feedback by email reply, verified against a source before any correction, logged in the machine-readable audit log. Retired at v2. |
+| P1-2 | Long-form lesson page (§6.5) | Recipient-signed link in every footer; static; generated with the email; served only with a valid token; no unsigned URL; not indexed; tokens revoked on unsubscribe. v1 only; taken down at v2 launch. |
+| P1-3 | Bhagavatam story track (§7.4) | Daily, opt-in, off by default, its own email, separate progress. Content is already ingested in v1.0; this adds a template, an episode sequence, and a schedule. |
+| P1-4 | Additional learners added by the operator (§3 timing) | After thirty clean days for the first learner. |
+| P1-5 | Correction note (§6.2 delivery) | Operator-triggered short note sent the next morning to learners who received a lesson with a material error. Never a resend, never an edit. |
+| P1-6 | Operator recovery commands | "Resend today's lesson" and "skip to lesson N" for testing and recovery. |
+| P1-7 | Per-learner pace options | Weekdays only, every other day. Schema supports it from v1.0. |
+| P1-8 | Telugu passage alongside the English in "From the teacher" | Stored already; a rendering option. |
+| P1-9 | Alternate translation per learner | Each translation is its own record with provenance; the lesson names whichever is used. |
+| P1-10 | Operator setup guide (§7.2 whose cloud) | States the GCP prerequisite first, the budget-alert step, the sender-identity step, and the rights warning verbatim. |
 
-### P2 — design for, do not build
+### P2 — design for in v1, build in v2
 
 | ID | Requirement | Design constraint on v1 |
 |---|---|---|
-| P2-0 | Every lesson has a stable ID from v1.0, and a reserved long-form URL slot during v1 | The ID is permanent and is what v2's reply threading and the agent's "full passage" offer key on. The URL slot is used only by the v1.1 long-form page and is dropped at v2 launch. |
-| P2-1 | Reply to a lesson and converse (the v2 agent), on whichever channel the lesson arrived | Every lesson carries a stable lesson ID and a channel-specific thread reference (email headers, SMS conversation, Slack thread). Transcript chunks are retrievable by verse and by semantic query. |
-| P2-1b | Reviewer feedback becomes automated evals | The v1 audit log is machine-readable from day one, keyed by lesson ID, so that confirmed-good lessons and corrections seed the fidelity golden set that replaces human reviewers at v2. |
-| P2-2 | SMS, Slack, and other channels, for delivery and for replies | The channel abstraction is two-way from v1: each adapter defines outbound send and inbound reply routing keyed by lesson ID, even though v1 implements only email outbound. Lesson content is channel-neutral text with a per-channel rendering step, so a text-length rendering exists as a design case from the start. |
-| P2-3 | Self-serve signup and public launch | Learner records carry a status and a consent timestamp from day one. |
-| P2-4 | Multiple operators / multi-tenant | Every record is scoped to an operator ID even though v1 has one. |
-| P2-5 | Telugu-language lessons | Telugu transcript is stored verbatim next to the English. |
+| P2-1 | Reply to a lesson and converse, on the channel the lesson arrived (§12.1) | Every lesson carries the stable ID (P0-14) and a channel-specific thread reference. Transcript segments are retrievable by verse and by semantic query. |
+| P2-2 | Reviewer feedback becomes automated evals (§6.6) | The audit log is machine-readable from day one, keyed by lesson ID, so verified corrections and confirmed-good lessons seed the fidelity golden set that replaces reviewers at v2. |
+| P2-3 | SMS, Slack, and other channels, for delivery and replies (§5) | The channel abstraction is two-way from v1.0: each adapter defines outbound send and inbound reply routing keyed by lesson ID. Lesson content is channel-neutral text with a per-channel rendering step; a text-length rendering exists as a design case. |
+| P2-4 | Self-serve signup and preferences surface (§5, §8.7) | Learner records carry a status and a consent timestamp from day one. Channel default follows the contact provided (§7.3). |
+| P2-5 | Agent offers the full passage in conversation (§6.5) | The long-form content is assembled from the same stored records the v1.1 page uses; nothing is page-specific. |
+| P2-6 | Multiple operators (§7.2) | Every record is scoped to an operator ID even though v1 has one. |
+| P2-7 | Telugu-language lessons (§5) | The Telugu transcript is stored verbatim next to the English. |
+| P2-8 | The agent is not a counselor (§6.2 reserved) | Defined in the v2 spec before any external learner is added. |
 
 ## 10. Success metrics
 
