@@ -286,7 +286,7 @@ spec owns the full list; it is a one-line test, not a judgment call. Words in
 this list may still appear inside a quoted translation or the teacher's
 translated passage, because those are sources, not generated text.
 
-### 6.5 The long-form page (v1.1)
+### 6.5 The long-form page (v1.1 only)
 
 Each lesson has a long-form page, reachable from the "read more" link in the
 email footer. It exists for the learner who has time that day, and for
@@ -306,28 +306,31 @@ publication. There is no login. In v1.1 it is hosted with the service; when
 Udaya's website exists the pages can move there and the original URLs
 redirect, so links in lessons already sent keep working.
 
-**Who can see it.** Anyone with the link, and in practice only people who
-received the lesson. The long form contains the teacher's full passage, and
-§7.2 commits this project to never redistributing a teacher's work, so in v1:
+**Who can see it: only the recipient.** The long form contains the teacher's
+full passage, and §7.2 commits this project to never redistributing a
+teacher's work. So the page is private to the person the lesson was sent to,
+not merely unlisted:
 
-- URLs are unguessable; the lesson ID in the URL is a random token, not a
-  sequence number.
-- There is no index page or listing of lessons.
-- Every page instructs search engines not to index it.
+- The "read more" link carries a signed token for that lesson and that
+  recipient, the same mechanism as the reaction row (§6.7). The page is served
+  only when the token is valid. A forwarded link opens for no one else.
+- There is no unsigned URL for a page, no index page, and no listing of
+  lessons.
+- Every page instructs search engines not to index it, as a second layer.
+- Tokens are revoked when the learner unsubscribes.
 
-This keeps the long form private to recipients without building
-authentication. It is adequate while v1 is private.
+This is authentication without an account: the email itself is the
+credential, which is the right level for a private v1.
 
-**In v2 the page goes away and the agent takes over.** Once a learner can
-reply to a lesson, the long form is no longer a link. The agent offers it in
-conversation: "Would you like the teacher's full passage on this verse, in
-English and the original Telugu, with the source?" and provides it only to the
-enrolled learner who asks, on the channel they are using, adapted to that
-channel's length. Nothing sits at a public URL. The teacher's words are shared
-one-to-one, on request, the way a tutor reads a passage aloud, rather than
-published. Long-form pages created during v1.1 remain link-private for the
-learners who received them and are not created for new lessons after v2
-launches.
+**Long-form pages exist only in v1.** They are a v1.1 feature and are retired
+at v2 launch. At that point no new pages are generated, existing pages are
+taken down, and the "read more" link is dropped from the lesson. The long form
+survives as something the agent offers in conversation: "Would you like the
+teacher's full passage on this verse, in English and the original Telugu, with
+the source?" It is provided only to the enrolled learner who asks, on the
+channel they are using, adapted to that channel's length. The teacher's words
+are shared one-to-one, on request, the way a tutor reads a passage aloud,
+never published at a URL.
 
 ### 6.6 The review edition
 
