@@ -500,6 +500,9 @@ is to work only, but never with its fruits." Retrieval does the following:
 If step 1 finds nothing and step 2 returns nothing above threshold, or only
 `low`-confidence segments, the lesson goes out canon-only, with one plain
 sentence where the teacher section would be, and the operator is flagged.
+Every step above, including what was rejected and why, is written to the
+lesson's composition trace (§4.6), so a canon-only morning can be explained
+without guesswork.
 
 The rules below are the general form of this example. They are a starting
 point: the threshold and the preference margin are tuned in phase 1 on
@@ -542,6 +545,46 @@ the teacher's own line of thought, keeps the teacher's examples, and adds
 nothing. The review appendix shows the span verbatim so the paraphrase can
 be checked. The citation is the video title, the series, and the timestamped
 link.
+
+### 4.6 The composition trace
+
+Every lesson, whether or not it has a teacher section, stores a
+**composition trace** alongside its record. It is the debugging record for
+"why did this lesson look like this," and it is distinct from the audit log
+(§8), which records human judgments.
+
+The trace holds:
+
+| Item | Content |
+|---|---|
+| Query | The text and terms retrieval was run with, and the lesson's verses |
+| Settings in force | Relevance threshold, series-preference margin, neighbor window, and the manifest version they came from |
+| Candidates | Every segment considered: those with a direct reference, and every semantic match above the threshold plus the next few below it. For each: segment ID, video, timestamp, series role, similarity score, confidence grade with its signal values, and the **rule that accepted or rejected it** (`direct_ref`, `above_threshold`, `below_threshold`, `low_confidence`, `secondary_lost_margin`, `neighbor_off_topic`) |
+| Selection | The winning segment, the neighbor span actually used, and the paraphrase's returned segment IDs |
+| Outcome | `teacher_section` or `canon_only`, and for canon-only a single reason code: `no_candidates`, `all_below_threshold`, `all_low_confidence`, `paraphrase_failed_validation` |
+| Provenance | Model ID and prompt versions for retrieval embedding, paraphrase, and composition |
+
+**Low-confidence segments are never discarded.** They stay in the store and
+the index, and they appear in the trace as candidates rejected for
+`low_confidence` with their scores intact. That is how the operator can
+tell "the teacher did not speak to this verse" apart from "he did, and the
+transcription of that window was poor," which have different fixes.
+
+**How the operator sees it.**
+
+- An operator command prints the trace for any lesson ID in readable form.
+- The ops digest lists every canon-only lesson of the week with its reason
+  code, and the per-video confidence distribution (§4.4), so a pattern such
+  as one badly recorded video is visible without digging.
+- Every `medium`-confidence selection is listed in the digest for
+  spot-checking.
+
+**The fix path.** When a trace shows the right segment was rejected for
+confidence, the remedy is to re-ingest that window, or that video, with the
+current model and prompt. Re-ingestion writes new segments with a new grade
+and provenance; the old ones are kept, marked superseded, and the next
+lesson that touches the verse shows in its trace whether the fix worked.
+Re-ingestion is an operator action and is idempotent per window.
 
 ## 5. Lesson composition
 
@@ -632,7 +675,8 @@ send and is reported to the operator with the lesson ID.
 | Structure | All required parts present in order; chapter opening present only where required |
 | Verse fidelity | Devanagari, transliteration, and translation byte-identical to the canon store |
 | Attribution | Teacher section, when present, carries video ID, timestamp, and a link, and the cited segment exists in the store with the cited offsets |
-| Retrieval-only | If the teacher section is present, the selected span has confidence `high` or `medium` |
+| Retrieval-only | If the teacher section is present, the selected span has confidence `high` or `medium`, and every segment ID the paraphrase cites exists in the store within the selected span |
+| Trace present | The composition trace (§4.6) is stored with the lesson and records an outcome and, for canon-only, a reason code |
 | Generated boundaries | Generated fields contain no straight or curly double quotation marks |
 | Banned words | No banned word or phrase appears in any generated field, case-insensitive, whole-word |
 | Length | Per-send generated fields within their hard limits; body under roughly 400 words. Reviewed artifacts (chapter openings) only warn on length, never block |
@@ -774,7 +818,7 @@ The audit log is one JSON record per line, in the repository under
 | Field | Content |
 |---|---|
 | `lesson_id` | The lesson's stable ID |
-| `pack_version`, `sequence_version`, `canon_pin`, `model_id`, `prompt_version` | Copied from the lesson's provenance |
+| `pack_version`, `sequence_version`, `canon_pin`, `model_id`, `prompt_version` | Copied from the lesson's provenance. The lesson's composition trace (§4.6) is reachable by the same lesson ID and is what the operator reads when judging a claim about the teacher section |
 | `reviewer` | `operator` in v1.0; a reviewer handle in v1.1 |
 | `kind` | `fidelity` / `translation` / `interpretive` / `confirmed_good` / `grouping` / `tone` |
 | `claim` | What was said, in the reviewer's words |
