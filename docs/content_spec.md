@@ -963,17 +963,21 @@ question C5); it is not the repository name.
 
 > {operator_name} has asked you to review daily Bhagavad Gita lessons for
 > accuracy. Each morning you will receive the lesson exactly as a learner
-> sees it, followed by the source material it was built from: the teacher's
-> original Telugu passage, the English translation, the recording and
-> timestamp, and the verse record. The teacher is {teacher_name}; the
-> lessons draw on {series_list}.
+> sees it, followed by the source material it was built from:
+> {teacher_name}'s original Telugu passage, the English translation, the
+> recording and timestamp, and the verse record. The lessons draw on
+> {series_list}.
 >
 > Your job is to judge whether the lesson is faithful to the verse and to
-> the teacher, not whether you agree with the teacher. Each edition asks a
-> few specific questions. Reply to the email with your answers or with
-> anything else that is wrong. If you do not reply, we take it as no
-> objection. To stop receiving these, use the link at the foot of any
-> edition.
+> what {teacher_name} actually said, not whether you agree with him. Each
+> edition asks a few specific questions. Reply to the email with your
+> answers or with anything else that is wrong. If you do not reply, we take
+> it as no objection. To stop receiving these, use the link at the foot of
+> any edition.
+
+Rendered for the default pack, `{teacher_name}` is "Sri Chaganti Koteswara
+Rao" on first mention and the honorific "Chaganti garu" after, both from
+the manifest. The word "teacher" does not appear in reviewer-facing text.
 
 ### 7.4 Reviewer banner and questions (v1.1)
 
@@ -981,14 +985,14 @@ Banner, above every review edition:
 
 > You are receiving this as a reviewer. Below is the lesson exactly as a
 > learner sees it, followed by the source material it was built from. If
-> anything is unfaithful to the verse or to the teacher, reply to this
-> email and say so. If it is fine, you need not reply. Pack: {pack_name}.
-> Teacher: {teacher_name}.
+> anything is unfaithful to the verse or to what {teacher_name} said, reply
+> to this email and say so. If it is fine, you need not reply. Pack:
+> {pack_name}. Source: {teacher_name}, {series_list}.
 
 Questions, after the appendix, each answerable with yes or no:
 
-1. Is the passage under "From the teacher" a fair account of what the
-   teacher says between {start} and {end} in "{video_title}"?
+1. Is the passage under "From the teacher" a fair account of what
+   {teacher_honorific} says between {start} and {end} in "{video_title}"?
 2. Does the English translation in the appendix match the Telugu above it?
 3. Does "What it means" say anything the verse and the teacher do not?
 4. Anything else?
