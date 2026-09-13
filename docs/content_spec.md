@@ -417,6 +417,42 @@ lesson is flagged in the ops digest so the operator can spot-check it.
 
 ### 4.5 Retrieval: how a verse finds its passage
 
+**A worked example first: verse 2.47.** The lesson is 2.47 alone, "Thy right
+is to work only, but never with its fruits." Retrieval does the following:
+
+1. Looks for any segment in the pack whose `refs` contains `gita:2.47`.
+   Suppose three exist: two in "Bhagavad Gita part 2" at 41:10 and 42:05,
+   where the teacher recites the verse and explains it, and one in
+   "Bhagavatam part 17" at 12:30, where he quotes it in passing while
+   telling a story. All three are candidates, and they come first.
+2. Builds a query from the verse: the Sivananda translation, the
+   transliteration, and the key terms from the word meanings (*karma*,
+   *phala*, *saṅga*, *akarma*), plus the chapter name. Runs it against the
+   English text of every segment in the pack. Suppose it returns, above the
+   threshold, the two Gita segments again, a segment from "Bhagavad Gita
+   part 3" at 08:40 on attachment to results, and a Bhagavatam segment on
+   Karna's duty that scores just above threshold.
+3. Applies series preference. The Gita segments are `primary`, the
+   Bhagavatam ones `secondary`. Unless a Bhagavatam segment beats the best
+   Gita segment by the configured margin, the Gita wins. Here the 41:10
+   segment wins: it has a direct reference and the highest similarity.
+4. Pulls in the adjacent segments from the same video around 41:10, say
+   40:30 to 43:00, so the passage is the teacher's full thought, not a
+   fragment.
+5. Hands that span, roughly 400 words of English, to composition, which
+   paraphrases it to 100 to 200 words and cites "Bhagavad Gita part 2,
+   41:10" with the timestamped link. The review appendix shows the span
+   verbatim, Telugu and English.
+
+If step 1 finds nothing and step 2 returns nothing above threshold, or only
+`low`-confidence segments, the lesson goes out canon-only, with one plain
+sentence where the teacher section would be, and the operator is flagged.
+
+The rules below are the general form of this example. They are a starting
+point: the threshold and the preference margin are tuned in phase 1 on
+twenty hand-checked verses (open question C3), and reviewer feedback in
+v1.1 is what tells us whether the selection is right.
+
 For a verse lesson, the query is built from the lesson's verses: the
 translation text, the transliteration, the key Sanskrit terms from the word
 meanings, and the chapter name. Retrieval runs across the whole pack.
