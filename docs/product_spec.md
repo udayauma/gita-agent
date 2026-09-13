@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft for review |
+| **Status** | Living document, v1 draft under review. Changes by pull request; see §14. |
 | **Owner** | Udaya Pillalamarri |
 | **Version** | v1 (private MVP) |
 | **Date** | 2026-09-12 |
@@ -868,3 +868,26 @@ store, under the same §6.2 rules:
 | **Long form** | The static page for a lesson with the full verse record, context, and the teacher's complete passage |
 | **Operator** | The person running a deployment and managing learners and reviewers |
 | **Ops digest** | The weekly operator email summarizing sends, failures, ingestion, and cost |
+
+## 14. How this spec changes
+
+This document is not set in stone. It is expected to change as testing,
+reviewer feedback, reactions, and the first weeks of real delivery teach us
+what learners actually do. What is fixed is how it changes:
+
+- **By pull request, like code.** Every change to this spec is a commit with
+  a reason, reviewed before merge, and the header's version and date move
+  with it. Nothing changes silently.
+- **Load-bearing sections change only by explicit decision.** The fidelity
+  contract (§6.2), the non-goals (§5), and the decision that v1 is private
+  (§3) have tests, review rules, and commitments to reviewers derived from
+  them. A change to any of these is a decision the owner makes on purpose,
+  recorded in the commit, not a drift.
+- **Everything else evolves with evidence.** Lesson structure, tone, defaults,
+  cadence, journeys, requirements priorities, and metrics targets are all
+  expected to move as the service is used. A change should cite what was
+  observed.
+- **The v2 journeys (§8.7, §12.1) are sketches by design.** They exist so v2
+  planning starts from a shared picture. The v2 spec is written after v1 has
+  run, and it will contradict parts of the sketch. That is the point of
+  running v1 first.
