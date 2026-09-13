@@ -120,8 +120,19 @@ This is the product. Everything else exists to produce it.
 
 Every lesson has the same five parts, in this order.
 
-1. **Where we are.** One line: "Day 14 · Chapter 2, Verse 47." Progress orients
-   the learner and makes gaps visible.
+1. **Where we are.** One line giving position and scale: "Day 14 of about 380 ·
+   Chapter 2, Verse 47." It is a position, not a score. There is no percentage
+   and no streak, so it reads the same on day one as on day three hundred.
+   Lesson one says "Day 1 of about 380 · Chapter 1, Verse 1" and that is
+   correct and complete.
+
+   **Chapter openings.** Lesson one, and the first lesson of every chapter,
+   adds a short *Where this sits* paragraph directly under this line: what the
+   chapter is about, what came before it, and why it begins where it does. For
+   lesson one this is the learner's introduction to the text itself: who is
+   speaking, to whom, and where. This paragraph is generated once per chapter
+   as part of the content pack, reviewed like any other content, and is the
+   same for every learner.
 2. **The verse.** Sanskrit in Devanagari, then transliteration, then one
    public-domain English translation. Verbatim from the canon dataset, never
    generated. The translator is named.
@@ -136,8 +147,9 @@ Every lesson has the same five parts, in this order.
 5. **A question to carry.** One reflective question for the day. Generated.
    Short.
 
-Then a footer: the sources used, the learner's progress, a **"read more" link**
-to the lesson's long-form page (see §6.5), and an unsubscribe link.
+Then a footer: the sources used, a **"read more" link** to the lesson's
+long-form page (see §6.5), and an unsubscribe link. Progress is not repeated in
+the footer; the "Where we are" line is the single place it appears.
 
 ### 6.1.1 Short form and long form
 
