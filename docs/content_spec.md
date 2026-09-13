@@ -34,7 +34,7 @@ changing this document.
 | Repository | `github.com/gita/gita` |
 | License | Unlicense (covers the compilation; see §2.5 for translator rights) |
 | Pinned commit | `c6fce39595445768876ddbb8d1268a9c935e1d2b` (main, 2023-01-29) |
-| Files used | `data/verse.json`, `data/chapters.json`, `data/authors.json`, `archive/translation_old.json` |
+| Files used | `data/verse.json` (verse records), `data/chapters.json` (names, verse counts, `chapter_summary` as input to the chapter-opening drafts), `data/authors.json`, `archive/translation_old.json` |
 | Files **not** used | `data/translation.json` (machine-rewritten, §2.4), `data/commentary.json` (28 MB of modern commentaries with unclear rights; not needed by the lesson design) |
 
 The pin is recorded in the canon store and named in every lesson's footer as
@@ -83,6 +83,15 @@ paragraphs (§3.4), and lesson counts.
 | 16 | 24 | Daivāsura Sampad Vibhāga Yoga | Divine and undivine natures |
 | 17 | 28 | Śraddhā Traya Vibhāga Yoga | The three kinds of faith |
 | 18 | 78 | Mokṣa Sannyāsa Yoga | Liberation through renunciation |
+
+**Chapter 13 numbering.** The dataset numbers chapter 13 as verses 1 to 35,
+where standard 700-verse editions number the same text 0 to 34 (the extra
+opening verse, *prakṛtiṁ puruṣaṁ caiva*, is verse 0 or omitted). The
+canon store keeps the dataset's numbering. Two consequences: the "Where we
+are" line for chapter 13 shows the dataset's numbers, and when a teacher
+cites a chapter-13 verse, the reference resolver (§4.3, §4.5) tries both
+`n` and `n+1` and lets the semantic match decide. The technical spec
+carries the mapping table.
 
 The dataset's chapter names use a Hindi-influenced transliteration
 (`Karm Yog`); the canon store keeps the dataset's spelling as the record and
@@ -335,6 +344,23 @@ sources:
     playlist_id: PL2N6khFUCtEmQiwvQve8wtTOBtJoPShF4
     title: Sampoorna Srimad Bhagavatam by Sri Chaganti Koteswara Rao Garu
     expected_videos: 40
+prompts:                    # versioned files under packs/<pack_id>/prompts/
+  transcribe: transcribe_v1.txt
+  paraphrase: paraphrase_v1.txt
+  compose: compose_v1.txt
+settings:                   # tuned in phase 1 on hand-checked samples; see §4.4, §4.5
+  window_seconds: 600
+  overlap_seconds: 30
+  confidence:
+    overlap_agreement_floor: null      # below this: low
+    overlap_agreement_ceiling: null    # below this: medium
+    tuned_on: null                     # date and video ID
+  retrieval:
+    relevance_threshold: null
+    primary_over_secondary_margin: null
+    neighbor_before_seconds: 60
+    neighbor_after_seconds: 120
+    tuned_on: null                     # date and the twenty verses used
 rights_attestation: >
   I confirm that I have the right to use the content listed above for
   generating private study material delivered to learners I enroll, and I
@@ -384,13 +410,17 @@ The model is asked for, in one call:
    `text:chapter.verse` where identifiable (for example `gita:2.47`), or
    the name of the text when not.
 
-The prompt is versioned. The prompt version is stored on every segment.
+The prompt is versioned (`transcribe_v1.txt` in the pack's `prompts/`
+directory) and the version is stored on every segment.
 Translation instructions include: prefer plain equivalents over ornate ones;
 do not add adjectives the teacher did not use; keep the teacher's own
 similes and examples exactly; where the teacher code-switches into English,
 keep the English words as spoken.
 
-Overlap is resolved by keeping the segment whose window centre is nearer.
+The 30-second overlap is used twice. First, the two independent
+transcriptions of the same audio are compared for agreement, which feeds
+the confidence grade (§4.4). Then the duplicate is resolved by keeping the
+segment whose window centre is nearer, so no passage is stored twice.
 
 ### 4.4 The segment record
 
@@ -533,6 +563,14 @@ rendered lesson. Generated fields are the only fields the model writes.
 | What it means | 2–4 sentences | Restate the translation and the teacher's point in plain modern English; define any Sanskrit term used | Add claims absent from both; quote; give advice; mention the learner |
 | A question to carry | 1 sentence, a question | Follow from the verse or the teacher's point | Instruct; assume anything about the learner's life |
 
+"From the teacher" is not in this table because it is not generated in the
+fidelity sense: it is the selected span **condensed** by a separate
+paraphrase step whose only input is the span (§4.5, Appendix A). Its rules
+are: 100 to 200 words, the teacher's own line of thought, his examples and
+similes kept, nothing added, and the segment IDs it drew from returned so
+the validator can confirm every one exists in the store. The review
+appendix shows the span verbatim so the condensation can be checked.
+
 Every generated field passes the checks in §5.4 before the lesson is sent.
 
 **Soft bounds for reviewed content, hard bounds for per-send content.** The
@@ -559,6 +597,30 @@ the verse block is supplied so the model can restate it, but the rendered
 lesson takes the verse from the store, never from model output; and the
 prompt is a file in the pack, so a wording change is a reviewed change
 with a new prompt version on every lesson it produces.
+
+**Prompt maintenance as models improve.** A prompt holds two kinds of
+instruction and they age differently:
+
+- **Constraints** say what must never happen: no model knowledge in the
+  teacher section, no quoting, no advice, no generated Sanskrit, no banned
+  words. These are policy. They do not cap the model's intelligence; they
+  define the job, and they stay regardless of how capable the model is.
+  Their enforcement lives in the validator (§5.4), not in prompt
+  verbosity, so the prompt never has to be defensive.
+- **Guidance** says how to do the job well: sentence length, ordering,
+  phrasing hints. This is where over-specification hurts. A more capable
+  model does better with the goal, the reason behind each rule, and the
+  material than with step-by-step direction, and stale guidance can hold
+  it below what it could do.
+
+The policy: keep constraints, prune guidance, and let the evals decide.
+Each guidance line in the prompt is a candidate for removal on every model
+change: remove it, rerun the golden set, and if nothing regresses it stays
+removed. Prefer stating the *reason* for a rule over adding more rules,
+because models generalize from reasons. Prefer one or two examples of a
+good "What it means" over a paragraph describing one. The prompt version
+records what was pruned and when, so a regression can be traced to a
+removed line.
 
 ### 5.4 Pre-send validation
 
