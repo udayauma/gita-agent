@@ -541,7 +541,7 @@ with no fabricated content. Meeting it is the signal to start v2.
 
 | # | Question | Who | Blocking? |
 |---|---|---|---|
-| 1 | Lesson unit: one verse per day, or one idea (1–3 verses) per day as proposed in §6.3? | Udaya | Yes, before content pack grouping is built |
+| 1 | ~~Lesson unit: one verse per day, or one idea (1–3 verses) per day as proposed in §6.3?~~ **Resolved 2026-09-12: one idea per lesson.** How ideas are grouped and reviewed is defined in the content spec. | Udaya | Resolved |
 | 2 | Should the Telugu original appear in v1 lessons by default, or stay P1? | Udaya | No |
 | 3 | Is Udaya's father willing to be the fidelity reviewer for the 20-lesson audit? | Udaya | No, but it shapes the audit plan |
 | 4 | Sender identity: which address and domain do lessons come from? Affects deliverability and is a setup step. | Udaya, technical spec | Yes, before first send |
