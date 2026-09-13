@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | Draft for review |
+| **Status** | Draft; §1–§9 reviewed by Udaya 2026-09-13; changes by pull request |
 | **Owner** | Udaya Pillalamarri |
-| **Answers to** | `docs/product_spec.md` §6, §7, §8.1, §8.5, §9 (P0-5, P0-8, P0-9, P0-11, P0-12, P0-19 to P0-23, P0-26, P0-27) |
-| **Date** | 2026-09-12 |
+| **Answers to** | `docs/product_spec.md` §6, §7, §8.1, §8.5, §9 (P0-5, P0-8, P0-9, P0-11, P0-12, P0-19 to P0-27) |
+| **Date** | 2026-09-13 |
 
 ---
 
@@ -51,7 +51,7 @@ the canon store, verbatim from `verse.json`:
 | `chapter_number`, `verse_number` | e.g. 2, 47 | "Where we are" line, footer |
 | `text` | Devanagari, with the trailing verse marker `।।2.47।।` | Verse section, first line |
 | `transliteration` | IAST-style, e.g. `karmaṇy-evādhikāras te mā phaleṣhu kadāchana` | Verse section, second line |
-| `word_meanings` | word-by-word gloss, e.g. `karmaṇi—in prescribed duties; eva—only; …` | Long-form page (v1.1) and review appendix; not in the email |
+| `word_meanings` | word-by-word gloss, e.g. `karmaṇi—in prescribed duties; eva—only; …` | Supplied to composition and retrieval as input (§4.5, Appendix A); shown on the long-form page (v1.1) and in the review appendix; not in the email body |
 
 The loader copies these fields without modification. It does not normalize
 transliteration, does not strip the verse marker, and does not "fix"
@@ -234,8 +234,9 @@ The sequence is produced once per pack version, not per send. Rules:
 ### 3.3 How the grouping is made and reviewed
 
 - **Draft:** the model proposes the grouping for one chapter at a time,
-  given the chapter's verses with translation and word meanings, the rules
-  above, and the target. Output is a list of `[first_verse, last_verse,
+  given the chapter's verses with translation and word meanings and the
+  rules above. The expected range in rule 6 is shown to it as a sanity
+  check, not as a target. Output is a list of `[first_verse, last_verse,
   one-line reason]`.
 - **Check:** a deterministic validator enforces rules 1 and 2, reports the
   count per chapter and in total against the rule 6 expectation without
@@ -307,6 +308,8 @@ A pack is a directory in the repository under `packs/<pack_id>/` containing
 
 ```yaml
 pack_id: chaganti-gita-telugu
+pack_name: Chaganti Gita (Telugu)
+service_name: Today's Gita        # learner-facing display name (C5, provisional)
 version: 1
 teacher:
   name: Sri Chaganti Koteswara Rao
@@ -344,6 +347,12 @@ sources:
     playlist_id: PL2N6khFUCtEmQiwvQve8wtTOBtJoPShF4
     title: Sampoorna Srimad Bhagavatam by Sri Chaganti Koteswara Rao Garu
     expected_videos: 40
+artifacts:                  # reviewed files in this directory; each carries its own version and review status
+  sequence: sequence.json
+  chapter_openings: chapter_openings.json
+  primer: primer.md
+  episodes: episodes.json   # v1.1
+  banned_words: banned_words.yaml
 prompts:                    # versioned files under packs/<pack_id>/prompts/
   transcribe: transcribe_v1.txt
   paraphrase: paraphrase_v1.txt
@@ -435,6 +444,8 @@ One record per marker-delimited paragraph within a window:
 | `en` | English translation, verbatim from the model output |
 | `confidence` | `high` / `medium` / `low`, the minimum across the signals below, plus the individual signal values and the model's stated reason |
 | `refs` | Scripture references detected in this segment |
+| `window_id` | The ingestion window this segment came from, for re-ingestion and overlap accounting |
+| `superseded_by` | Empty unless a later re-ingestion of the same window replaced this segment (§4.6); superseded segments are kept, never selected |
 | `model_id`, `prompt_version`, `ingested_at` | Provenance |
 
 The store is the system of record. The vector index holds the English text
@@ -516,7 +527,9 @@ meanings, and the chapter name. Retrieval runs across the whole pack.
 Selection, in order:
 
 1. **Direct reference wins.** If any segment's `refs` contains a verse in the
-   lesson, those segments are candidates first.
+   lesson, those segments are candidates first. For chapter 13 the resolver
+   also accepts the off-by-one reference (§2.3), because the teacher may
+   cite by either numbering.
 2. **Semantic match next.** Otherwise the top candidates by similarity, with
    a fixed **relevance threshold** below which nothing is selected. The
    threshold is a pack setting, tuned once on twenty hand-checked verses
@@ -595,8 +608,11 @@ opening if this is a chapter's first lesson, the selected transcript span
 with its citation, the pack's tone rules and banned-word list, and the
 learner's position.
 
-Outputs: the three generated parts, each as a separate field, plus the
-rendered lesson. Generated fields are the only fields the model writes.
+Outputs: the two per-send generated fields, "What it means" and "A
+question to carry," each as a separate field, plus the rendered lesson.
+(The chapter opening is generated once per pack and reviewed, §3.4; it is
+read from the pack at send time, not written.) Generated fields are the
+only fields the model writes at send time.
 
 ### 5.2 Rules for the generated parts
 
@@ -667,8 +683,10 @@ removed line.
 
 ### 5.4 Pre-send validation
 
-A lesson is composed, validated, and only then sent. Any failure blocks the
-send and is reported to the operator with the lesson ID.
+A lesson is composed, validated, and only then sent. A **hard** failure
+blocks the send and is reported to the operator with the lesson ID. A
+**warning** (soft banned words, length of a reviewed artifact) is logged
+on the lesson and counted in the digest but never blocks.
 
 | Check | Rule |
 |---|---|
@@ -681,7 +699,7 @@ send and is reported to the operator with the lesson ID.
 | Banned words | No **hard-tier** banned word appears in any generated field after up to two regenerations (§5.5). Soft-tier hits are logged, never block. |
 | Length | Per-send generated fields within their hard limits; body under roughly 400 words. Reviewed artifacts (chapter openings) only warn on length, never block |
 | Provenance | Model ID, prompt version, canon pin, pack version, sequence version present |
-| Links | Only the source link, the reaction links, and the unsubscribe link; every non-source link is a signed first-party URL |
+| Links | Only the source link, the reaction links, the unsubscribe link, and from v1.1 the long-form link; every non-source link is a signed first-party URL |
 
 ### 5.5 The banned-word list
 
@@ -828,7 +846,7 @@ texts can be read without guessing.
 | `{first_lesson_date}` | Computed: the first delivery time after the welcome is sent | per learner |
 | `{n}`, `{total}` | Learner position and sequence length (§3.4) | per lesson |
 | `{c}`, `{v}`, `{v1}`, `{v2}` | The lesson's chapter and verse or verse range from `sequence.json` | per lesson |
-| `{episode_title}` | `episodes.json` (story track, v1.1) | per lesson |
+| `{episode_title}`, `{video_number}` | `episodes.json` (story track, v1.1): the episode's title and the series part it comes from | per lesson |
 | `{video_title}`, `{start}`, `{end}` | The selected span's segment records (§4.4) | per lesson |
 | `{date}`, `{reference}`, `{citation}` | Correction note (§7.6): the affected lesson's send date, its "Where we are" line, and the source that justified the correction | per note |
 
@@ -1006,7 +1024,9 @@ question C5); it is not the repository name.
 
 Rendered for the default pack, `{teacher_name}` is "Sri Chaganti Koteswara
 Rao" on first mention and the honorific "Chaganti garu" after, both from
-the manifest. The word "teacher" does not appear in reviewer-facing text.
+the manifest. The word "teacher" does not appear in reviewer-facing text
+except when quoting the lesson's own section label, "From the teacher"
+(open question C6).
 
 ### 7.4 Reviewer banner and questions (v1.1)
 
@@ -1023,7 +1043,7 @@ Questions, after the appendix, each answerable with yes or no:
 1. Is the passage under "From the teacher" a fair account of what
    {teacher_honorific} says between {start} and {end} in "{video_title}"?
 2. Does the English translation in the appendix match the Telugu above it?
-3. Does "What it means" say anything the verse and the teacher do not?
+3. Does "What it means" say anything the verse and {teacher_honorific} do not?
 4. Anything else?
 
 ### 7.5 Unsubscribe confirmation
@@ -1088,7 +1108,8 @@ from the log, never edited by hand.
 
 - **Canon pin** changes only by the operator's upgrade action with a diff.
 - **Pack version** increments whenever any pack artifact changes: manifest,
-  sequence, chapter openings, primer, banned-word list, episodes, thresholds.
+  sequence, chapter openings, primer, banned-word list, episodes, tuned
+  settings, and any prompt file.
 - **Every lesson records** the canon pin and pack version it was composed
   from. A correction produces a new pack version; learners who have not yet
   reached the affected lesson receive the corrected version; learners who
@@ -1098,15 +1119,34 @@ from the log, never edited by hand.
   the audit entry that justified it. The original model output stays in the
   store beside it.
 
-## 10. Open questions
+## 10. Open questions and pre-day-one checklist
+
+### 10.1 Open questions
 
 | # | Question | Who | Blocking? |
 |---|---|---|---|
 | C1 | ~~Default translation for v1?~~ **Resolved 2026-09-13: Sivananda.** The v2 public-use default is deferred to the v2 product spec (product spec open question 6); Besant is the leading candidate, Sivananda the alternate. | Udaya | Resolved for v1 |
-| C2 | Chapter openings and the primer: Udaya edits the drafts in §3.4 and §7.1 before the first send? | Udaya | Yes, before day 1 |
-| C3 | Relevance threshold and series-preference margin: tuned on which twenty verses? Proposal: the first lesson of each chapter plus 2.47 and 18.66. | Operator | No; set during phase 1 |
-| C4 | Reaction labels: keep "Got it / Unclear / Loved it"? | Udaya | No |
-| C5 | ~~Service display name as learners see it.~~ **Resolved 2026-09-13: "Today's Gita"**, provisional, expected to be revisited during v1.0 testing. It is a pack setting (`service_name`), so changing it is a config edit, not code. The subject-line format is in §7.8. | Udaya | Resolved (provisional) |
+| C4 | Reaction labels: keep "Got it / Unclear / Loved it"? | Udaya | No; a pack setting, changeable any time |
+| C5 | ~~Service display name as learners see it.~~ **Resolved 2026-09-13: "Today's Gita"**, provisional, expected to be revisited during v1.0 testing. A pack setting (`service_name`); the subject-line format is in §7.8. | Udaya | Resolved (provisional) |
+| C6 | The learner-facing section label is "From the teacher" (product spec §6.1). Udaya removed "teacher" from the primer and the reviewer texts. Should the lesson label change too, for example to the teacher's name ("From Chaganti garu") rendered from the manifest, or stay as a role word? | Udaya | No, but before day 1 since it is in every lesson |
+| C7 | Chapter 13 numbering (§2.3): keep the dataset's 1–35 in the "Where we are" line, or renumber the store to the standard 0–34 so citations match printed editions? Recommendation: keep the dataset's numbering and let the resolver handle both; renumbering the store breaks byte-identity with the pinned source. | Udaya | No |
+| C8 | Confirm the v1 legend values (§7): timezone America/New_York, delivery time 07:00, pack name "Chaganti Gita (Telugu)". | Udaya | No |
+
+### 10.2 Pre-day-one checklist (operator tasks, not decisions)
+
+These were listed as open questions C2 and C3 in earlier drafts. They are
+work items for the operator before the first lesson is sent, and each
+maps to a P0.
+
+| # | Task | Maps to |
+|---|---|---|
+| T1 | Edit the primer draft (§7.1) and mark it reviewed | P0-5, P0-27 |
+| T2 | Draft, edit, and mark reviewed the chapter openings for chapters 1 and 2 and the lesson-one introduction (§3.4) | P0-8, P0-27 |
+| T3 | Review the sequence grouping for chapters 1 and 2 (§3.3) | P0-2, P0-27 |
+| T4 | Ingest the first Gita video; hand-check twenty segments per confidence grade; set the confidence thresholds in the manifest (§4.4) | P0-20 |
+| T5 | Tune the relevance threshold and series-preference margin on twenty hand-checked verses. Proposal: the first lesson of each chapter plus 2.47 and 18.66 (§4.5). Record the verses and date in the manifest | P0-11 |
+| T6 | Set `service_name`, operator config, and the learner record for Udaya (§7 legend) | P0-22 |
+| T7 | Run the unsubscribe test and the review-appendix render on a test lesson (product spec §10.1) | P0-4, P0-26 |
 
 ## Appendix A. Composition prompt, v1 draft
 
@@ -1116,7 +1156,7 @@ Stored as `packs/<pack_id>/prompts/compose_v1.txt`. Two parts.
 
 ```
 You compose one daily lesson on the Bhagavad Gita for a single reader who
-does not read Sanskrit. You write only three things: WHAT IT MEANS,
+does not read Sanskrit. You write only two things: WHAT IT MEANS and
 A QUESTION TO CARRY, and nothing else. Every other part of the lesson is
 supplied to you verbatim and you never alter it.
 
