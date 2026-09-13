@@ -171,13 +171,83 @@ without changing anything already sent.
 
 ### 6.2 What a lesson never does
 
-- Never quotes a verse that is not in the canon dataset.
-- Never attributes to the teacher something that is not in a transcript.
-- Never presents generated text as a quotation.
+These rules are the fidelity contract. They are written as absolutes on
+purpose: tests are derived from them, the review rules for every pull request
+are derived from them, and a lesson that violates any one of them is not sent.
+They apply in every version, and they matter most in v2, when learners the
+operator has never met are on the list.
+
+**Fidelity**
+
+- Never quotes a verse that is not in the canon dataset. The Sanskrit,
+  transliteration, and translation are copied from the canon record, never
+  generated, never "corrected."
+- Never generates Sanskrit. Every Devanagari or transliterated term in a
+  lesson comes from the canon record or from the teacher's transcript.
+- Never attributes to the teacher something that is not in a transcript. The
+  teacher passage is drawn from the transcript store for a specific video and
+  timestamp, or it does not appear.
+- Never draws on the model's own knowledge of the Gita or its commentators
+  for the teacher section. The model knows the Gita well, and the easiest
+  failure is a plausible passage the teacher never said. If the store has
+  nothing for a verse, the lesson says so and carries the canon layer only.
+- Never guesses when confidence is low. If a transcript segment or its
+  translation is uncertain, the lesson omits it, sends with the canon layer,
+  and flags the lesson to the operator. Fidelity beats completeness.
+- Never presents generated text as a quotation, and never blurs the boundary
+  between the teacher's words and generated text. Each part of the lesson is
+  labeled. "What it means" and "A question to carry" are generated and say
+  nothing the verse and the teacher passage do not support.
+- Never depends on the model for accuracy. The model composes; the canon
+  store and the transcript store are the only sources of fact. A more capable
+  model produces a better-written lesson under the same rules; it does not
+  earn looser rules. Every lesson records the model and prompt version that
+  produced it, and a model change is a reviewed change: it passes the same
+  fidelity audit as content before it reaches a learner.
+
+**Voice**
+
+- Never gives directive advice. The lesson offers a question, not an
+  instruction. No medical, legal, financial, relationship, or political
+  guidance, even where the verse seems to invite it.
+- Never asserts one interpretation as the only one. Where translations or
+  schools differ, the lesson either says so in a sentence or stays with the
+  teacher's reading, attributed to the teacher.
+- Never proselytizes, ranks traditions, or comments on other religions.
+- Never speaks to the learner's personal circumstances. It does not know
+  them, and in v1 it must not pretend to.
+- Never adapts content automatically from reactions or feedback. Reactions
+  inform the operator. Content changes go through review.
+
+**Reach and privacy**
+
+- Never sends to anyone who is not on the list, and never reveals one
+  learner's existence, address, progress, or reactions to another.
+- Never includes third-party trackers, tracking pixels, or external scripts.
+  The only links in a lesson are the source recording on YouTube, the
+  long-form page, the reaction row, and unsubscribe. All but the recording are
+  first-party.
+- Never sends outside the learner's configured delivery window.
+- Never sends anything other than the welcome email, the daily lesson, a
+  correction note when one is needed, and the unsubscribe confirmation. No
+  promotions, no re-engagement messages, no surveys beyond the reaction row.
+
+**Delivery and immutability**
+
 - Never exceeds roughly 400 words in the body. If the teacher's material is
   rich, the lesson links to it rather than growing.
 - Never sends twice for the same day, and never skips a day silently. If
-  delivery fails, the operator is told.
+  delivery fails, the operator is told and the learner's progress does not
+  advance.
+- Never changes a lesson after it is sent. Corrections go into the content
+  pack for learners who have not reached that lesson yet. If a lesson that
+  was already sent had a material error, the fix is a short correction note
+  the next morning, never a silent edit and never a resend.
+
+**Reserved for v2.** When learners can reply, the agent is not a counselor.
+If a learner brings distress into the conversation, the agent responds with
+care and points to a person. The v2 spec defines this before any external
+learner is added; it is listed here so that it is not forgotten.
 
 ### 6.3 Pace and sequence
 
