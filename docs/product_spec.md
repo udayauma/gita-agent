@@ -346,8 +346,19 @@ never published at a URL.
 | v1.1 | Reviewers added by the operator receive the review edition by email. |
 | v2 | Retired. The review edition is no longer produced. The golden set built from v1 reviewer feedback runs as automated evals instead. |
 
-Reviewers receive the learner's lesson unchanged, by email, followed by a
-clearly marked appendix:
+**The reviewer is told, every time.** A review edition opens with a short
+banner above the lesson, before anything else: "You are receiving this as a
+reviewer. Below is the lesson exactly as a learner sees it, followed by the
+source material it was built from. If anything is unfaithful to the verse or
+to the teacher, reply to this email and say so. If it is fine, you need not
+reply." The banner names the pack and the teacher so the reviewer knows whose
+words they are judging.
+
+Reviewers also receive a **reviewer welcome email** when the operator adds
+them (§8.5), which explains the role once, in full.
+
+Below the banner, reviewers receive the learner's lesson unchanged, followed
+by a clearly marked appendix:
 
 - The teacher's original Telugu passage that "From the teacher" was drawn from,
   and the English translation the service produced, verbatim.
@@ -507,11 +518,20 @@ no dashboard.
 1. The operator adds a reviewer with an email address. A reviewer is not
    required to be a learner. Email is the only channel for reviewers; the
    role does not extend to SMS or Slack and is retired at v2.
-2. Each morning the reviewer receives the review edition of that day's lesson,
-   at the same time as the learners on the same pack.
-3. If something is wrong, the reviewer replies to the email in plain language.
+2. The reviewer receives a **reviewer welcome email** the same day. It says,
+   in plain terms: you have been asked to review daily Bhagavad Gita lessons
+   for accuracy; each morning you will receive the lesson as a learner sees
+   it plus the source material behind it; your job is to judge whether the
+   lesson is faithful to the verse and to the teacher, not whether you agree
+   with the teacher; reply to any email to give feedback; no reply means no
+   objection; here is how to stop. It names the operator, the pack, and the
+   teacher.
+3. Each morning the reviewer receives the review edition of that day's lesson,
+   at the same time as the learners on the same pack. Every review edition
+   opens with the reviewer banner (§6.6).
+4. If something is wrong, the reviewer replies to the email in plain language.
    No form, no account.
-4. The operator reads the reply and records it in the fidelity audit log, with
+5. The operator reads the reply and records it in the fidelity audit log, with
    the lesson ID. If the lesson needs correcting, the correction goes into the
    content pack so that the next learner to reach that lesson gets the fixed
    version.
