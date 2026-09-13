@@ -607,11 +607,14 @@ Bhagavatam is never forced onto a verse it does not speak to.
 one episode at a time, not anchored to a verse: where we are in the series,
 the teacher's passage in English, what it means, a question. It uses the same
 pipeline, the same fidelity rules, and a different template. Sixty-eight
-hours is roughly four hundred episodes, so cadence is a real choice: weekend
-lessons alongside the verse track, or a daily second track a learner opts
-into. This is open question 7. Ingestion of the full series happens in v1.0
-regardless, so the story track is a template and a schedule, not new content
-work.
+hours is roughly four hundred episodes. The story track is a **daily second
+track, opt-in, off by default, delivered as its own email** at the learner's
+delivery time, so a learner can read the verse in the morning and the story
+whenever suits them. The two tracks keep separate progress. Composition cost
+is a fraction of a cent per lesson; the constraint is the learner's
+attention, which is why it is opt-in. Ingestion of the full series happens
+in v1.0 regardless, so the story track is a template and a schedule, not new
+content work.
 
 ## 8. User journeys
 
@@ -762,7 +765,7 @@ with no fabricated content. Meeting it is the signal to start v2.
 | 4 | Sender identity: which address and domain do lessons come from? Affects deliverability and is a setup step. | Udaya, technical spec | Yes, before first send |
 | 5 | Monthly cost ceiling for the GCP budget alert. | Udaya | No |
 | 6 | Default English translation for v2 public use: Purohit Swami (1935) or Sivananda (1942), and whether the three later translators are offered at all. Needs a rights check, not a taste call. | Udaya, content spec | Not for v1; yes before v2 |
-| 7 | Story track cadence (§7.4): weekend lessons alongside the verse track, or a daily opt-in second track? Roughly 400 episodes either way. | Udaya | Not for v1.0; yes before v1.1 |
+| 7 | ~~Story track cadence (§7.4): weekend lessons alongside the verse track, or a daily opt-in second track?~~ **Resolved 2026-09-12: a daily second track, opt-in, default off, sent as its own email.** Composition cost is a fraction of a cent per lesson; the constraint is learner attention, hence opt-in. | Udaya | Resolved |
 
 ## 12. Phasing
 
