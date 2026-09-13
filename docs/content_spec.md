@@ -685,9 +685,29 @@ send and is reported to the operator with the lesson ID.
 
 ### 5.5 The banned-word list
 
-Applied to generated text only. Whole words and phrases, case-insensitive,
-including simple inflections (`journey`, `journeys`; `transform`,
-`transformative`, `transformation`).
+**Why a list exists.** The product spec's tone rule (§6.4) is "factual
+first, plain, warm, unhurried, never preaching." A rule like that cannot be
+tested; a judgment call on every lesson is exactly what a pre-send check
+cannot make. But the failure has a recognizable signature. When a model is
+asked to be warm and encouraging, it reaches for a small, predictable
+vocabulary, and each of those words carries a claim the lesson must not
+make: that the learner is being guided somewhere (*journey*), that a secret
+is being revealed (*unlock*, *secret*), that transformation is on offer
+(*transform*, *awaken*, *empower*), that the text is being sold (*ancient
+wisdom*, *timeless*, *powerful*). The same vocabulary is the register of
+the social-media Gita quotes the product exists to be an alternative to.
+
+So the list is the tone rule made testable: a one-line, deterministic
+check that catches the most common way the tone drifts, applied to the
+only text the model writes freely. It does not make a lesson good. It
+stops the most recognizable way a lesson goes bad, cheaply, before it is
+sent. Everything subtler is what reviewers and reactions are for.
+
+**How it is applied.** Generated text only: "Where this sits," "What it
+means," "A question to carry," and the story-track equivalents. Whole
+words and phrases, case-insensitive, including simple inflections
+(`journey`, `journeys`; `transform`, `transformative`, `transformation`).
+A hit blocks the send and reports the word and the field.
 
 ```
 journey, unlock, empower, transform, embrace, mindful, mindfulness,
@@ -699,9 +719,28 @@ sense), authentic self, inner peace (as a promise), true self,
 sacred journey, spiritual growth, level up, hack, superpower
 ```
 
-The list is a pack file so it can grow from reviewer feedback without a
-code change. Words in quoted translations and in the teacher's translated
-passage are exempt: those are sources.
+**Why these words and not others.** The seed list came from the product
+spec (§6.4) and was extended with phrases that mark the same register:
+self-help framing (*level up*, *hack*, *superpower*, *game-changer*),
+vague spiritual promise (*inner peace* as a promise, *authentic self*,
+*resonate*, *energy* in the spiritual sense), and filler openers (*at the
+end of the day*, *in today's world*, *in our fast-paced lives*). It is
+deliberately a list of words that are common in that register and rare in
+an honest restatement of a verse. A word that is ordinary English in this
+context, such as *action* or *duty*, never goes on it, however often it
+appears in bad copy.
+
+**How it changes.** The list is a pack file so it can grow from reviewer
+feedback and from reading lessons, without a code change. Adding a word is
+a pack version bump. Removing one is the same, and the prompt-maintenance
+policy (§5.3) applies: if a more capable model never reaches for a word,
+the word can come off the list after a golden-set run shows no regression.
+
+**What is exempt.** Words in quoted translations and in the teacher's
+translated passage are exempt: those are sources, and a source is never
+edited to satisfy a style rule. If the translation step introduces one of
+these words where the teacher used a plain one, that is a translation
+quality issue for the audit, not a banned-word hit.
 
 ## 6. The story track (v1.1)
 
