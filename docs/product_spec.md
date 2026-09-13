@@ -570,10 +570,19 @@ If an operator configures nothing, the service works. The defaults are:
 | Translation | The dataset's default English translation, named in every lesson |
 | Pace | One lesson per day |
 | Delivery time | 07:00 in the learner's timezone |
-| Channel | Email |
+| Channel | The channel matching the contact the learner provided. In v1 that is always email, because the operator adds learners by email address. |
 
 A learner added with only an email address and a timezone receives a correct,
 complete lesson the next morning. This is a hard requirement, not a convenience.
+
+**Defaults across versions.** Canon, teacher pack, translation, pace, and
+delivery time have the same defaults in every version. Only the channel
+default changes shape in v2: a learner who signs up with a phone number
+defaults to SMS, one who connects Slack defaults to Slack, and one who
+provides more than one contact chooses at signup, with email as the
+tie-break. Whatever the channel, a learner who provides nothing beyond a
+contact and a timezone still receives a complete lesson using every other
+default.
 
 ### 7.4 Content order
 
