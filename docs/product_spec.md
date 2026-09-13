@@ -457,8 +457,12 @@ transliteration, and word meanings come from the spine; each English
 translation is a separate record with its own provenance and rights status,
 whichever source it came from. The alternatives and their trade-offs are
 recorded in the content spec. In brief: `vedicscriptures/bhagavad-gita` has
-the same lineage with more commentators but is GPL-3.0, which would bind this
-project's license; Wikisource carries three verified public-domain
+the same lineage with 22 text commentators, but it is GPL-3.0, so vendoring it
+would put copyleft files in this repository, and, more importantly, several of
+its commentaries (Prabhupada, Chinmayananda, modern translations of the
+classical commentators) are copyrighted by their publishers, which no
+repository license can override; its marginal value here is low because this
+product's lens is spoken discourse, not text commentary; Wikisource carries three verified public-domain
 translations (Telang 1882, Arnold 1885, Besant 1895) under CC BY-SA; GRETIL
 carries a scholarly Sanskrit e-text derived from the critical edition with no
 stated reuse terms; Gita Supersite (IIT Kanpur) is the academic origin of
