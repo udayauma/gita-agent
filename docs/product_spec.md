@@ -520,7 +520,7 @@ operator action is needed. Already-processed videos are never reprocessed.
 | ID | Requirement | Notes |
 |---|---|---|
 | P1-0 | Reviewer role and review edition per §3, §6.6, §8.5 | Operator-managed review list; review edition is a rendering option on the same lesson; feedback by email reply, logged manually. |
-| P1-0b | Long-form lesson page per §6.5, linked from every email footer | Static, generated with the email, never edited after publication. |
+| P1-0b | Long-form lesson page per §6.5, linked from every email footer via a recipient-signed link | Static, generated with the email, never edited after publication. Served only with a valid token; no unsigned URL; not indexed; tokens revoked on unsubscribe. v1 only; retired at v2 launch. |
 | P1-1 | Per-learner pace options: weekdays only, every other day | Schema supports it in v1; UI is a config field. |
 | P1-2 | Second default pack: Srimad Bhagavatam as a "story" track | Requires a lesson type that is not verse-anchored. |
 | P1-3 | Operator-triggered "resend today's lesson" and "skip to lesson N" | For recovery and testing. |
@@ -531,7 +531,7 @@ operator action is needed. Already-processed videos are never reprocessed.
 
 | ID | Requirement | Design constraint on v1 |
 |---|---|---|
-| P2-0 | Every lesson has a stable ID and a reserved long-form URL from v1.0 | Required so v1.1's long-form page and v2's reply threading attach to lessons already sent. |
+| P2-0 | Every lesson has a stable ID from v1.0, and a reserved long-form URL slot during v1 | The ID is permanent and is what v2's reply threading and the agent's "full passage" offer key on. The URL slot is used only by the v1.1 long-form page and is dropped at v2 launch. |
 | P2-1 | Reply to a lesson and converse (the v2 agent), on whichever channel the lesson arrived | Every lesson carries a stable lesson ID and a channel-specific thread reference (email headers, SMS conversation, Slack thread). Transcript chunks are retrievable by verse and by semantic query. |
 | P2-1b | Reviewer replies read and triaged by the agent | Review edition messages carry the lesson ID; the audit log format is machine-readable from day one. |
 | P2-2 | SMS, Slack, and other channels, for delivery and for replies | The channel abstraction is two-way from v1: each adapter defines outbound send and inbound reply routing keyed by lesson ID, even though v1 implements only email outbound. Lesson content is channel-neutral text with a per-channel rendering step, so a text-length rendering exists as a design case from the start. |
