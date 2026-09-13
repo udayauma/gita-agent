@@ -213,9 +213,28 @@ reviewers. It contains:
   with a timestamped link for each transcript segment.
 - The same reflective question.
 
-It is a static page, generated at the same time as the email from the same
-material, and it never changes after publication. There is no login. In v1.1
-it is hosted with the service; when Udaya's website exists it can move there.
+**Where it lives.** It is a web page at a stable URL derived from the lesson's
+ID, served from the operator's own deployment. It is static HTML, generated at
+the same time as the email from the same material, and it never changes after
+publication. There is no login. In v1.1 it is hosted with the service; when
+Udaya's website exists the pages can move there and the original URLs
+redirect, so links in lessons already sent keep working.
+
+**Who can see it.** Anyone with the link, and in practice only people who
+received the lesson. The long form contains the teacher's full passage, and
+§7.2 commits this project to never redistributing a teacher's work, so in v1:
+
+- URLs are unguessable; the lesson ID in the URL is a random token, not a
+  sequence number.
+- There is no index page or listing of lessons.
+- Every page instructs search engines not to index it.
+
+This keeps the long form private to recipients without building
+authentication. It is adequate while v1 is private. Before v2 opens the
+service to people the operator does not know, the v2 spec must decide
+whether long-form pages remain link-private, move behind the learner's
+signed link, or are limited to the canon layer with the teacher's passage
+available only by the timestamped source link.
 
 ### 6.6 The review edition
 
