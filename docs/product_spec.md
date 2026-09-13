@@ -290,8 +290,18 @@ separate "story" track in a later version. It is not part of v1 lessons.
 
 1. The operator adds a learner with, at minimum, an email address and a
    timezone. Optional: name, delivery time, pace, pack.
-2. The learner receives a **welcome email** the same day: what will arrive,
-   when, from whom, how to stop, and the first lesson's date.
+2. The learner receives a **welcome email** the same day. It has two parts:
+   - **A primer**, one or two paragraphs, orienting the learner in the
+     tradition before the first lesson arrives: the Vedas as the root, the
+     Upanishads as their philosophical core, the Mahabharata as the epic, and
+     the Gita as the conversation inside it that distils the whole. It should
+     say plainly that the tradition is vast and deep, that this service walks
+     one text slowly, and that depth comes from the daily habit rather than
+     from any single lesson. The primer is written once as part of the
+     content pack, reviewed like any other content, and is the same for every
+     learner.
+   - **The mechanics**: what will arrive, when, from whom, how long it takes to
+     read, how to stop, and the date of the first lesson.
 3. The next morning at the delivery time, lesson one arrives.
 
 Adding a learner is a configuration change made by the operator, not a form. In
@@ -359,7 +369,7 @@ operator action is needed. Already-processed videos are never reprocessed.
 | P0-8 | Failure visibility | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance. |
 | P0-9 | Teacher content ingestion from a public YouTube playlist | Given a playlist manifest, when ingestion runs, then every video is transcribed and translated, stored, and marked complete. Running ingestion again processes nothing. |
 | P0-10 | Weekly ops digest | Every week the operator receives one email with sends, failures, videos ingested, tokens used, and estimated cost. |
-| P0-11 | Welcome email | A newly added learner receives a welcome email before their first lesson. |
+| P0-11 | Welcome email per §8.1 | A newly added learner receives a welcome email before their first lesson. It contains the primer (Vedas, Upanishads, Mahabharata, Gita) in no more than two paragraphs, and the mechanics. The primer text is part of the content pack and is identical for every learner. |
 
 ### P1 — should follow soon after
 
