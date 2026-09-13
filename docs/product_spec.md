@@ -775,6 +775,39 @@ with no fabricated content. Meeting it is the signal to start v2.
 | **v1.1** | Reviewer role and review edition; long-form lesson page; additional learners added by the operator; other P1 items as chosen | The lesson survives expert review, and the service works for more than one person |
 | **v2** | Reply-to-lesson conversation (ADK agent) on low-friction channels: SMS and Slack alongside email; long form offered by the agent in conversation instead of a page link (§6.5); self-serve signup and preferences web surface; public announcement via Udaya's website | The service works for people who do not know the operator, and talking to it is as easy as answering a text |
 
+### 12.1 What carries into v2
+
+The agent is additive. The daily push remains the backbone of the product in
+every version, because most learners on most days read the lesson and do not
+reply. The agent exists for the days they do.
+
+**Carried unchanged:** the daily verse lesson and the opt-in story track,
+with their structure (§6.1), tone (§6.4), and fidelity contract (§6.2); the
+canon (§7.1), packs and ingestion (§7.2), defaults (§7.3), and the weekly
+content poll (§8.6); per-learner progress, the reaction row (§6.7),
+unsubscribe (§8.3), the welcome email with its primer (§8.1), and the ops
+digest (§8.4); the stable lesson ID on every message, which is what the agent
+threads on.
+
+**Changes shape:** reviewers retire into golden-set evals (§6.6); the
+long-form page retires into the agent's offer of the full passage (§6.5);
+channels widen from email to SMS and Slack for both delivery and replies
+(§5); onboarding moves from operator-added to self-serve with the same
+defaults (§7.3).
+
+**What the agent adds**, grounded only in the canon store and the transcript
+store, under the same §6.2 rules:
+
+- Answers a question about today's lesson, citing the verse and the
+  teacher's passage.
+- Provides the full passage, English and Telugu, with its source, on request.
+- Explains a term, or steps one verse back or forward, on request.
+- Handles preferences in conversation: pause, change delivery time, turn the
+  story track on or off, stop.
+- Says plainly "I don't have that from this teacher" when the stores hold
+  nothing relevant, rather than answering from model memory.
+- Is not a counselor (§6.2, reserved for v2).
+
 ## 13. Glossary
 
 | Term | Meaning |
