@@ -645,11 +645,12 @@ content work.
    timezone. Optional: name, delivery time, pace, pack, and, from v1.1, the
    story-track opt-in.
 2. The learner receives a **welcome email** the same day. It has two parts:
-   - **A primer**, one or two paragraphs, orienting the learner in the
-     tradition before the first lesson arrives: the Vedas as the root, the
+   - **A primer**, one or two paragraphs, orienting the learner in
+     Hinduism before the first lesson arrives: the Vedas as the root, the
      Upanishads as their philosophical core, the Mahabharata as the epic, and
-     the Gita as the conversation inside it that distils the whole. It should
-     say plainly that the tradition is vast and deep, that this service walks
+     the Gita as the conversation inside it that distils the whole. It names
+     Hinduism plainly rather than hedging with "the tradition." It should
+     say plainly that Hinduism is vast and deep, that this service walks
      one text slowly, and that depth comes from the daily habit rather than
      from any single lesson. The primer is written once as part of the
      content pack, reviewed like any other content, and is the same for every

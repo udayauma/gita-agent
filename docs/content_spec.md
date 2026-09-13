@@ -809,23 +809,23 @@ are reviewed. Drafts follow; Udaya edits them in place.
 
 ### 7.1 Welcome primer (draft)
 
-> The Bhagavad Gita is one conversation inside a much larger body of
-> writing. At the root are the Vedas, the oldest texts of the tradition,
-> concerned mostly with ritual and the order of the world. Their closing
-> portions, the Upanishads, turn inward and ask what the self is and what
-> lasts. Much later comes the Mahabharata, an epic about a family at war
-> with itself. On the eve of its great battle, the warrior Arjuna loses his
-> nerve and asks his charioteer, Krishna, what he should do. Krishna's
-> answer is the Gita: seven hundred verses that gather the Upanishads'
-> questions into one exchange between a person in trouble and a teacher who
-> will not let him look away.
+> The Bhagavad Gita is one conversation inside the much larger body of
+> Hindu scripture. At the root are the Vedas, the oldest texts of
+> Hinduism, concerned mostly with ritual and the order of the world. Their
+> closing portions, the Upanishads, turn inward and ask what the self is
+> and what lasts. Much later comes the Mahabharata, an epic about a family
+> at war with itself. On the eve of its great battle, the warrior Arjuna
+> loses his nerve and asks his charioteer, Krishna, what he should do.
+> Krishna's answer is the Gita: seven hundred verses that gather the
+> Upanishads' questions into one exchange between a person in trouble and a
+> teacher who will not let him look away.
 >
-> The tradition is vast and deep, and no one takes it in at once. This
-> service walks one text slowly: one idea from the Gita each morning, in
-> plain English, with the verse itself and a short passage from a teacher
-> explaining it. Depth comes from the daily habit, not from any single
-> lesson. Read it in five minutes, carry the question for the day, and let
-> the rest go.
+> Hinduism, which its own texts call Sanātana Dharma, the enduring way, is
+> vast and deep, and no one takes it in at once. This service walks one
+> text slowly: one idea from the Gita each morning, in plain English, with
+> the verse itself and a short passage from a teacher explaining it. Depth
+> comes from the daily habit, not from any single lesson. Read it in five
+> minutes, carry the question for the day, and let the rest go.
 
 ### 7.2 Welcome mechanics (template)
 
