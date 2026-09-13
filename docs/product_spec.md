@@ -69,9 +69,15 @@ an appendix the learner never sees, with the teacher's original Telugu passage,
 the transcript excerpt it was drawn from, and the exact canon record for the
 verse. A person can be both a learner and a reviewer.
 
-In v1, a reviewer gives feedback by replying to the email. The operator reads the
-reply and records it in the fidelity audit log. In v2 the agent reads reviewer
-replies itself. The role carries forward unchanged.
+A reviewer gives feedback by replying to the email. The operator reads the
+reply and records it in the fidelity audit log.
+
+**The reviewer role exists only in v1 and v1.1, and only over email.** It is
+retired at v2. What reviewers produce is not retired: every correction and
+every lesson they confirm as faithful goes into the fidelity golden set, so
+that by v2 their judgment runs automatically as evals on every model or prompt
+change (§6.2, model independence). Reviewers stop being people on a list and
+become the test suite.
 
 **Timing.** v1.0 sends to Udaya alone. Reviewers and additional learners are
 added in v1.1, once thirty days of clean delivery have shown the lesson is worth
@@ -332,10 +338,16 @@ channel they are using, adapted to that channel's length. The teacher's words
 are shared one-to-one, on request, the way a tutor reads a passage aloud,
 never published at a URL.
 
-### 6.6 The review edition
+### 6.6 The review edition (v1 and v1.1 only, email only)
 
-Reviewers receive the learner's lesson unchanged, followed by a clearly marked
-appendix:
+| Version | Reviewers |
+|---|---|
+| v1.0 | None. Udaya is the only learner and does her own checking. |
+| v1.1 | Reviewers added by the operator receive the review edition by email. |
+| v2 | Retired. The review edition is no longer produced. The golden set built from v1 reviewer feedback runs as automated evals instead. |
+
+Reviewers receive the learner's lesson unchanged, by email, followed by a
+clearly marked appendix:
 
 - The teacher's original Telugu passage that "From the teacher" was drawn from,
   and the English translation the service produced, verbatim.
@@ -475,10 +487,11 @@ whom, failures, reactions and one-sentence notes per lesson, new videos
 ingested, tokens used, and estimated spend for the week and month to date. This is the primary operational surface in v1. There is
 no dashboard.
 
-### 8.5 Reviewer receives and answers (v1.1)
+### 8.5 Reviewer receives and answers (v1.1 only, email only)
 
 1. The operator adds a reviewer with an email address. A reviewer is not
-   required to be a learner.
+   required to be a learner. Email is the only channel for reviewers; the
+   role does not extend to SMS or Slack and is retired at v2.
 2. Each morning the reviewer receives the review edition of that day's lesson,
    at the same time as the learners on the same pack.
 3. If something is wrong, the reviewer replies to the email in plain language.
@@ -519,7 +532,7 @@ operator action is needed. Already-processed videos are never reprocessed.
 
 | ID | Requirement | Notes |
 |---|---|---|
-| P1-0 | Reviewer role and review edition per §3, §6.6, §8.5 | Operator-managed review list; review edition is a rendering option on the same lesson; feedback by email reply, logged manually. |
+| P1-0 | Reviewer role and review edition per §3, §6.6, §8.5 | Operator-managed review list; email only; review edition is a rendering option on the same lesson; feedback by email reply, logged manually into the golden set. Retired at v2. |
 | P1-0b | Long-form lesson page per §6.5, linked from every email footer via a recipient-signed link | Static, generated with the email, never edited after publication. Served only with a valid token; no unsigned URL; not indexed; tokens revoked on unsubscribe. v1 only; retired at v2 launch. |
 | P1-1 | Per-learner pace options: weekdays only, every other day | Schema supports it in v1; UI is a config field. |
 | P1-2 | Second default pack: Srimad Bhagavatam as a "story" track | Requires a lesson type that is not verse-anchored. |
@@ -533,7 +546,7 @@ operator action is needed. Already-processed videos are never reprocessed.
 |---|---|---|
 | P2-0 | Every lesson has a stable ID from v1.0, and a reserved long-form URL slot during v1 | The ID is permanent and is what v2's reply threading and the agent's "full passage" offer key on. The URL slot is used only by the v1.1 long-form page and is dropped at v2 launch. |
 | P2-1 | Reply to a lesson and converse (the v2 agent), on whichever channel the lesson arrived | Every lesson carries a stable lesson ID and a channel-specific thread reference (email headers, SMS conversation, Slack thread). Transcript chunks are retrievable by verse and by semantic query. |
-| P2-1b | Reviewer replies read and triaged by the agent | Review edition messages carry the lesson ID; the audit log format is machine-readable from day one. |
+| P2-1b | Reviewer feedback becomes automated evals | The v1 audit log is machine-readable from day one, keyed by lesson ID, so that confirmed-good lessons and corrections seed the fidelity golden set that replaces human reviewers at v2. |
 | P2-2 | SMS, Slack, and other channels, for delivery and for replies | The channel abstraction is two-way from v1: each adapter defines outbound send and inbound reply routing keyed by lesson ID, even though v1 implements only email outbound. Lesson content is channel-neutral text with a per-channel rendering step, so a text-length rendering exists as a design case from the start. |
 | P2-3 | Self-serve signup and public launch | Learner records carry a status and a consent timestamp from day one. |
 | P2-4 | Multiple operators / multi-tenant | Every record is scoped to an operator ID even though v1 has one. |
@@ -584,7 +597,7 @@ with no fabricated content. Meeting it is the signal to start v2.
 | **Lesson** | One email: verse, meaning, teacher passage, question, footer |
 | **Idea** | The unit of a lesson: one verse or a short run of verses forming one thought |
 | **Learner** | A person receiving lessons |
-| **Reviewer** | A person on the operator's review list who receives the review edition and replies with corrections |
+| **Reviewer** | A person on the operator's review list who receives the review edition by email and replies with corrections. v1 and v1.1 only; retired at v2 in favor of automated evals |
 | **Review edition** | The learner's lesson plus an appendix of the raw source material behind it |
 | **Long form** | The static page for a lesson with the full verse record, context, and the teacher's complete passage |
 | **Operator** | The person running a deployment and managing learners and reviewers |
