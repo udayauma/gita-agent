@@ -246,6 +246,26 @@ The sequence is produced once per pack version, not per send. Rules:
 Chapter {c}, Verse {v}` or `Verses {v1}–{v2}`. `total` is the sequence
 length. It is a position, never a percentage or a streak.
 
+**The sequence is shared; the position is per learner.** One sequence exists
+per pack version and every learner on that pack walks the same one. What is
+stored per learner (product spec P0-2, P0-5) is:
+
+- the pack and sequence version they are currently on;
+- the **last verse delivered** (chapter and verse), which is the position of
+  record;
+- the lesson index and the day count, derived from the two above and stored
+  for convenience;
+- the date of the last successful send, so a failed day does not advance;
+- for the story track (v1.1), the last episode delivered, separately.
+
+The next lesson for a learner is the first lesson in the current sequence
+whose first verse comes after the learner's last delivered verse. Storing
+the position as a verse rather than as an index is deliberate: if a
+correction produces a new sequence version that regroups verses, a learner
+part-way through resumes at the next verse they have not seen, and never
+skips or repeats one. The day count shown in "Where we are" continues from
+the learner's own count; it is not recomputed from the new sequence.
+
 **Chapter openings** ("Where this sits") are eighteen short paragraphs, one
 per chapter, plus one for lesson one that introduces the text itself: who is
 speaking, to whom, where, and why. They are drafted by the model from the
