@@ -691,6 +691,27 @@ no dashboard.
    content pack so that the next learner to reach that lesson gets the fixed
    version.
 
+**Feedback is evidence, not a verdict.** Reviewers are more learned than the
+learner, and they are also people; a reply can be mistaken. A correction is
+applied only when the operator has verified it against a source. The review
+edition exists so that this is always possible: the Telugu passage, the
+transcript segments with timestamps, and the canon record are right there.
+
+| Kind of feedback | Example | How it is checked | If verified | If not |
+|---|---|---|---|---|
+| Fidelity claim | "The lesson says the teacher said X; he said Y." | Read the transcript at the timestamp; listen to the recording if the transcript is unclear. | Correct the pack for future learners. | Log it; leave the lesson. |
+| Translation claim | "This Telugu phrase means Z, not what the lesson says." | Listen at the timestamp. If still unsure, ask a second reviewer; two independent reviewers agreeing is strong evidence, one is a prompt to look. | Correct the translation record and the pack. | Log it; leave the lesson. |
+| Interpretive disagreement | "I think the verse means something else." | None needed. The lesson reports the teacher's reading, not the reviewer's. | n/a | Log as commentary; change nothing. |
+
+Every audit-log entry records the claim, the source checked, the decision,
+and who decided. This is what makes the golden set (P2-1b) trustworthy: it
+holds verified corrections, not opinions.
+
+**Ask narrow questions.** The review edition asks specific, answerable
+questions rather than "any feedback?": "Is this passage what the teacher said
+at 12:34?" and "Does the English match the Telugu above?" A reviewer who is
+elderly or busy gives better answers to a question with a yes or no in it.
+
 Reviewers can stop the same way learners do, with the unsubscribe link.
 
 ### 8.6 New teacher content appears (v1.0 onward)
