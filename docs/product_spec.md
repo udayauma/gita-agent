@@ -230,11 +230,18 @@ received the lesson. The long form contains the teacher's full passage, and
 - Every page instructs search engines not to index it.
 
 This keeps the long form private to recipients without building
-authentication. It is adequate while v1 is private. Before v2 opens the
-service to people the operator does not know, the v2 spec must decide
-whether long-form pages remain link-private, move behind the learner's
-signed link, or are limited to the canon layer with the teacher's passage
-available only by the timestamped source link.
+authentication. It is adequate while v1 is private.
+
+**In v2 the page goes away and the agent takes over.** Once a learner can
+reply to a lesson, the long form is no longer a link. The agent offers it in
+conversation: "Would you like the teacher's full passage on this verse, in
+English and the original Telugu, with the source?" and provides it only to the
+enrolled learner who asks, on the channel they are using, adapted to that
+channel's length. Nothing sits at a public URL. The teacher's words are shared
+one-to-one, on request, the way a tutor reads a passage aloud, rather than
+published. Long-form pages created during v1.1 remain link-private for the
+learners who received them and are not created for new lessons after v2
+launches.
 
 ### 6.6 The review edition
 
@@ -476,7 +483,7 @@ with no fabricated content. Meeting it is the signal to start v2.
 |---|---|---|
 | **v1.0** | Ingestion of the default Gita pack; canon loaded; lesson composition; email delivery to Udaya; unsubscribe; ops digest | The lesson is accurate and delivery is reliable |
 | **v1.1** | Reviewer role and review edition; long-form lesson page; additional learners added by the operator; other P1 items as chosen | The lesson survives expert review, and the service works for more than one person |
-| **v2** | Reply-to-lesson conversation (ADK agent) on low-friction channels: SMS and Slack alongside email; self-serve signup and preferences web surface; public announcement via Udaya's website | The service works for people who do not know the operator, and talking to it is as easy as answering a text |
+| **v2** | Reply-to-lesson conversation (ADK agent) on low-friction channels: SMS and Slack alongside email; long form offered by the agent in conversation instead of a page link (§6.5); self-serve signup and preferences web surface; public announcement via Udaya's website | The service works for people who do not know the operator, and talking to it is as easy as answering a text |
 
 ## 13. Glossary
 
