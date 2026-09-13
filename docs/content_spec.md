@@ -909,6 +909,16 @@ the Gita's own method.
 
 ### 7.1 Welcome primer (draft)
 
+The welcome email opens with a one-line greeting, then the primer, then
+the mechanics (§7.2). The greeting uses the learner's name when the
+operator supplied one and plain "Welcome" when not. `{service_name}` is
+the display name of the service as learners see it, a pack setting (open
+question C5); it is not the repository name.
+
+> {name}, welcome. Starting {first_lesson_date}, one short lesson from the
+> Bhagavad Gita will arrive here each morning from {service_name}. Here is
+> where it comes from, and why a little each day.
+>
 > The Bhagavad Gita is one conversation inside the much larger body of
 > Hindu scripture. At the root are the four Vedas, the oldest texts of
 > Hinduism, held to be heard by seers rather than composed: hymns of praise
@@ -932,12 +942,13 @@ the Gita's own method.
 > again.
 >
 > Hinduism, which its own texts call Sanātana Dharma, the enduring way, is
-> vast and deep, and no one takes it in at once. This service walks one
+> vast and deep, and no one takes it in at once. These lessons walk one
 > text slowly: one idea from the Gita each morning, in plain English, with
-> the verse itself and a short passage from a teacher explaining it. Depth
-> comes from the daily habit, not from any single lesson, which is also how
-> the Gita itself asks to be practised. Read it in five minutes, carry the
-> question for the day, and let the rest go.
+> the verse itself, a short passage explaining it, and a link to where that
+> explanation came from. Depth comes from the daily habit, not from any
+> single lesson, which is also how the Gita itself asks to be practised.
+> Read it in five minutes, carry the question for the day, and let the
+> rest go.
 
 ### 7.2 Welcome mechanics (template)
 
@@ -1044,6 +1055,7 @@ from the log, never edited by hand.
 | C2 | Chapter openings and the primer: Udaya edits the drafts in §3.4 and §7.1 before the first send? | Udaya | Yes, before day 1 |
 | C3 | Relevance threshold and series-preference margin: tuned on which twenty verses? Proposal: the first lesson of each chapter plus 2.47 and 18.66. | Operator | No; set during phase 1 |
 | C4 | Reaction labels: keep "Got it / Unclear / Loved it"? | Udaya | No |
+| C5 | Service display name as learners see it in the welcome email and the sender line. "Gita Agent" is the repository name, not a name for a learner. Proposals: "Daily Gita", "Gita, a little each day", or simply Udaya's own name as sender with no service name at all. | Udaya | Yes, before the first welcome email |
 
 ## Appendix A. Composition prompt, v1 draft
 
