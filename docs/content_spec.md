@@ -770,13 +770,28 @@ quality issue for the audit, not a banned-word hit.
 
 ### 6.1 Episodes
 
-The Bhagavatam series is segmented into **episodes** of roughly 8 to 15
-minutes of discourse, cut at topic boundaries the model identifies from the
-transcript (a new story, a new character, a return to the frame narrative).
-Sixty-eight hours yields roughly 350 to 450 episodes. The episode list is a
-pack artifact, `episodes.json`, drafted by the model per video, validated
-for length, reviewed by the operator, versioned, and refused when
-unreviewed, exactly like the verse sequence.
+The Bhagavatam series is segmented into **episodes**, cut at topic
+boundaries the model identifies from the transcript: a new story, a new
+character, a return to the frame narrative, a shift from narration to
+teaching. The unit is one story or one teaching, the way the unit of a
+verse lesson is one idea (§3.1).
+
+**Length is guidance, count is an outcome.** An episode is expected to run
+about 8 to 15 minutes of discourse, and sixty-eight hours is expected to
+yield somewhere around 350 to 450 episodes. Neither figure is a limit. A
+story that takes twenty-five minutes is one episode; a teaching that takes
+four is one episode. The validator reports episode lengths and the count
+per video and flags outliers for a human eye; it never fails on either, and
+no boundary is ever moved to hit a number. If the series has 600 stories,
+there are 600 episodes. This is the same rule as the verse sequence
+(§3.2 rule 6) and the same soft-bound treatment as other reviewed artifacts
+(§5.2).
+
+The episode list is a pack artifact, `episodes.json`, drafted by the model
+per video, reviewed by the operator per video, versioned, and refused when
+its video is unreviewed, exactly like the verse sequence. Review is ahead of
+the learner: the first few videos before the story track is switched on,
+then a video ahead.
 
 ### 6.2 Template
 

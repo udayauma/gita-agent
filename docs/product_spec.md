@@ -626,7 +626,9 @@ Bhagavatam is never forced onto a verse it does not speak to.
 one episode at a time, not anchored to a verse: where we are in the series,
 the teacher's passage in English, what it means, a question. It uses the same
 pipeline, the same fidelity rules, and a different template. Sixty-eight
-hours is roughly four hundred episodes. The story track is a **daily second
+hours is expected to be roughly four hundred episodes; the count is an
+outcome of cutting at story boundaries, never a target (content spec §6.1).
+The story track is a **daily second
 track, opt-in, off by default, delivered as its own email** at the learner's
 delivery time, so a learner can read the verse in the morning and the story
 whenever suits them. The two tracks keep separate progress. Composition cost
