@@ -618,7 +618,7 @@ content work.
 
 ## 8. User journeys
 
-### 8.1 Operator adds a learner
+### 8.1 Operator adds a learner (v1.0 onward)
 
 1. The operator adds a learner with, at minimum, an email address and a
    timezone. Optional: name, delivery time, pace, pack.
@@ -639,25 +639,29 @@ content work.
 Adding a learner is a configuration change made by the operator, not a form. In
 v1 there is exactly one operator.
 
-### 8.2 The daily lesson
+### 8.2 The daily lesson (v1.0 onward)
 
 1. At the learner's delivery time, the next lesson in the sequence is composed
    and sent.
-2. The learner reads it. There is nothing to click, though the source links are
-   there.
-3. The learner's progress advances by one.
+2. The learner reads it. Nothing is required of them, though the source link
+   and, from v1.1, the "read more" link are there.
+3. If they choose, the learner taps one of the three reactions in the footer
+   (§6.7). A thank-you page confirms it and offers a box for one sentence
+   more. Reactions are optional; most days a learner will not react, and that
+   is fine.
+4. The learner's progress advances by one, whether or not they reacted.
 
 If a lesson cannot be sent, it is retried within the hour. If it still fails,
 the operator is notified, and the learner's progress does not advance, so the
 same lesson is sent the next day rather than skipped.
 
-### 8.3 Learner stops
+### 8.3 Learner stops (v1.0 onward)
 
 Every email carries an unsubscribe link. Clicking it stops delivery
 immediately, sends one confirmation, and preserves the learner's progress in
 case they return. No further email is sent for any reason.
 
-### 8.4 Operator checks on the service
+### 8.4 Operator checks on the service (v1.0 onward)
 
 Once a week the operator receives an **ops digest** email: lessons sent and to
 whom, failures, reactions and one-sentence notes per lesson, new videos
@@ -689,11 +693,31 @@ no dashboard.
 
 Reviewers can stop the same way learners do, with the unsubscribe link.
 
-### 8.6 New teacher content appears
+### 8.6 New teacher content appears (v1.0 onward)
 
 Once a week, the service checks each configured playlist for videos it has not
 yet processed, processes them, and mentions them in the next ops digest. No
 operator action is needed. Already-processed videos are never reprocessed.
+
+### 8.7 v2 journeys (sketch)
+
+These are listed here so that the v2 journeys sit next to the v1 ones. Each
+gets its full treatment in the v2 spec.
+
+- **Self-serve signup.** A person arrives from Udaya's website, gives a
+  contact (email, phone, or Slack) and a timezone, sees the defaults, and
+  confirms. They receive the welcome email with the primer, then lesson one.
+  No operator involvement.
+- **Reply and converse.** A learner replies to a lesson on the channel it
+  arrived on. The agent answers from the canon and transcript stores, cites
+  the verse and the teacher's passage, and offers the full passage if asked.
+  The thread is keyed by the lesson ID.
+- **Preferences in conversation.** "Pause for two weeks," "send at 6 instead,"
+  "turn on the stories," "stop." The agent confirms and applies. No settings
+  page is needed, though one exists.
+- **Story track opt-in.** Offered once in the welcome flow and available any
+  time by asking. Off by default.
+- **Reviewer journeys do not exist in v2.** Their judgment runs as evals.
 
 ## 9. Requirements
 
