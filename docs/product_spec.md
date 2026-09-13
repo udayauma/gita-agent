@@ -566,7 +566,7 @@ If an operator configures nothing, the service works. The defaults are:
 | Layer | Default |
 |---|---|
 | Canon | `gita/gita` dataset, pinned version |
-| Teacher pack | Sri Chaganti Koteswara Rao, "Bhagavad Gita" playlist (8 videos, 8.5 h) |
+| Teacher pack | Sri Chaganti Koteswara Rao: the "Bhagavad Gita" playlist (8 videos, 8.5 h) and the "Sampoorna Srimad Bhagavatam" series (40 videos, 68 h), see §7.4 |
 | Translation | The dataset's default English translation, named in every lesson |
 | Pace | One lesson per day |
 | Delivery time | 07:00 in the learner's timezone |
@@ -584,13 +584,34 @@ tie-break. Whatever the channel, a learner who provides nothing beyond a
 contact and a timezone still receives a complete lesson using every other
 default.
 
-### 7.4 Content order
+### 7.4 The default teacher's two series
 
-The default teacher's "Bhagavad Gita" playlist is ingested first because it
-maps directly onto the canon. The much larger "Sampoorna Srimad Bhagavatam"
-series (40 videos, 68 h) is a different text, the Purana of Krishna's life, and
-does not align to Gita verses. It becomes a second pack and a candidate for a
-separate "story" track in a later version. It is not part of v1 lessons.
+The default teacher pack contains two of Sri Chaganti Koteswara Rao's series,
+both recommended by Udaya's father, and both are part of v1:
+
+| Series | Size | What it is | Role in lessons |
+|---|---|---|---|
+| Bhagavad Gita playlist | 8 videos, 8.5 h | Discourse on the Gita itself | Primary lens for verse lessons. Ingested first. |
+| Sampoorna Srimad Bhagavatam | 40 videos, 68 h | Discourse on the Bhagavata Purana: Krishna's life and the devotional stories | Secondary lens for verse lessons from v1.0; its own story track from v1.1 |
+
+**v1.0: both series are ingested, and verse lessons retrieve across both.**
+When a verse lesson looks for "From the teacher," it searches the whole pack.
+The Bhagavatam discourses speak constantly about karma, devotion, and
+Krishna, so for many verses the most relevant passage will come from there.
+The lesson names the series, video, and timestamp it drew from, as always.
+Where no passage in either series is relevant enough, the retrieval threshold
+does not select one, and the lesson carries the canon layer only (§6.2). The
+Bhagavatam is never forced onto a verse it does not speak to.
+
+**v1.1: the story track.** A second lesson type walks the Bhagavatam in order,
+one episode at a time, not anchored to a verse: where we are in the series,
+the teacher's passage in English, what it means, a question. It uses the same
+pipeline, the same fidelity rules, and a different template. Sixty-eight
+hours is roughly four hundred episodes, so cadence is a real choice: weekend
+lessons alongside the verse track, or a daily second track a learner opts
+into. This is open question 7. Ingestion of the full series happens in v1.0
+regardless, so the story track is a template and a schedule, not new content
+work.
 
 ## 8. User journeys
 
@@ -697,7 +718,7 @@ operator action is needed. Already-processed videos are never reprocessed.
 | P1-0 | Reviewer role and review edition per §3, §6.6, §8.5 | Operator-managed review list; email only; review edition is a rendering option on the same lesson; feedback by email reply, logged manually into the golden set. Retired at v2. |
 | P1-0b | Long-form lesson page per §6.5, linked from every email footer via a recipient-signed link | Static, generated with the email, never edited after publication. Served only with a valid token; no unsigned URL; not indexed; tokens revoked on unsubscribe. v1 only; retired at v2 launch. |
 | P1-1 | Per-learner pace options: weekdays only, every other day | Schema supports it in v1; UI is a config field. |
-| P1-2 | Second default pack: Srimad Bhagavatam as a "story" track | Requires a lesson type that is not verse-anchored. |
+| P1-2 | Bhagavatam story track per §7.4: a second lesson type walking the series in order | Content is already ingested in v1.0; this adds a template, an episode sequence, and a schedule. Cadence is open question 7. |
 | P1-3 | Operator-triggered "resend today's lesson" and "skip to lesson N" | For recovery and testing. |
 | P1-4 | Include the original Telugu passage alongside the English in "From the teacher" | Stored already; a rendering option. |
 | P1-5 | Alternate translation choice per learner | Dataset has several; lesson names whichever is used. |
@@ -741,6 +762,7 @@ with no fabricated content. Meeting it is the signal to start v2.
 | 4 | Sender identity: which address and domain do lessons come from? Affects deliverability and is a setup step. | Udaya, technical spec | Yes, before first send |
 | 5 | Monthly cost ceiling for the GCP budget alert. | Udaya | No |
 | 6 | Default English translation for v2 public use: Purohit Swami (1935) or Sivananda (1942), and whether the three later translators are offered at all. Needs a rights check, not a taste call. | Udaya, content spec | Not for v1; yes before v2 |
+| 7 | Story track cadence (§7.4): weekend lessons alongside the verse track, or a daily opt-in second track? Roughly 400 episodes either way. | Udaya | Not for v1.0; yes before v1.1 |
 
 ## 12. Phasing
 
