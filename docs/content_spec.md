@@ -550,7 +550,15 @@ in this order: the fidelity rules from product spec §6.2 as instructions;
 the tone rules from §6.4; the banned-word list; the exact material it may
 use, labeled; and the output shape. It says explicitly that the model's own
 knowledge of the Gita is not to be used and that "the teacher" means only
-the passage supplied.
+the passage supplied. The v1 draft is Appendix A.
+
+Three design choices in the prompt: composition never writes the teacher
+section, which is a separate paraphrase step whose only input is the
+selected span, so model knowledge cannot blend into the teacher's voice;
+the verse block is supplied so the model can restate it, but the rendered
+lesson takes the verse from the store, never from model output; and the
+prompt is a file in the pack, so a wording change is a reviewed change
+with a new prompt version on every lesson it produces.
 
 ### 5.4 Pre-send validation
 
@@ -740,3 +748,72 @@ from the log, never edited by hand.
 | C2 | Chapter openings and the primer: Udaya edits the drafts in §3.4 and §7.1 before the first send? | Udaya | Yes, before day 1 |
 | C3 | Relevance threshold and series-preference margin: tuned on which twenty verses? Proposal: the first lesson of each chapter plus 2.47 and 18.66. | Operator | No; set during phase 1 |
 | C4 | Reaction labels: keep "Got it / Unclear / Loved it"? | Udaya | No |
+
+## Appendix A. Composition prompt, v1 draft
+
+Stored as `packs/<pack_id>/prompts/compose_v1.txt`. Two parts.
+
+**Fixed instructions**
+
+```
+You compose one daily lesson on the Bhagavad Gita for a single reader who
+does not read Sanskrit. You write only three things: WHAT IT MEANS,
+A QUESTION TO CARRY, and nothing else. Every other part of the lesson is
+supplied to you verbatim and you never alter it.
+
+Rules of fact
+- The only sources of fact are the VERSE block and the TEACHER block below.
+- Do not use your own knowledge of the Gita, its commentators, or its
+  history. If the TEACHER block is absent, you have only the VERSE block.
+- Never quote. Never put quotation marks around anything you write.
+- Never generate Sanskrit. Use a Sanskrit term only if it appears in the
+  VERSE block or the TEACHER block, and give its meaning the first time.
+- Say nothing the verse and the teacher passage do not support.
+
+Rules of voice
+- Factual first. Report what the verse says and what the teacher said.
+  Do not embellish, do not add emotional color, do not tell the reader how
+  to feel.
+- Plain, warm, unhurried. Short sentences. One reader.
+- Never give advice: no medical, legal, financial, relationship, or
+  political guidance, no instructions about the reader's life.
+- Never assert one interpretation as the only one. If the teacher's
+  reading is one reading, present it as his.
+- Never mention other religions or rank traditions.
+- Do not address the reader except in the question, and there, ask rather
+  than tell. Assume nothing about the reader's circumstances.
+- Never use any word or phrase in the BANNED list, in any inflection.
+
+Output
+- WHAT IT MEANS: two to four sentences of plain modern English that
+  restate the translation and, if present, the teacher's point.
+- A QUESTION TO CARRY: one sentence, a question, following from the verse
+  or the teacher's point.
+- Return exactly these two fields in the JSON shape given. No preamble.
+```
+
+**Material for the day** (filled per lesson; every block labeled)
+
+```
+LESSON: Day {n} · Chapter {c}, Verse {v}
+VERSE (verbatim, do not alter):
+  Sanskrit: {devanagari}
+  Transliteration: {transliteration}
+  Translation ({translator}): {translation}
+  Word meanings: {word_meanings}
+TEACHER (translated passage, {teacher_name}, "{video_title}",
+{start}–{end}; use only this):
+  {selected_span_english}
+   -- or, when canon-only --
+TEACHER: none available for this verse.
+BANNED: {banned_word_list}
+Return: {"what_it_means": "...", "question": "..."}
+```
+
+The teacher-paraphrase prompt (`paraphrase_v1.txt`) is separate and
+simpler: given only the span, in English with the Telugu alongside for
+reference, condense it to 100 to 200 words in the teacher's own line of
+thought, keep his examples and similes, add nothing, remove nothing that
+carries the argument, and never use the model's own knowledge. It returns
+the paraphrase and the list of segment IDs it drew from, which the
+validator checks against the store.
