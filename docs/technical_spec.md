@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft; revised after an independent staff-level review (81 findings, 2026-09-13); awaiting Udaya's review |
+| **Status** | Draft; revised after two independent staff-level review passes (81 findings, then 35 on the revision, 2026-09-13); awaiting Udaya's review |
 | **Owner** | Udaya Pillalamarri |
 | **Answers to** | `docs/product_spec.md` §9 (every P0; P1-1 to P1-7, P1-10, P1-11; P2-1 to P2-10 as design constraints), `docs/content_spec.md` (all sections) |
 | **Audience** | A senior or staff engineer who has to approve this, and the operator who has to run it |
