@@ -203,7 +203,7 @@ C4Container
     Container(digest, "digest", "Cloud Run Job", "Weekly digest; monthly canon and model-deprecation checks")
     Container(links, "links", "Cloud Run Service, min 0", "Signed-link endpoint: reactions, unsubscribe (GET confirm + POST), long form (v1.1)")
     ContainerDb(fs, "Firestore (Native, nam5)", "document DB", "learners, reviewers, positions, lessons, traces, deliveries, reactions, segments, segment_overrides, videos, packs, model_calls")
-    ContainerDb(gcs, "Cloud Storage", "object store", "two buckets: raw (retention-locked) and store (canon snapshot, rendered lessons, long-form HTML)")
+    ContainerDb(gcs, "Cloud Storage", "object store", "two buckets: raw (retention policy) and store (canon snapshot, rendered lessons, long-form HTML)")
     ContainerDb(sm, "Secret Manager", "secrets", "gmail-refresh-token, pinecone-api-key, link-key, operator-config")
     Container(mon, "Cloud Monitoring + Trace + Logging", "observability", "OTel spans; structlog JSON; alerting policies")
     Container(build, "Cloud Build + Artifact Registry", "CI/CD", "Image build on tag; weekly contract-test and eval triggers")
