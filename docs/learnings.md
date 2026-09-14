@@ -184,6 +184,41 @@ tell someone else. **Evidence** points at the commit, doc, or moment.
 - **Evidence.** Commit 0810ad9, "Apply independent cross-spec review: 18
   findings."
 
+### The technical spec review: 81 findings, and which ones would have hurt
+
+- **Observation.** The same narrowly scoped reviewer pattern, applied to
+  the first draft of the technical spec against both upstream specs,
+  returned 81 findings. Roughly a third were cross-reference and naming
+  slips. A third were mechanisms the content spec defined that the data
+  model had not carried (the trace record had no shape; overrides had no
+  record; fixed texts had no file). The last third were the ones that
+  matter: Cloud Scheduler cannot trigger a Cloud Run *Job* with an OIDC
+  token, only a Service; a Gmail refresh token minted while the OAuth
+  consent screen is in "Testing" dies after seven days, which would have
+  silently killed delivery on day eight; a single-task ingest with a
+  one-hour timeout cannot process 85 hours of video; mail security
+  scanners prefetch links, so unsubscribe on GET would have unsubscribed
+  people; a base64 payload is not opaque, so the learner ID was in every
+  URL; a lost Gmail response retried "byte-identically" is a duplicate
+  email, because Gmail has no idempotency key.
+- **Lesson.** An author's first architecture draft is optimistic about
+  platform details it has not exercised. The reviewer caught platform
+  behavior the author "knew" but had not checked. Each of these is cheap
+  to fix in a document and expensive to discover in production.
+- **Lesson.** Ask the reviewer to grade its own confidence. The prompt
+  asked it to say when it was not sure; it did, on three items (embedding
+  batch size, YouTube-hours quota on Vertex, timestamp origin for clipped
+  windows), and those became contract tests rather than assertions.
+- **Lesson.** Some findings are decisions, not fixes. Five became open
+  questions for the owner (region, custom domain, OAuth flow, judge model,
+  reactions-on-GET). Separating "fix" from "decide" is part of applying a
+  review.
+- **Lesson.** Rewrite, do not patch, when findings exceed a few dozen.
+  Applying 81 edits to an 800-line document would have left seams; the
+  rewrite took the findings as a checklist and produced a coherent
+  document, then the content spec was aligned in one pass.
+- **Evidence.** Commit a946d5f; technical spec §8.2, §8.4, §9, §13, D17–D20.
+
 ### When the human's question is better than the spec
 
 - **Observation.** Three of the day's most consequential changes came from
