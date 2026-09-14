@@ -352,9 +352,9 @@ credential, which is the right level for a private v1.
 **Long-form pages exist only in v1.** They are a v1.1 feature and are retired
 at v2 launch. At that point no new pages are generated, existing pages are
 taken down, and the "read more" link is dropped from the lesson. The long form
-survives as something the agent offers in conversation: "Would you like the
-teacher's full passage on this verse, in English and the original Telugu, with
-the source?" It is provided only to the enrolled learner who asks, on the
+survives as something the agent offers in conversation: "Would you like
+{teacher_honorific}'s full passage on this verse, in English and the original
+Telugu, with the source?" It is provided only to the enrolled learner who asks, on the
 channel they are using, adapted to that channel's length. The teacher's words
 are shared one-to-one, on request, the way a tutor reads a passage aloud,
 never published at a URL.

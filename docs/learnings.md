@@ -152,6 +152,67 @@ tell someone else. **Evidence** points at the commit, doc, or moment.
   `main` was worth a careful, literal answer before acting. The mental
   model gap (push equals merge) would have caused a real scare.
 
+
+## 2026-09-13 · Day two: the content spec and the first sub-agent
+
+### An independent reviewer catches what the author cannot
+
+- **Observation.** After the owner and the agent had reviewed the product
+  and content specs together over two days, the agent ran a single
+  sub-agent with one instruction: read both documents completely and report
+  only concrete inconsistencies. It returned eighteen findings in seven
+  minutes. Several were things the authoring agent had introduced itself
+  and could not see: a "soft" banned-word tier in one document that
+  contradicted three absolute statements in the other; a message type
+  tagged v1.0 in one table and v1.1 in every other place; a role whose
+  daily position was undefined once learners could be at different points;
+  cross-references to requirement IDs that had been renumbered.
+- **Lesson.** The author of a document is the worst reviewer of its
+  consistency, and that is as true of an agent as of a person. A reviewer
+  with no memory of why anything was written, reading only what is on the
+  page, is the cheapest strong check available. It is worth running before
+  every "are we good to go" moment.
+- **Lesson.** Scope the reviewer narrowly. "Report only concrete
+  inconsistencies, quote both sides, suggest a one-line fix, do not edit"
+  produced a list that could be applied in one pass. A general "review
+  this" would have produced opinions.
+- **Lesson.** The files changed under the reviewer while it read (the
+  authoring agent kept fixing its own findings in parallel). The reviewer
+  noticed the modification times, re-verified every finding against the
+  current text, and dropped the ones already fixed. That is the behavior to
+  ask for explicitly when review and editing overlap.
+- **Evidence.** Commit 0810ad9, "Apply independent cross-spec review: 18
+  findings."
+
+### When the human's question is better than the spec
+
+- **Observation.** Three of the day's most consequential changes came from
+  the owner asking a plain question the spec had glossed over: "what is the
+  scoring algorithm?" (there was none; the confidence grade was the model's
+  self-report), "what happens to the low entries, do we log them?" (nothing
+  was recorded; the composition trace did not exist), and "is the banned
+  list a bit restrictive?" (it was; a single tier that blocked sends).
+- **Lesson.** A spec reads as complete until someone asks how a specific
+  thing actually happens. Walking a reader through the document section by
+  section, and answering every "how" with a mechanism rather than a
+  reassurance, is the review. Each of those three answers became a section
+  with a table and a test.
+
+### Small things
+
+- The lesson count and the episode count were both written as targets and
+  both had to be rewritten as outcomes of the grouping rules. A number in a
+  spec is read as a limit unless the spec says it is not.
+- "Tradition" was a hedge for "Hinduism." The owner asked for precision;
+  the primer got better and the reference section (content spec §7.0) came
+  out of the same question, with the teacher's own words cited to a
+  timestamp.
+- Pruning guidance from prompts as models improve, while keeping
+  constraints, is now written policy (content spec §5.3). The owner raised
+  it from the observation that natural-language instructions, in prompts
+  and in skills alike, can hold a more capable model below what it could
+  do.
+
 ---
 
 ## Article outline (evolving)
@@ -171,8 +232,10 @@ grand). Themes, each mapping to entries above:
    track the model.
 6. **Boring process, real leverage.** Tags over archive folders; trunk
    with deferred PRs; confirm-before-shared-state; memory files.
-7. **When not to orchestrate.** One agent, one conversation, until the
-   work is parallel. (To be written after phase 1.)
+7. **When not to orchestrate, and the first time it paid off.** One agent,
+   one conversation, until the work is parallel; then a single narrowly
+   scoped reviewer sub-agent that found eighteen inconsistencies the author
+   could not see.
 
 Open questions for the article: how much of the nuance is specific to a
 solo project with a single owner; what changed once Greptile and the triage
