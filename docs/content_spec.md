@@ -288,12 +288,15 @@ stored per learner (product spec P0-2; scoped per P2-6, erasable per P2-9) is:
 - for the story track (v1.1), the last episode delivered, separately.
 
 The next lesson for a learner is the first lesson in the current sequence
-whose first verse comes after the learner's last delivered verse. Storing
-the position as a verse rather than as an index is deliberate: if a
-correction produces a new sequence version that regroups verses, a learner
-part-way through resumes at the next verse they have not seen, and never
-skips or repeats one. The day count shown in "Where we are" continues from
-the learner's own count; it is not recomputed from the new sequence.
+whose **last** verse comes after the learner's last delivered verse.
+Storing the position as a verse rather than as an index is deliberate: if
+a correction produces a new sequence version that regroups verses, a
+learner part-way through resumes with the first lesson that contains a
+verse they have not seen. Such a lesson may **repeat** a verse they have
+already read (when the regrouped lesson spans their last verse), but it can
+never **skip** one; repeating a verse in context is harmless, skipping one
+is not. The day count shown in "Where we are" continues from the learner's
+own count; it is not recomputed from the new sequence.
 
 **Chapter openings** ("Where this sits") are eighteen short paragraphs, one
 per chapter. Chapter 1's opening doubles as the introduction to the text
@@ -478,8 +481,9 @@ One record per marker-delimited paragraph within a window:
 | `superseded_by` | Empty unless a later re-ingestion of the same window replaced this segment (§4.6); superseded segments are kept, never selected |
 | `model_id`, `prompt_version`, `ingested_at` | Provenance |
 
-The store is the system of record. The vector index holds the English text
-of each segment with its identifying fields as metadata and can be rebuilt
+The store is the system of record. The vector index holds one vector per
+segment, computed from its English text, with identifying fields as
+metadata; the text itself lives only in the store. The index can be rebuilt
 from the store at any time.
 
 **How confidence is assigned.** The model's self-reported confidence (§4.3
@@ -573,11 +577,14 @@ Selection, in order:
    in so the passage has its full context. This step is **positional, not
    semantic**: the segments immediately before and after the winner by
    timestamp are read from the store, because a teacher's thought runs
-   across marker boundaries in time. Two bounds apply: a time window of
-   roughly one minute before and two minutes after the winner, and a soft
+   across marker boundaries in time. Three bounds apply: a time window of
+   roughly one minute before and two minutes after the winner; a soft
    on-topic check that drops a neighbor whose similarity to the query falls
    far below the winner's, so a story that begins mid-window is not dragged
-   in. The passage is then 100 to 200 words of English drawn from that span.
+   in; and a confidence stop, so that extension on each side halts at the
+   first `low`-graded segment (it and anything beyond it are left out, and
+   the trace records `neighbor_low_confidence`). The passage is then 100 to
+   200 words of English drawn from that span.
 5. **Nothing above threshold, or only `low` confidence:** the lesson is sent
    canon-only, says so in one plain sentence in place of the teacher
    section, and is flagged (P0-11).
@@ -602,7 +609,7 @@ The trace holds:
 |---|---|
 | Query | The text and terms retrieval was run with, and the lesson's verses |
 | Settings in force | Relevance threshold, series-preference margin, neighbor window, and the manifest version they came from |
-| Candidates | Every segment considered: those with a direct reference, and every semantic match above the threshold plus the next few below it. For each: segment ID, video, timestamp, series role, similarity score, confidence grade with its signal values, and the **rule that accepted or rejected it** (`direct_ref`, `above_threshold`, `below_threshold`, `low_confidence`, `secondary_lost_margin`, `neighbor_off_topic`) |
+| Candidates | Every segment considered: those with a direct reference, and every semantic match above the threshold plus the next few below it. For each: segment ID, video, timestamp, series role, similarity score, confidence grade with its signal values, and the **rule that accepted or rejected it** (`direct_ref`, `above_threshold`, `below_threshold`, `low_confidence`, `secondary_lost_margin`, `neighbor_off_topic`, `neighbor_low_confidence`) |
 | Selection | The winning segment, the neighbor span actually used, and the paraphrase's returned segment IDs |
 | Outcome | `teacher_section` or `canon_only`, and for canon-only a single reason code: `no_candidates`, `all_below_threshold`, `all_low_confidence`, `paraphrase_failed_validation` |
 | Provenance | Model ID and prompt versions for retrieval embedding, paraphrase, and composition |
@@ -894,8 +901,7 @@ texts can be read without guessing.
 | `{n}`, `{total}` | Learner position and sequence length (§3.4) | per lesson |
 | `{c}`, `{v}`, `{v1}`, `{v2}` | The lesson's chapter and verse or verse range from `sequence.json` | per lesson |
 | `{episode_title}`, `{video_number}` | `episodes.json` (story track, v1.1): the episode's title and the series part it comes from | per lesson |
-| `{end}` | The selected span's end timestamp, stored on the lesson citation with `{start}` | per lesson |
-| `{video_title}`, `{start}`, `{end}` | The selected span's segment records (§4.4) | per lesson |
+| `{video_title}`, `{start}`, `{end}` | The selected span's segment records (§4.4); `{start}` and `{end}` are stored on the lesson citation | per lesson |
 | `{date}`, `{reference}`, `{citation}` | Correction note (§7.7): the affected lesson's send date, its "Where we are" line, and the source that justified the correction | per note |
 | `{week_of}` | Ops digest (§7.9): the Monday of the reported week | per digest |
 | `{send_date}`, `{count}` | Failure notification (§7.9): the delivery date and the number of lessons not sent | per notification |
@@ -1126,9 +1132,16 @@ The passage line is omitted on a canon-only lesson. `{canon_source}` is
 
 ### 7.6 Unsubscribe confirmation
 
+To a learner:
+
 > You will not receive further lessons. Your place in the sequence is kept
 > in case you return; reply to this email if you would like to. Nothing
 > else will be sent.
+
+To a reviewer (v1.1):
+
+> You will not receive further review editions. Thank you for reviewing.
+> Nothing else will be sent.
 
 ### 7.7 Correction note (template, v1.1)
 

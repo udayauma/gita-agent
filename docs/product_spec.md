@@ -673,7 +673,7 @@ content work.
      learner.
    - **The mechanics**: what will arrive, when, from whom, how long it takes to
      read, how to stop, and the date of the first lesson.
-3. The next morning at the delivery time, lesson one arrives.
+3. At the next delivery time after the welcome, lesson one arrives.
 
 Adding a learner is a configuration change made by the operator, not a form. In
 v1 there is exactly one operator.
@@ -696,9 +696,10 @@ same lesson is sent the next day rather than skipped.
 
 ### 8.3 Learner stops (v1.0 onward)
 
-Every email carries an unsubscribe link. Clicking it stops delivery
-immediately, sends one confirmation, and preserves the learner's progress in
-case they return. No further email is sent for any reason.
+Every email carries an unsubscribe link. Confirming it, with one click on
+the confirm page or through the mail client's one-click unsubscribe, stops
+delivery immediately, sends one confirmation, and preserves the learner's
+progress in case they return. No further email is sent for any reason.
 
 ### 8.4 Operator checks on the service (v1.0 onward)
 
@@ -716,9 +717,10 @@ roll-up, not the alarm.
 
 ### 8.5 Reviewer receives and answers (v1.1 only, email only)
 
-1. The operator adds a reviewer with an email address, a timezone, and a
-   delivery time, the same fields as a learner. A reviewer is not required to
-   be a learner. Email is the only channel for reviewers; the role does not
+1. The operator adds a reviewer with an email address and the learner they
+   shadow. A reviewer is not required to be a learner; they receive the
+   review edition when the shadowed learner receives the lesson, so they
+   need no timezone or delivery time of their own. Email is the only channel for reviewers; the role does not
    extend to SMS or Slack and is retired at v2.
 2. The reviewer receives a **reviewer welcome email** the same day. It says,
    in plain terms: you have been asked to review daily Bhagavad Gita lessons
@@ -802,10 +804,10 @@ acceptance criterion is not a requirement.
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| P0-1 | Daily lesson delivery by email at the learner's local time, sent as the operator identity (§8.2, §6.2 reach, §7.2) | Given an active learner with delivery time 07:00 Asia/Kolkata, when 07:00 IST arrives, then a lesson email is sent within 5 minutes from the configured sender (within 10 minutes if one scheduled run is missed; technical spec §8.2). When the day's send has already succeeded, no second email is sent that day. No email is ever sent outside the learner's configured window. |
+| P0-1 | Daily lesson delivery by email at the learner's local time, sent as the operator identity (§8.2, §6.2 reach, §7.2) | Given an active learner with delivery time 07:00 Asia/Kolkata, when 07:00 IST arrives, then a lesson email is sent within 5 minutes from the configured sender (within 10 minutes if one scheduled run is missed; technical spec §8.2). When the day's send has already succeeded, no second email is sent that day. No lesson email is ever sent outside the learner's configured window; the welcome and the unsubscribe confirmation are sent when triggered. |
 | P0-2 | Sequential progress per learner, following the pack's fixed sequence (§6.3, §8.2) | Two learners on the same pack at different start dates each receive the identical sequence from lesson 1. Progress is stored per learner and survives restarts. The sequence is a pack artifact, not computed per send. |
 | P0-3 | Failure visibility and no silent skips (§8.2, §6.2 delivery) | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance, so the same lesson is sent next day. |
-| P0-4 | Unsubscribe (§8.3, §6.5) | Every email has an unsubscribe link. Clicking it stops all future email within one minute, sends exactly one confirmation, preserves progress, and revokes every signed token issued to that learner. |
+| P0-4 | Unsubscribe (§8.3, §6.5) | Every email has an unsubscribe link. Confirming it (one click on the confirm page, or the mail client's one-click unsubscribe) stops all future email within one minute, sends exactly one confirmation, preserves progress, and revokes every signed token issued to that learner. |
 | P0-5 | Welcome email with primer (§8.1) | A newly added learner receives a welcome email before their first lesson. It opens with a one-line greeting using the learner's name when known, then the primer (Vedas, Upanishads, Mahabharata, Gita, and why the Gita is read a little every day) in no more than three short paragraphs, then the mechanics. The primer does not use the word "teacher"; the explanation is described as a passage with a link to its source. The primer is pack content, identical for every learner. |
 | P0-6 | Fixed list of message types per audience (§6.2 reach) | In v1.0 the service can send, to a learner: welcome, daily verse lesson, unsubscribe confirmation; to the operator: failure notification, weekly ops digest. v1.1 adds the correction note, the story-track lesson, the reviewer welcome, and the review edition. Every outbound message carries a type from this list; any other type is a test failure. |
 
@@ -863,8 +865,8 @@ acceptance criterion is not a requirement.
 | P1-7 | Per-learner pace options | Weekdays only, every other day. Schema supports it from v1.0. |
 | P1-8 | Telugu passage alongside the English in "From {teacher}" | Stored already; a rendering option. |
 | P1-9 | Alternate translation per learner | Each translation is its own record with provenance; the lesson names whichever is used. |
-| P1-11 | Source type: audio or video files the operator owns (§7.2) | Same model call with the file instead of the URL; same segment record. |
 | P1-10 | Operator setup guide (§7.2 whose cloud) | States the GCP prerequisite first, the budget-alert step, the operator-identity step, and the rights warning verbatim. |
+| P1-11 | Source type: audio or video files the operator owns (§7.2) | Same model call with the file instead of the URL; same segment record. |
 
 ### P2 — design for in v1, build in v2
 
