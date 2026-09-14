@@ -267,6 +267,29 @@ tell someone else. **Evidence** points at the commit, doc, or moment.
   reassurance, is the review. Each of those three answers became a section
   with a table and a test.
 
+### Serverless as the lesson, not the label (running thread)
+
+- **Observation.** The owner asked whether there was "a place for
+  serverless" in the design. The design was already entirely serverless:
+  Cloud Run Jobs and a Service that scale to zero, Firestore, Cloud
+  Storage, Secret Manager, Pinecone serverless, a managed cron. The label
+  had never been applied because each choice had been made on its own
+  merits (zero idle cost, no instance, transactional create).
+- **Lesson.** Serverless is less a platform than a set of habits the
+  platform forces: stateless execution, idempotency answered from the
+  store, cold starts accepted and measured, least privilege per component,
+  observability without hosts, and event-driven flow where it earns its
+  place. Each of these already had a mechanism in the spec before anyone
+  called the architecture serverless. Learning the habits is the point;
+  the label follows.
+- **Thread to continue in implementation.** Record, as each lands: the
+  first time a killed job recovers cleanly from the delivery record; the
+  measured cold start of `links` and of `deliver`; the first double-send
+  prevented by the transactional create; the first least-privilege
+  denial caught in a contract test; and, in v2, the move from polling to
+  Pub/Sub push for inbound replies.
+- **Evidence.** Technical spec §1.1, D3, D8, D12.
+
 ### Small things
 
 - The lesson count and the episode count were both written as targets and
@@ -310,6 +333,10 @@ grand). Themes, each mapping to entries above:
    class of error; the fix is a draft; stop on convergence, not on a
    count. The 81 → 35 curve, and what the second pass found in the first
    pass's fixes.
+9. **Serverless as habits, not a label.** Stateless, idempotent, cold-start
+   aware, least-privilege, host-less observability; the design had all of
+   them before anyone said the word. (Running thread; to be filled from
+   implementation.)
 
 Open questions for the article: how much of the nuance is specific to a
 solo project with a single owner; what changed once Greptile and the triage

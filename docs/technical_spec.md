@@ -42,6 +42,56 @@ The design's center of gravity is the **fidelity contract** (product spec
 §6.2). Every component either supplies a source verbatim, or produces
 generated text under validation, or records what happened. Nothing else.
 
+## 1.1 Key decisions, in brief
+
+The full decision log with alternatives is §14. These three are the ones a
+reader should know before the diagrams.
+
+**Language: Python 3.13, for everything in v1 (D21, evidence in §14.1).**
+The core of this system is prompt assembly, evaluation, similarity
+scoring, and content tooling, where Python's ecosystem is far deeper than
+Go's. yt-dlp is Python. The only v0 code that survives, the tracing
+module, is Python. And the Agent Development Kit that v2 is built on is
+Python-first by every measure taken on 2026-09-13: four times the
+contributors, seven times the commit rate, 13.8 million monthly downloads,
+and an evaluation package that the Go SDK does not have, which matters
+because a golden-set eval harness is this project's gate to v2. Go was
+seriously considered and is the candidate for rewriting the `links`
+service in v2 if measured click latency warrants it.
+
+**Compute: Cloud Run, Jobs for scheduled work and one Service for
+clicks (D3, D8, D12).** Cloud Run runs a container only while there is
+work: a Job runs to completion and exits; a Service scales to zero
+instances when idle. There is no virtual machine to size, patch, or keep
+alive, billing is per second of container time inside a monthly free
+allowance, and the operator's only recurring "always on" component is a
+managed cron entry in Cloud Scheduler. The alternatives, a long-running
+scheduler process or a VM, were rejected because each needs something
+kept alive and monitored, and each loses state on restart in ways the
+delivery records would then have to paper over.
+
+**Architecture: serverless throughout (D3, D4, D5).** Every store and
+service in the design shares the same properties: no instance, no
+capacity planning, pay per operation, scale to zero. Firestore rather
+than Cloud SQL was the decisive choice, because a database instance is
+the one component that would have broken the model. What serverless
+demands in return, and what this design is built around:
+
+- *Stateless execution.* Any job can be killed at any second; the next
+  run must recover from the store alone. Hence the delivery record, the
+  raw-window sentinel, and the rule for a pending delivery with no lesson.
+- *Idempotency.* "Did this already happen?" is answered by a transactional
+  create in Firestore, never by process memory.
+- *Cold starts.* Accepted and measured; the slim image and CPU boost for
+  `links` exist for this reason.
+- *Least privilege per component.* Three service accounts, each with only
+  what its container needs, because there is no trusted host.
+- *Observability without hosts.* Traces and structured logs are the only
+  window into a run, so every span carries a lesson or window ID.
+- *Event-driven where it earns its place.* Scheduler triggers and signed
+  clicks in v1; Pub/Sub push for inbound email in v2, which is where
+  event-driven design stops being optional.
+
 ## 2. Constraints, restated for engineering
 
 | Constraint | Source | Engineering consequence |
