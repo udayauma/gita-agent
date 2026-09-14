@@ -21,9 +21,10 @@ into its own storage.
 | Document | Purpose |
 |---|---|
 | [`docs/product_spec.md`](docs/product_spec.md) | What we are building, for whom, and what a lesson is |
-| `docs/content_spec.md` | Canon, teacher packs, defaults *(to follow)* |
-| `docs/technical_spec.md` | Architecture, protocols, data model, tests *(to follow)* |
+| [`docs/content_spec.md`](docs/content_spec.md) | Canon, teacher packs, lesson sequence, fixed texts, audit log |
+| [`docs/technical_spec.md`](docs/technical_spec.md) | Architecture, protocols, data model, ingestion and delivery, tests and evals, decision log |
 | `docs/task_plan.md` | Phased, test-first implementation plan *(to follow)* |
+| [`docs/learnings.md`](docs/learnings.md) | Running log of agentic-development lessons |
 | [`docs/archive/`](docs/archive/) | The superseded v0 design (code at git tag `v0-legacy`) |
 
 ## Stack (planned)
