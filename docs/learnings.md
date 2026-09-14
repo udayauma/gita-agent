@@ -219,6 +219,40 @@ tell someone else. **Evidence** points at the commit, doc, or moment.
   document, then the content spec was aligned in one pass.
 - **Evidence.** Commit a946d5f; technical spec §8.2, §8.4, §9, §13, D17–D20.
 
+### How many review passes, and when to stop
+
+- **Observation.** The technical spec went through two independent
+  sub-agent reviews in sequence, each a fresh reader with no memory of the
+  other or of the author's reasoning. Pass one returned 81 findings and
+  led to a full rewrite. Pass two, on the rewrite, returned 35, and
+  several of those were errors introduced by the rewrite itself: an
+  "is the learner still active" check placed after the send instead of
+  before it, a retry rule that contradicted the new forward-only state
+  machine, a resend that shared the daily delivery key and would have
+  blocked the day's lesson. The fix was a draft too.
+- **Lesson.** The number of passes is not the rule; convergence is. Three
+  signals say another pass is worth its cost: the finding count is still
+  dropping steeply (81 to 35 is healthy; 81 to 70 means the process is
+  broken); the last pass still found something that would break in
+  production; and the findings are still about the original content
+  rather than seams from the previous fix. Stop when a fresh reader finds
+  nothing you would act on, or only cosmetics.
+- **Lesson.** For a large artifact that is rewritten between passes, the
+  third pass is usually where convergence happens, which is why "three"
+  feels like a magic number. It is not a number; it is where the curve
+  flattens for that size of change. A one-paragraph edit needs one pass.
+- **Lesson.** Neither the human owner's read nor the author agent's first
+  draft is sufficient, and neither is one independent pass. The owner
+  finds what is wrong for the product; the independent reader finds what
+  is wrong in the document; the second independent reader finds what the
+  fix broke. Each catches a different class.
+- **Cost.** Each pass on three documents totalling about 3,000 lines took
+  eight to ten minutes and roughly 170k tokens. Against the cost of
+  discovering "Scheduler cannot trigger a Job with OIDC" on deploy day,
+  that is cheap, and the curve makes the stopping point visible.
+- **Evidence.** Commits a946d5f (after pass one) and 4b6ec30 (after pass
+  two); finding counts 81 → 35.
+
 ### When the human's question is better than the spec
 
 - **Observation.** Three of the day's most consequential changes came from
@@ -271,6 +305,11 @@ grand). Themes, each mapping to entries above:
    one conversation, until the work is parallel; then a single narrowly
    scoped reviewer sub-agent that found eighteen inconsistencies the author
    could not see.
+8. **One reviewer is not enough, and neither is three by rule.** The
+   owner, the author, and independent readers each catch a different
+   class of error; the fix is a draft; stop on convergence, not on a
+   count. The 81 → 35 curve, and what the second pass found in the first
+   pass's fixes.
 
 Open questions for the article: how much of the nuance is specific to a
 solo project with a single owner; what changed once Greptile and the triage
