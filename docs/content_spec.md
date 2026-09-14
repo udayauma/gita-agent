@@ -285,7 +285,8 @@ stored per learner (product spec P0-2; scoped per P2-6, erasable per P2-9) is:
 - the lesson index and the day count, derived from the two above and stored
   for convenience;
 - the date of the last successful send, so a failed day does not advance;
-- for the story track (v1.1), the last episode delivered, separately.
+- for the story track (v1.1), the end instant of the last episode
+  delivered (video number and end offset), separately.
 
 The next lesson for a learner is the first lesson in the current sequence
 whose **last** verse comes after the learner's last delivered verse.
@@ -295,7 +296,11 @@ learner part-way through resumes with the first lesson that contains a
 verse they have not seen. Such a lesson may **repeat** a verse they have
 already read (when the regrouped lesson spans their last verse), but it can
 never **skip** one; repeating a verse in context is harmless, skipping one
-is not. The day count shown in "Where we are" continues from the learner's
+is not. The story track follows the same rule on time instead of verses:
+the next episode is the first in the current episode list whose end
+instant is after the learner's last delivered end instant, so a re-cut of
+the episodes (§6.1) never skips a minute of the series and may repeat a
+few. The day count shown in "Where we are" continues from the learner's
 own count; it is not recomputed from the new sequence.
 
 **Chapter openings** ("Where this sits") are eighteen short paragraphs, one
