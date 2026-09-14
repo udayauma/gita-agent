@@ -182,6 +182,15 @@ C4Context
 
 ## 4. Containers and every edge
 
+A note on the word *container*. The diagram below is a C4 container
+diagram, and in the C4 model a "container" is any separately deployable
+or runnable unit, including databases and buckets; the term predates
+Docker and is unrelated to it. Separately, Cloud Run runs OCI (Docker)
+container images, and every job and service in this design is deployed as
+one. So `ingest`, `deliver`, `digest`, and `links` are containers in both
+senses; Firestore, Cloud Storage, Secret Manager, and Scheduler are C4
+containers only.
+
 ```mermaid
 C4Container
   title Containers inside the operator's GCP project
