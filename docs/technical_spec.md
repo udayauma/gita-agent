@@ -84,6 +84,26 @@ in Cloud Storage and as a queryable document in Firestore, plus a derived
 vector in Pinecone. Nothing generated from the teacher's recordings is
 ever in the repository (product §7.2).
 
+**Why Firestore is the right operational store here.** Every daily
+operation in this system is a point read or a small transaction: create
+today's delivery record only if it does not already exist, fetch two
+dozen segments by ID, write one reaction, advance one learner's position
+together with the record of the send. Firestore does exactly those things
+in single-digit milliseconds with ACID transactions, and its
+create-if-absent is the single primitive that prevents a learner ever
+receiving two lessons in a day. It costs nothing when idle and nothing at
+this volume. It is a poor fit for analytics over large histories, which is
+BigQuery's job (D22), and that is the one thing this system does not need
+on the daily path.
+
+**Why Firestore over BigQuery for these records.** BigQuery is a columnar
+warehouse: it answers by scanning, so even a tiny table takes a second or
+more per query, it has no transactional create, and row updates run as
+quota-limited jobs. The delivery job would be slower and, on the
+double-send guarantee, incorrect. BigQuery earns its place later, for
+cross-month questions about cost, reactions, and eval trends, fed by
+Firestore's managed export with no migration.
+
 **Why not Cloud SQL.** Cloud SQL is a managed virtual machine running
 Postgres. It runs whether or not anyone uses it, bills by the hour (about
 ten dollars a month at the smallest size, more with high availability),
