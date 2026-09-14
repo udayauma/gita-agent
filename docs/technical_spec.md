@@ -93,7 +93,8 @@ this design costs nothing when idle and needs no capacity decision.
 Adding it would put one always-on server back into a system that has
 none, and it would be the most expensive component by an order of
 magnitude. Google's serverless data services are Firestore and BigQuery;
-Firestore fits the record shapes here.
+Firestore fits the record shapes here, and BigQuery is where the
+analytics go once there is history worth analyzing (D22).
 
 **Architecture: serverless throughout (D3, D4, D5).** Every store and
 service in the design shares the same properties: no instance, no
@@ -1033,6 +1034,7 @@ GCP; GitHub Actions never holds the Gmail token or the Pinecone key.
 | D18 | Discovery via `yt-dlp` with the manifest video list as fallback; no YouTube Data API key | YouTube Data API v3 | Keeps "no Google API keys"; a committed video list is also reproducible and reviewable |
 | D19 | Alarms through Cloud Monitoring, not only email | Email only | The failure notification must not share the dependency that failed |
 | D20 | Unsubscribe requires POST (confirm page or one-click); reactions on GET with scanner filtering, confirm step deferred to v2 | GET for both | Mail scanners prefetch links; a phantom unsubscribe is worse than a phantom reaction |
+| D22 | Firestore for operational records; BigQuery deferred to analytics over exported data | BigQuery as the only store; BigQuery for operational records | Every daily path is a point read or a transaction: the delivery record's atomic create, candidate segment fetches, reaction writes, position advances. Firestore answers those in milliseconds with ACID transactions; BigQuery is a columnar warehouse with second-plus query latency, no transactional create, and DML quotas, so the delivery job would be slower and incorrect on it. BigQuery is the right place for cross-month analysis of model calls, deliveries, and reactions; Firestore's managed export to BigQuery makes that a v1.1 or v2 addition with no migration |
 | D21 | Python 3.13 for everything in v1 | Go for everything; Go for `links` only | The core work is prompts, evals, similarity, and content tooling, where Python's ecosystem is far deeper; yt-dlp is Python; ADK for v2 is Python-first; v0's tested tracing module is Python. Go would win on `links` cold start and on typed concurrency for ingest, and `links` is small and isolated enough to rewrite in Go in v2 if click latency matters with external learners. Cold start is measured in the contract run (§7.5) so that decision is made on a number |
 
 ### 14.1 Evidence for D21: the ADK language SDKs, measured 2026-09-13
