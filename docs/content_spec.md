@@ -363,7 +363,7 @@ artifacts:                  # reviewed files in this directory; each carries its
   chapter_names: chapter_names.json   # IAST names and meanings (§2.3)
   canon_overrides: canon_overrides.json  # documented source slips (§2.4); empty until one exists
   texts: texts.yaml           # every fixed text in §7, versioned and reviewed
-videos: []                  # written by `gita pack discover`; the fallback list when YouTube blocks datacenter discovery
+videos: []                  # top-level; entries {source_id, video_id, title, duration_s}; written by `gita pack discover`; the fallback when YouTube blocks datacenter discovery
 prompts:                    # versioned files under packs/<pack_id>/prompts/
   transcribe: transcribe_v1.txt
   paraphrase: paraphrase_v1.txt
@@ -390,6 +390,7 @@ settings:                   # tuned before day one on hand-checked samples (§10
   embedding:
     model: gemini-embedding-001
     dimensions: 768
+    location: null                     # verified by the contract test
     batch_size: null                   # verified by the contract test
 rights_attestation: >
   I confirm that I have the right to use the content listed above for
@@ -893,6 +894,7 @@ texts can be read without guessing.
 | `{n}`, `{total}` | Learner position and sequence length (§3.4) | per lesson |
 | `{c}`, `{v}`, `{v1}`, `{v2}` | The lesson's chapter and verse or verse range from `sequence.json` | per lesson |
 | `{episode_title}`, `{video_number}` | `episodes.json` (story track, v1.1): the episode's title and the series part it comes from | per lesson |
+| `{end}` | The selected span's end timestamp, stored on the lesson citation with `{start}` | per lesson |
 | `{video_title}`, `{start}`, `{end}` | The selected span's segment records (§4.4) | per lesson |
 | `{date}`, `{reference}`, `{citation}` | Correction note (§7.7): the affected lesson's send date, its "Where we are" line, and the source that justified the correction | per note |
 | `{week_of}` | Ops digest (§7.9): the Monday of the reported week | per digest |
@@ -1138,7 +1140,8 @@ The passage line is omitted on a canon-only lesson. `{canon_source}` is
 
 Labels: **Got it** · **Unclear** · **Loved it**. Thank-you page, one line:
 "Noted, thank you." followed by an optional single-line box labeled "One
-sentence more, if you like" and a Send button. Nothing else on the page.
+sentence more, if you like", a Send button, and a small "Undo" link that
+clears the reaction. Nothing else on the page.
 
 ### 7.9 Subject lines
 
