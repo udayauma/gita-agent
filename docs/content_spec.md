@@ -120,7 +120,11 @@ The dataset ships two translation files. Only one is the translators' work.
    (`thy`, `thou`) and the occasional typographical slip in the source (for
    example Gambirananda 18.66 reads "I sahll free you"). A slip is reported
    in the fidelity audit and handled as a pack override with a note; the
-   canon record itself is not edited.
+   canon record itself is not edited. Overrides live in the pack as
+   `canon_overrides.json` (verse, translator, corrected text, audit
+   reference); the validator accepts an overridden verse only when it is
+   byte-identical to the override record, and the footer cites the
+   override.
 
 Each translation is its own record: verse, translator, source, source
 version, text, and rights status. A lesson uses exactly one and names it.
@@ -357,23 +361,36 @@ artifacts:                  # reviewed files in this directory; each carries its
   episodes: episodes.json   # v1.1
   banned_words: banned_words.yaml
   chapter_names: chapter_names.json   # IAST names and meanings (§2.3)
+  canon_overrides: canon_overrides.json  # documented source slips (§2.4); empty until one exists
+  texts: texts.yaml           # every fixed text in §7, versioned and reviewed
+videos: []                  # written by `gita pack discover`; the fallback list when YouTube blocks datacenter discovery
 prompts:                    # versioned files under packs/<pack_id>/prompts/
   transcribe: transcribe_v1.txt
   paraphrase: paraphrase_v1.txt
   compose: compose_v1.txt
+  group: group_v1.txt         # sequence drafting (§3.3)
+  opening: opening_v1.txt     # chapter openings (§3.4)
+  episode: episode_v1.txt     # story-track episodes (§6.1)
 settings:                   # tuned before day one on hand-checked samples (§10.2 T4, T5); see §4.4, §4.5
   window_seconds: 600
   overlap_seconds: 30
   confidence:
     overlap_agreement_floor: null      # below this: low
     overlap_agreement_ceiling: null    # below this: medium
+    script_ratio_min: null             # Telugu-script fraction below this: low
+    length_ratio_band: null            # allowed deviation from the pack's running median (persisted on the pack record)
     tuned_on: null                     # date and video ID
   retrieval:
     relevance_threshold: null
     primary_over_secondary_margin: null
     neighbor_before_seconds: 60
     neighbor_after_seconds: 120
+    neighbor_similarity_floor: null    # neighbors below this fraction of the winner's similarity are dropped
     tuned_on: null                     # date and the twenty verses used
+  embedding:
+    model: gemini-embedding-001
+    dimensions: 768
+    batch_size: null                   # verified by the contract test
 rights_attestation: >
   I confirm that I have the right to use the content listed above for
   generating private study material delivered to learners I enroll, and I
@@ -448,6 +465,7 @@ One record per marker-delimited paragraph within a window:
 
 | Field | Content |
 |---|---|
+| `segment_id` | `<video_id>:<window_id>:g<generation>:<start_s>`; a re-ingested window is a new generation, so superseded segments keep their IDs |
 | `pack_id`, `source_id`, `video_id` | Where it came from |
 | `video_title`, `series_role` | For citation and retrieval preference |
 | `start_s`, `end_s` | Offsets in seconds; the source link is `https://www.youtube.com/watch?v={video_id}&t={start_s}s` |
@@ -849,8 +867,9 @@ are the product spec's.
 
 ## 7. Fixed texts
 
-These are content, not code. They live in the pack, carry a version, and
-are reviewed. Drafts follow; Udaya edits them in place.
+These are content, not code. They live in the pack as `texts.yaml` (one
+key per text below, plus the section labels and subject lines), carry a
+version, and are reviewed. Drafts follow; Udaya edits them in place.
 
 ### Placeholder legend
 
@@ -879,7 +898,7 @@ texts can be read without guessing.
 | `{week_of}` | Ops digest (§7.9): the Monday of the reported week | per digest |
 | `{send_date}`, `{count}` | Failure notification (§7.9): the delivery date and the number of lessons not sent | per notification |
 | `{reaction_labels}` | Operator config; three labels in order | Got it · Unclear · Loved it |
-| `{translator}`, `{canon_source}`, `{canon_pin_short}`, `{source_link}` | Footer (§7.5): the translation record, "gita/gita", the first seven characters of the pin, the timestamped YouTube link | per lesson |
+| `{translator}`, `{canon_source}`, `{canon_pin_short}`, `{series_title}`, `{source_link}` | Footer (§7.5): the translation record, "gita/gita", the first seven characters of the pin, the source's `title` from the manifest, the timestamped YouTube link | per lesson |
 
 Operator config is one small file in the deployment, not in the pack, so
 a self-hosting operator changes it without touching the pack. The
@@ -990,8 +1009,8 @@ the Gita's own method.
 The welcome email opens with a one-line greeting, then the primer, then
 the mechanics (§7.2). The greeting uses the learner's name when the
 operator supplied one and plain "Welcome" when not. `{service_name}` is
-the display name of the service as learners see it, a pack setting (open
-question C5); it is not the repository name.
+the display name of the service as learners see it, an operator config
+value (C5); it is not the repository name.
 
 > {name}, welcome. Starting {first_lesson_date}, one short lesson from the
 > Bhagavad Gita will arrive here each morning from {service_name}. Here is
@@ -1097,7 +1116,7 @@ section when nothing in the pack spoke to this verse (§4.5, P0-11):
 
 > Verse and translation: Bhagavad Gita {c}.{v}, translated by {translator}
 > ({canon_source}, version {canon_pin_short}).
-> Passage: {teacher_name}, "{video_title}", {start}. Listen: {source_link}.
+> Passage: {teacher_name}, {series_title}, "{video_title}", {start}. Listen: {source_link}.
 > [Got it] [Unclear] [Loved it] · Read more (v1.1) · Stop these lessons.
 
 The passage line is omitted on a canon-only lesson. `{canon_source}` is
@@ -1124,7 +1143,7 @@ sentence more, if you like" and a Send button. Nothing else on the page.
 ### 7.9 Subject lines
 
 Subject lines carry information, not a slogan, so a learner can find a
-lesson later. `{service_name}` is the pack setting, provisionally
+lesson later. `{service_name}` is the operator config value, provisionally
 "Today's Gita" (C5). *Gita* is used as the short form throughout;
 *Bhagavad* alone is an adjective and is never used on its own.
 
@@ -1184,8 +1203,8 @@ from the log, never edited by hand.
 | # | Question | Who | Blocking? |
 |---|---|---|---|
 | C1 | ~~Default translation for v1?~~ **Resolved 2026-09-13: Sivananda.** The v2 public-use default is deferred to the v2 product spec (product spec open question 6); Besant is the leading candidate, Sivananda the alternate. | Udaya | Resolved for v1 |
-| C4 | ~~Reaction labels?~~ **Resolved 2026-09-13: keep "Got it / Unclear / Loved it" for now.** Udaya may switch to a more formal set such as "Understood / Unclear / Love" during v1.0 testing; it is a pack setting. | Udaya | Resolved (provisional) |
-| C5 | ~~Service display name as learners see it.~~ **Resolved 2026-09-13: "Today's Gita"**, provisional, expected to be revisited during v1.0 testing. A pack setting (`service_name`); the subject-line format is in §7.8. | Udaya | Resolved (provisional) |
+| C4 | ~~Reaction labels?~~ **Resolved 2026-09-13: keep "Got it / Unclear / Loved it" for now.** Udaya may switch to a more formal set such as "Understood / Unclear / Love" during v1.0 testing; it is an operator config value. | Udaya | Resolved (provisional) |
+| C5 | ~~Service display name as learners see it.~~ **Resolved 2026-09-13: "Today's Gita"**, provisional, expected to be revisited during v1.0 testing. An operator config value (`service_name`); the subject-line format is in §7.9. | Udaya | Resolved (provisional) |
 | C6 | ~~Lesson section label "From the teacher"?~~ **Resolved 2026-09-13: the label is "From {teacher}", rendered from the manifest honorific, so the default pack reads "From Chaganti garu".** The word "teacher" no longer appears in any learner- or reviewer-facing text. "Teacher" remains the internal role name in these documents and in prompts. | Udaya | Resolved |
 | C7 | ~~Chapter 13 numbering?~~ **Resolved 2026-09-13: keep the dataset's 1–35; the resolver accepts both numberings (§2.3, §4.5).** | Udaya | Resolved |
 | C8 | ~~Legend values?~~ **Resolved 2026-09-13: timezone America/New_York (US Eastern, DST-aware), delivery 07:00, pack name "Chaganti Gita (Telugu)".** | Udaya | Resolved |
