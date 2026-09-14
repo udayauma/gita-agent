@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Draft; §1–§9 reviewed by Udaya 2026-09-13; changes by pull request |
 | **Owner** | Udaya Pillalamarri |
-| **Answers to** | `docs/product_spec.md` §6, §7, §8.1, §8.5, §9 (P0-5, P0-8, P0-9, P0-11, P0-12, P0-19 to P0-27) |
+| **Answers to** | `docs/product_spec.md` §6, §7, §8.1, §8.5, §9 (P0-5, P0-7 to P0-13, P0-15, P0-16, P0-19 to P0-24, P0-26, P0-27; P1-1 to P1-3, P1-5) |
 | **Date** | 2026-09-13 |
 
 ---
@@ -22,8 +22,8 @@ a reviewer needs to judge fidelity; exact storage schemas live in the
 technical spec.
 
 Out of scope: the v2 agent, channels other than email, any teacher other
-than the default. Adding a teacher pack later means writing a manifest, not
-changing this document.
+than the default. Adding a teacher pack later means writing a manifest and
+its reviewed artifacts (§4.1), not changing this document.
 
 ## 2. The canon
 
@@ -127,16 +127,16 @@ version, text, and rights status. A lesson uses exactly one and names it.
 
 ### 2.5 Translators, sources, and rights
 
-| Translator | Year | Where from | Style | Rights status | Use |
-|---|---|---|---|---|---|
-| Swami Sivananda | 1942 | `gita/gita` originals | Prose, some `thy`/`thou` | Very likely public domain in India (author d. 1963, India term life+60 ended 2024); US status not verified | **v1 default** (confirmed 2026-09-13) |
-| Shri Purohit Swami | 1935 | `gita/gita` originals | Prose, `thou`, freer | Very likely public domain (author d. 1941) | Alternate |
-| Swami Gambirananda | 1984 | `gita/gita` originals | Literal, scholarly | Advaita Ashrama; likely copyrighted | Review appendix only; never in a public lesson |
-| Swami Adidevananda | c. 1990s | `gita/gita` originals | Ramanuja tradition | Sri Ramakrishna Math; likely copyrighted | Review appendix only |
-| Dr. S. Sankaranarayan | 1985 | `gita/gita` originals | Literal, Abhinavagupta tradition | Likely copyrighted | Review appendix only |
-| Annie Besant | 1895 (4th ed. 1922) | Wikisource, `Bhagavad-Gita (Besant 4th)` | Prose, `thy`/`thou`, close to the Sanskrit | Public domain; Wikisource transcription CC BY-SA | Leading candidate for v2 public use; decided in the v2 spec |
-| K. T. Telang | 1882 | Wikisource, Sacred Books of the East vol. 8 | Prose with parenthetical glosses | Public domain; Wikisource transcription CC BY-SA | Candidate; heavier to read |
-| Edwin Arnold | 1885 | Wikisource | Verse | Public domain | Not for lessons; verse form fights the "factual first" tone |
+| Translator | Year | Where from | Style | Rights status | Use | Learner display (long form, alternates) |
+|---|---|---|---|---|---|---|
+| Swami Sivananda | 1942 | `gita/gita` originals | Prose, some `thy`/`thou` | Very likely public domain in India (author d. 1963, India term life+60 ended 2024); US status not verified | **v1 default** (confirmed 2026-09-13) | Yes |
+| Shri Purohit Swami | 1935 | `gita/gita` originals | Prose, `thou`, freer | Very likely public domain (author d. 1941) | Alternate | Yes |
+| Swami Gambirananda | 1984 | `gita/gita` originals | Literal, scholarly | Advaita Ashrama; likely copyrighted | Review appendix only; never in a public lesson | v1 private: yes; v2 public: no |
+| Swami Adidevananda | c. 1990s | `gita/gita` originals | Ramanuja tradition | Sri Ramakrishna Math; likely copyrighted | Review appendix only | v1 private: yes; v2 public: no |
+| Dr. S. Sankaranarayan | 1985 | `gita/gita` originals | Literal, Abhinavagupta tradition | Likely copyrighted | Review appendix only | v1 private: yes; v2 public: no |
+| Annie Besant | 1895 (4th ed. 1922) | Wikisource, `Bhagavad-Gita (Besant 4th)` | Prose, `thy`/`thou`, close to the Sanskrit | Public domain; Wikisource transcription CC BY-SA | Leading candidate for v2 public use; decided in the v2 spec | Yes |
+| K. T. Telang | 1882 | Wikisource, Sacred Books of the East vol. 8 | Prose with parenthetical glosses | Public domain; Wikisource transcription CC BY-SA | Candidate; heavier to read | Yes |
+| Edwin Arnold | 1885 | Wikisource | Verse | Public domain | Not for lessons; verse form fights the "factual first" tone | No |
 
 "Very likely" and "likely" are an engineer's reading, not a legal opinion.
 Product spec open question 6 stays open until the v2 default has a
@@ -186,7 +186,8 @@ default. Sanskrit and transliteration are from the verse record.
   *dharmasya glānih*), which is readable but is interpretation, and 6.2's
   "never asserts one interpretation" rule sits uneasily with it as a default.
 - Gambirananda and Telang are the most literal and the hardest to read cold;
-  they are excellent in the long form and the review appendix.
+  they belong in the review appendix, and in the long form only where the
+  rights column in §2.5 allows.
 - Every translator except Gambirananda uses `thy`/`thou`. The lesson does
   not modernize any of them: the quotation is the quotation. "What it means"
   is where plain modern English lives.
@@ -272,7 +273,7 @@ length. It is a position, never a percentage or a streak.
 
 **The sequence is shared; the position is per learner.** One sequence exists
 per pack version and every learner on that pack walks the same one. What is
-stored per learner (product spec P0-2, P0-5) is:
+stored per learner (product spec P0-2; scoped per P2-6, erasable per P2-9) is:
 
 - the pack and sequence version they are currently on;
 - the **last verse delivered** (chapter and verse), which is the position of
@@ -291,8 +292,9 @@ skips or repeats one. The day count shown in "Where we are" continues from
 the learner's own count; it is not recomputed from the new sequence.
 
 **Chapter openings** ("Where this sits") are eighteen short paragraphs, one
-per chapter, plus one for lesson one that introduces the text itself: who is
-speaking, to whom, where, and why. They are drafted by the model from the
+per chapter. Chapter 1's opening doubles as the introduction to the text
+itself, who is speaking, to whom, where, and why, so lesson one carries one
+paragraph, not two. They are drafted by the model from the
 chapter summary in `chapters.json` and the first lesson's verses, then
 edited by the operator, stored in the pack as `chapter_openings.json`, and
 versioned and reviewed like the sequence. Length guidance: 60 to 120
@@ -304,13 +306,13 @@ follows immediately below.
 ### 4.1 Manifest
 
 A pack is a directory in the repository under `packs/<pack_id>/` containing
-`manifest.yaml` and the reviewed artifacts (`sequence.json`,
-`chapter_openings.json`, `primer.md`). Generated content never lives here.
+`manifest.yaml`, the reviewed artifacts listed under `artifacts:`, and the
+prompt files. Teacher content, meaning transcripts, translations, and
+anything derived from the recordings, never lives here.
 
 ```yaml
 pack_id: chaganti-gita-telugu
 pack_name: Chaganti Gita (Telugu)
-service_name: Today's Gita        # learner-facing display name (C5, provisional)
 version: 1
 teacher:
   name: Sri Chaganti Koteswara Rao
@@ -354,11 +356,12 @@ artifacts:                  # reviewed files in this directory; each carries its
   primer: primer.md
   episodes: episodes.json   # v1.1
   banned_words: banned_words.yaml
+  chapter_names: chapter_names.json   # IAST names and meanings (§2.3)
 prompts:                    # versioned files under packs/<pack_id>/prompts/
   transcribe: transcribe_v1.txt
   paraphrase: paraphrase_v1.txt
   compose: compose_v1.txt
-settings:                   # tuned in phase 1 on hand-checked samples; see §4.4, §4.5
+settings:                   # tuned before day one on hand-checked samples (§10.2 T4, T5); see §4.4, §4.5
   window_seconds: 600
   overlap_seconds: 30
   confidence:
@@ -381,6 +384,13 @@ attested_on: 2026-09-12
 
 `expected_videos` is a sanity check for the weekly poll, not a limit: the
 poll reports when a playlist grows or shrinks.
+
+**Operator config** is a separate small file in the deployment, never in
+the pack, holding what is per-deployment rather than per-pack:
+`operator_name`, `operator_email`, `service_name` (provisionally "Today's
+Gita", C5), and `reaction_labels` (C4). A self-hosting operator using the
+default pack sets these without touching the pack. The technical spec
+names the file.
 
 ### 4.2 The rights warning, verbatim
 
@@ -504,8 +514,8 @@ is to work only, but never with its fruits." Retrieval does the following:
 4. Pulls in the adjacent segments from the same video around 41:10, say
    40:30 to 43:00, so the passage is the teacher's full thought, not a
    fragment.
-5. Hands that span, roughly 400 words of English, to composition, which
-   paraphrases it to 100 to 200 words and cites "Bhagavad Gita part 2,
+5. Hands that span, roughly 400 words of English, to the paraphrase step,
+   which condenses it to 100 to 200 words and cites "Bhagavad Gita part 2,
    41:10" with the timestamped link. The review appendix shows the span
    verbatim, Telugu and English.
 
@@ -517,9 +527,9 @@ lesson's composition trace (§4.6), so a canon-only morning can be explained
 without guesswork.
 
 The rules below are the general form of this example. They are a starting
-point: the threshold and the preference margin are tuned in phase 1 on
-twenty hand-checked verses (open question C3), and reviewer feedback in
-v1.1 is what tells us whether the selection is right.
+point: the threshold and the preference margin are tuned before day one
+on twenty hand-checked verses (§10.2, T5), and reviewer feedback in v1.1
+is what tells us whether the selection is right.
 
 For a verse lesson, the query is built from the lesson's verses: the
 translation text, the transliteration, the key Sanskrit terms from the word
@@ -737,8 +747,13 @@ words and phrases, case-insensitive, including simple inflections
 Reviewer feedback in v1.1 can promote a soft word to hard or demote a hard
 one; either is a pack version bump with the audit entry that justified it.
 
-**Regenerate before refusing.** A hard hit does not block the send by
-itself. Composition is retried, up to two more times, with the offending
+**Reviewed artifacts are checked at review time.** A hard-tier hit in a
+chapter opening or the primer blocks the artifact from being marked
+reviewed, not the send; by send time a reviewed artifact has already
+passed.
+
+**Regenerate before refusing.** A hard hit in a per-send field does not
+block the send by itself. Composition is retried, up to two more times, with the offending
 words named: "your draft used *X*; rewrite the same content without it."
 The model was never attached to the word, so the first retry almost always
 succeeds. Each attempt and its hits are recorded in the composition trace
@@ -821,6 +836,17 @@ A story lesson has four parts: **Where we are** (`Story {n} of about
 section, because there is no Gita verse. All fidelity, tone, and validation
 rules apply unchanged.
 
+### 6.3 The long-form page (v1.1): what it renders
+
+The page is defined in product spec §6.5; this is the content it draws on,
+all from existing records, nothing generated: the verse record in full
+including `word_meanings` and the IAST chapter name; every translation
+whose learner-display column in §2.5 allows it, each named; the two
+neighboring lessons' verses for context; the full selected span (§4.5) in
+English and Telugu side by side with a timestamped link per segment; and
+the lesson's own "What it means" and question, unchanged. Access rules
+are the product spec's.
+
 ## 7. Fixed texts
 
 These are content, not code. They live in the pack, carry a version, and
@@ -834,13 +860,13 @@ texts can be read without guessing.
 
 | Placeholder | Filled from | v1 value |
 |---|---|---|
-| `{service_name}` | Pack manifest, `service_name` | Today's Gita (provisional, C5) |
+| `{service_name}` | Operator config, `service_name` | Today's Gita (provisional, C5) |
 | `{operator_name}` | Operator config | Udaya |
 | `{operator_email}` | Operator config, the operator identity (product spec §7.2) | Udaya's Google account address |
 | `{teacher_name}` | Pack manifest, `teacher.name` | Sri Chaganti Koteswara Rao |
 | `{teacher_honorific}` | Pack manifest, `teacher.honorific`; used after first mention, and as the lesson section label "From {teacher}" | Chaganti garu |
 | `{series_list}` | Pack manifest, the `title` of each source, joined | Bhagavad Gita; Bhagavad Gita Bhakti Yogam; Geeta Vaibhavam; Sampoorna Srimad Bhagavatam |
-| `{pack_name}` | Pack manifest, `pack_id` rendered as a title | Chaganti Gita (Telugu) |
+| `{pack_name}` | Pack manifest, `pack_name` | Chaganti Gita (Telugu) |
 | `{name}` | Learner record, optional; when absent the greeting is "Welcome" alone | Udaya |
 | `{timezone}` | Learner record | America/New_York |
 | `{delivery_time}` | Learner record, default 07:00 | 07:00 |
@@ -849,7 +875,11 @@ texts can be read without guessing.
 | `{c}`, `{v}`, `{v1}`, `{v2}` | The lesson's chapter and verse or verse range from `sequence.json` | per lesson |
 | `{episode_title}`, `{video_number}` | `episodes.json` (story track, v1.1): the episode's title and the series part it comes from | per lesson |
 | `{video_title}`, `{start}`, `{end}` | The selected span's segment records (§4.4) | per lesson |
-| `{date}`, `{reference}`, `{citation}` | Correction note (§7.6): the affected lesson's send date, its "Where we are" line, and the source that justified the correction | per note |
+| `{date}`, `{reference}`, `{citation}` | Correction note (§7.7): the affected lesson's send date, its "Where we are" line, and the source that justified the correction | per note |
+| `{week_of}` | Ops digest (§7.9): the Monday of the reported week | per digest |
+| `{send_date}`, `{count}` | Failure notification (§7.9): the delivery date and the number of lessons not sent | per notification |
+| `{reaction_labels}` | Operator config; three labels in order | Got it · Unclear · Loved it |
+| `{translator}`, `{canon_source}`, `{canon_pin_short}`, `{source_link}` | Footer (§7.5): the translation record, "gita/gita", the first seven characters of the pin, the timestamped YouTube link | per lesson |
 
 Operator config is one small file in the deployment, not in the pack, so
 a self-hosting operator changes it without touching the pack. The
@@ -1002,22 +1032,23 @@ question C5); it is not the repository name.
 
 > You will receive one lesson each morning at {delivery_time}
 > ({timezone}), from {operator_name} at this address. The first arrives on
-> {first_lesson_date}. Each takes under five minutes to read. Every lesson
-> has a link to the original recording and three small reactions at the
-> bottom; use them or ignore them. To stop at any time, use the link at the
-> foot of any lesson. Nothing else will ever be sent.
+> {first_lesson_date}. Each takes under five minutes to read. Most lessons
+> carry a link to the original recording, and every lesson has three small
+> reactions at the bottom; use them or ignore them. To stop at any time,
+> use the link at the foot of any lesson. Nothing else is sent, apart from
+> a short correction if a lesson ever needs one.
 
 ### 7.3 Reviewer welcome (v1.1, draft)
 
 > {operator_name} has asked you to review daily Bhagavad Gita lessons for
-> accuracy. Each morning you will receive the lesson exactly as a learner
-> sees it, followed by the source material it was built from:
+> accuracy ({pack_name}). Each morning you will receive the lesson exactly
+> as a learner sees it, followed by the source material it was built from:
 > {teacher_name}'s original Telugu passage, the English translation, the
 > recording and timestamp, and the verse record. The lessons draw on
 > {series_list}.
 >
 > Your job is to judge whether the lesson is faithful to the verse and to
-> what {teacher_name} actually said, not whether you agree with him. Each
+> what {teacher_honorific} actually said, not whether you agree with him. Each
 > edition asks a few specific questions. Reply to the email with your
 > answers or with anything else that is wrong. If you do not reply, we take
 > it as no objection. To stop receiving these, use the link at the foot of
@@ -1037,7 +1068,7 @@ Banner, above every review edition:
 > learner sees it, followed by the source material it was built from. If
 > anything is unfaithful to the verse or to what {teacher_name} said, reply
 > to this email and say so. If it is fine, you need not reply. Pack:
-> {pack_name}. Source: {teacher_name}, {series_list}.
+> {pack_name}. Source: {teacher_honorific}, {series_list}.
 
 Questions, after the appendix, each answerable with yes or no:
 
@@ -1047,25 +1078,50 @@ Questions, after the appendix, each answerable with yes or no:
 3. Does "What it means" say anything the verse and {teacher_honorific} do not?
 4. Anything else?
 
-### 7.5 Unsubscribe confirmation
+### 7.5 Fixed lesson texts: labels, footer, canon-only line
+
+**Section labels**, in order, exactly as rendered: `Where we are` ·
+`Where this sits` (chapter openings only) · `The verse` · `What it means` ·
+`From {teacher_honorific}` · `A question to carry`. The two per-send
+generated sections carry a small marker after the label, `(written for
+this lesson)`, which is how P0-12's "labeled as such" is satisfied; the
+verse and the passage carry none, because they are sources.
+
+**Canon-only line**, used in place of the `From {teacher_honorific}`
+section when nothing in the pack spoke to this verse (§4.5, P0-11):
+
+> {teacher_honorific}'s recordings do not take up this verse directly, so
+> today's lesson stays with the text itself.
+
+**Footer**, always in this order:
+
+> Verse and translation: Bhagavad Gita {c}.{v}, translated by {translator}
+> ({canon_source}, version {canon_pin_short}).
+> Passage: {teacher_name}, "{video_title}", {start}. Listen: {source_link}.
+> [Got it] [Unclear] [Loved it] · Read more (v1.1) · Stop these lessons.
+
+The passage line is omitted on a canon-only lesson. `{canon_source}` is
+"gita/gita" and `{canon_pin_short}` the first seven characters of the pin.
+
+### 7.6 Unsubscribe confirmation
 
 > You will not receive further lessons. Your place in the sequence is kept
 > in case you return; reply to this email if you would like to. Nothing
 > else will be sent.
 
-### 7.6 Correction note (template, v1.1)
+### 7.7 Correction note (template, v1.1)
 
 > A correction to the lesson of {date}, {reference}: {one sentence stating
 > what was wrong and what is right}. The source is {citation}. Nothing else
 > in that lesson changes.
 
-### 7.7 Reaction row and thank-you page
+### 7.8 Reaction row and thank-you page
 
 Labels: **Got it** · **Unclear** · **Loved it**. Thank-you page, one line:
 "Noted, thank you." followed by an optional single-line box labeled "One
 sentence more, if you like" and a Send button. Nothing else on the page.
 
-### 7.8 Subject lines
+### 7.9 Subject lines
 
 Subject lines carry information, not a slogan, so a learner can find a
 lesson later. `{service_name}` is the pack setting, provisionally
@@ -1081,8 +1137,8 @@ lesson later. `{service_name}` is the pack setting, provisionally
 | Reviewer welcome (v1.1) | `Reviewing {service_name}: what to expect` |
 | Correction note (v1.1) | `{service_name}: a correction to Day {n}` |
 | Unsubscribe confirmation | `{service_name}: you have been unsubscribed` |
-| Ops digest | `{service_name} ops digest, week of {date}` |
-| Failure notification (operator, same day) | `{service_name}: {count} lesson(s) not sent on {date}` |
+| Ops digest | `{service_name} ops digest, week of {week_of}` |
+| Failure notification (operator, same day) | `{service_name}: {count} lesson(s) not sent on {send_date}` |
 
 ## 8. Audit log and golden set
 

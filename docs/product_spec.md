@@ -5,7 +5,7 @@
 | **Status** | Living document, v1 draft under review. Changes by pull request; see §14. |
 | **Owner** | Udaya Pillalamarri |
 | **Version** | v1 (private MVP) |
-| **Date** | 2026-09-12 |
+| **Date** | 2026-09-13 |
 | **Related** | `docs/content_spec.md`, `docs/technical_spec.md`, `docs/task_plan.md` (to follow) |
 
 ---
@@ -73,7 +73,7 @@ verse. A person can be both a learner and a reviewer.
 A reviewer gives feedback by replying to the email. The operator reads the
 reply and records it in the fidelity audit log.
 
-**The reviewer role exists only in v1 and v1.1, and only over email.** It is
+**The reviewer role exists only in v1.1, and only over email** (v1.0 renders the review appendix on demand for the operator's own audit, P0-26). It is
 retired at v2. What reviewers produce is not retired: every correction and
 every lesson they confirm as faithful goes into the fidelity golden set, so
 that by v2 their judgment runs automatically as evals on every model or prompt
@@ -138,9 +138,10 @@ Every lesson has the same five parts, in this order.
    adds a short *Where this sits* paragraph directly under this line: what the
    chapter is about, what came before it, and why it begins where it does. For
    lesson one this is the learner's introduction to the text itself: who is
-   speaking, to whom, and where. This paragraph is generated once per chapter
-   as part of the content pack, reviewed like any other content, and is the
-   same for every learner.
+   speaking, to whom, and where; it is chapter 1's opening, not a second
+   paragraph. This paragraph is generated once per chapter as part of the
+   content pack, reviewed like any other content, and is the same for every
+   learner.
 2. **The verse.** Sanskrit in Devanagari, then transliteration, then one
    named English translation from the canon (§7.1). Verbatim from the canon
    record, never generated. The translator is named.
@@ -209,8 +210,9 @@ operator has never met are on the list.
   and flags the lesson to the operator. Fidelity beats completeness.
 - Never presents generated text as a quotation, and never blurs the boundary
   between the teacher's words and generated text. Each part of the lesson is
-  labeled. "What it means" and "A question to carry" are generated and say
-  nothing the verse and the teacher passage do not support.
+  labeled. "What it means" and "A question to carry" are generated at send
+  time; "Where this sits" is generated once per chapter and reviewed. None
+  of them says anything the verse and the teacher passage do not support.
 - Never depends on the model for accuracy. The model composes; the canon
   store and the transcript store are the only sources of fact. A more capable
   model produces a better-written lesson under the same rules; it does not
@@ -244,7 +246,7 @@ operator has never met are on the list.
 - Never sends anything outside the fixed list of message types, per
   audience. To a learner: the welcome email, the daily verse lesson, the
   story-track lesson if opted in (v1.1), a correction note when one is
-  needed, and the unsubscribe confirmation. To a reviewer (v1.1): the
+  needed (v1.1), and the unsubscribe confirmation. To a reviewer (v1.1): the
   reviewer welcome and the review edition. To the operator: the same-day
   failure notification and the weekly ops digest. Nothing else, ever: no
   promotions, no re-engagement messages, no surveys beyond the reaction row.
@@ -298,10 +300,15 @@ meaning the first time they are used in a lesson.
 **Banned words.** Certain words are what a model reaches for when asked to be
 encouraging, and each carries a claim the lesson must not make: that the
 learner is being guided somewhere, that a secret is being revealed, that
-transformation is on offer. They never appear in generated text. The seed list
-is *journey, unlock, empower, transform, embrace, mindful, elevate, awaken,
-manifest, secret, powerful, profound, timeless, ancient wisdom*. The content
-spec owns the full list; it is a one-line test, not a judgment call. Words in
+transformation is on offer. The list has two tiers, defined in the content
+spec (§5.5): **hard** words, which carry such a claim and never appear in a
+sent lesson (the lesson is regenerated, and blocked only if regeneration
+fails), and **soft** words, which mark the same register and are logged and
+counted but never block. The hard seed set is *journey, unlock, empower,
+transform, awaken, manifest, secret, ancient wisdom, life-changing,
+unleash*; *embrace, mindful, elevate, powerful, profound, timeless* and the
+filler phrases are soft. The content spec owns the full list; the hard
+check is a one-line test, not a judgment call. Words in
 this list may still appear inside a quoted translation or the teacher's
 translated passage, because those are sources, not generated text.
 
@@ -352,7 +359,7 @@ channel they are using, adapted to that channel's length. The teacher's words
 are shared one-to-one, on request, the way a tutor reads a passage aloud,
 never published at a URL.
 
-### 6.6 The review edition (v1 and v1.1 only, email only)
+### 6.6 The review edition (v1.1 only, email only)
 
 | Version | Reviewers |
 |---|---|
@@ -364,9 +371,10 @@ never published at a URL.
 banner above the lesson, before anything else: "You are receiving this as a
 reviewer. Below is the lesson exactly as a learner sees it, followed by the
 source material it was built from. If anything is unfaithful to the verse or
-to the teacher, reply to this email and say so. If it is fine, you need not
-reply." The banner names the pack and the teacher so the reviewer knows whose
-words they are judging.
+to what {teacher_name} said, reply to this email and say so. If it is fine,
+you need not reply." The banner names the pack and the teacher by name so
+the reviewer knows whose words they are judging (exact text: content spec
+§7.4).
 
 Reviewers also receive a **reviewer welcome email** when the operator adds
 them (§8.5), which explains the role once, in full.
@@ -396,7 +404,7 @@ lesson. Nothing in the appendix is generated; it is the raw material.
 3. Corrections go into the content pack for learners who have not yet
    reached that lesson. Lessons already sent are never edited (§6.2).
 4. The audit log is machine-readable and is the source of the fidelity
-   golden set (P2-3). Nothing about reviewer feedback is automated in v1 or
+   golden set (P2-2). Nothing about reviewer feedback is automated in v1 or
    v1.1; the operator is the loop.
 
 ### 6.7 Learner feedback in v1
@@ -459,7 +467,7 @@ preserved in the dataset at `archive/translation_old.json`. This service loads
 the **originals** and never the rewritten file. Attributing a machine-edited
 sentence to Swami Sivananda would be exactly the misattribution §6.2 forbids.
 The loader strips the leading verse-number prefix present in the original
-records and does nothing else to the text.
+records, trims surrounding whitespace, and does nothing else to the text.
 
 **Why this dataset, and what else exists.** `gita/gita` was chosen as the
 structural spine because it is the only open source found with all of:
@@ -495,8 +503,10 @@ default and records the reasoning; this is open question 6.
 ### 7.2 Teacher content packs
 
 A **pack** is a named set of sources by one teacher, plus the transcripts and
-translations the service produces from them. Packs are the "bring your own
-content" mechanism.
+translations the service produces from them, plus the reviewed artifacts
+that ship with it in the repository: the lesson sequence, chapter openings,
+primer, banned-word list, and prompts (content spec §4.1). Packs are the
+"bring your own content" mechanism.
 
 **Source types.** A pack lists one or more sources, each with a type. The pack
 format and the transcript store are source-agnostic from v1.0: a stored
@@ -534,10 +544,12 @@ requires acknowledgment before the content is accepted. The wording is fixed in 
 content spec so that every surface says the same thing. "Bring your own
 content" means your own, and the service says so out loud.
 
-**The repository ships manifests, never content.** A manifest lists the
-playlist and video IDs and describes the pack. The transcripts and translations
-are generated by the operator's own deployment into the operator's own storage.
-The teacher's work is never redistributed by this project.
+**The repository ships manifests and reviewed artifacts, never teacher
+content.** A manifest lists the playlist and video IDs and describes the
+pack; the artifacts are the operator's own writing over the public canon.
+The transcripts and translations are generated by the operator's own
+deployment into the operator's own storage. The teacher's work is never
+redistributed by this project.
 
 **Whose cloud.** Two roles must not be confused here:
 
@@ -716,9 +728,12 @@ roll-up, not the alarm.
    with the teacher; reply to any email to give feedback; no reply means no
    objection; here is how to stop. It names the operator, the pack, and the
    teacher.
-3. Each morning the reviewer receives the review edition of that day's lesson,
-   at the same time as the learners on the same pack. Every review edition
-   opens with the reviewer banner (§6.6).
+3. Each morning the reviewer receives the review edition of that day's lesson.
+   A reviewer **shadows one named learner**: they receive the review edition
+   of whatever lesson that learner receives, at the same time, so their
+   position is that learner's position. The default shadowed learner is the
+   operator's own learner record. Every review edition opens with the
+   reviewer banner (§6.6).
 4. If something is wrong, the reviewer replies to the email in plain language.
    No form, no account.
 5. The operator reads the reply and records it in the fidelity audit log, with
@@ -792,7 +807,7 @@ acceptance criterion is not a requirement.
 | P0-3 | Failure visibility and no silent skips (§8.2, §6.2 delivery) | A failed send is retried at least once within the hour. A send that still fails produces an operator notification the same day, and the learner's progress does not advance, so the same lesson is sent next day. |
 | P0-4 | Unsubscribe (§8.3, §6.5) | Every email has an unsubscribe link. Clicking it stops all future email within one minute, sends exactly one confirmation, preserves progress, and revokes every signed token issued to that learner. |
 | P0-5 | Welcome email with primer (§8.1) | A newly added learner receives a welcome email before their first lesson. It opens with a one-line greeting using the learner's name when known, then the primer (Vedas, Upanishads, Mahabharata, Gita, and why the Gita is read a little every day) in no more than three short paragraphs, then the mechanics. The primer does not use the word "teacher"; the explanation is described as a passage with a link to its source. The primer is pack content, identical for every learner. |
-| P0-6 | Fixed list of message types per audience (§6.2 reach) | In v1.0 the service can send, to a learner: welcome, daily verse lesson, correction note, unsubscribe confirmation; to the operator: failure notification, weekly ops digest. v1.1 adds the story-track lesson, the reviewer welcome, and the review edition. Every outbound message carries a type from this list; any other type is a test failure. |
+| P0-6 | Fixed list of message types per audience (§6.2 reach) | In v1.0 the service can send, to a learner: welcome, daily verse lesson, unsubscribe confirmation; to the operator: failure notification, weekly ops digest. v1.1 adds the correction note, the story-track lesson, the reviewer welcome, and the review edition. Every outbound message carries a type from this list; any other type is a test failure. |
 
 **The lesson**
 
@@ -803,7 +818,7 @@ acceptance criterion is not a requirement.
 | P0-9 | Verse fidelity (§6.2 fidelity, §7.1) | The Sanskrit, transliteration, and translation in a lesson are byte-identical to the canon store record, and the translation is from the original translator text, never the machine-edited file. The translator and canon version are named in the footer. |
 | P0-10 | Teacher attribution and source link (§6.2, §6.1, §7.4) | Every "From {teacher}" passage cites a series, video ID, and timestamp at which the transcript store contains the source material, and carries a timestamped link to the public recording. A lesson without the link is not sent. |
 | P0-11 | Retrieval-only teacher content with canon fallback (§6.2 fidelity, §7.4) | The teacher passage is drawn from the transcript store by retrieval across the whole pack. If no segment clears the relevance threshold, or the best segment's confidence is low, the lesson is sent with the canon layer only, says so, and is flagged to the operator. No teacher content is ever produced from model knowledge; a test that removes the transcript store must yield canon-only lessons, never a teacher passage. |
-| P0-12 | Generated text is labeled and bounded (§6.2 fidelity, §6.4) | "Where this sits," "What it means," and "A question to carry" are the only generated parts. They are labeled as such, contain no quotation marks around generated text, and contain none of the banned words. The body is at most roughly 400 words. |
+| P0-12 | Generated text is labeled and bounded (§6.2 fidelity, §6.4) | "Where this sits," "What it means," and "A question to carry" are the only generated parts. They are labeled as such, contain no quotation marks around generated text, and contain no hard-tier banned word after regeneration (soft-tier hits are logged, never block; content spec §5.5). The body is at most roughly 400 words. |
 | P0-13 | Provenance on every lesson (§6.2 model independence, §7.1) | Every lesson record stores the model ID, prompt version, canon commit hash, and pack version that produced it. A model or prompt change cannot reach a learner without a recorded fidelity audit: against the golden set once it exists (v1.1 onward), and against the operator's self-audit sample before then. |
 | P0-14 | Stable lesson ID (§6.1.1, §12.1) | Every lesson is minted with a permanent, random, unguessable ID before it is sent, carried in the email headers, and never reused. |
 | P0-15 | Immutability (§6.2 delivery) | A lesson record is never modified after send. Corrections are applied to the pack and reach only learners who have not yet received that lesson. |
@@ -812,7 +827,7 @@ acceptance criterion is not a requirement.
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| P0-16 | Reaction row (§6.7) | Every lesson email has exactly three reaction links. Tapping one records the reaction for that lesson and learner within one minute and shows a thank-you page with an optional one-sentence box. The latest reaction wins. |
+| P0-16 | Reaction row (§6.7) | Every lesson email to a learner has exactly three reaction links; the review edition (v1.1) carries none. Tapping one records the reaction for that lesson and learner within one minute and shows a thank-you page with an optional one-sentence box. The latest reaction wins. |
 | P0-17 | No learner data in links, no third-party tracking (§6.7, §6.2 reach) | Every link the service issues carries a signed, single-purpose token; no email address or learner identifier appears in any URL. Lesson emails contain no tracking pixels, external scripts, or third-party links other than the source recording. |
 | P0-18 | Learner isolation (§6.2 reach) | No lesson, page, or digest ever exposes one learner's existence, address, progress, or reactions to another learner. |
 
@@ -820,7 +835,7 @@ acceptance criterion is not a requirement.
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| P0-19 | Canon loaded from a pinned commit, originals only (§7.1) | The canon store is built from a recorded `gita/gita` commit hash, using `archive/translation_old.json` with the verse-number prefix stripped and no other change. Loading the same commit twice yields byte-identical stores. |
+| P0-19 | Canon loaded from a pinned commit, originals only (§7.1) | The canon store is built from a recorded `gita/gita` commit hash, using the English entries of `archive/translation_old.json` with the verse-number prefix stripped and surrounding whitespace trimmed, and no other change. Loading the same commit twice yields byte-identical stores. |
 | P0-20 | Pack ingestion from public YouTube sources with rights attestation (§7.2) | Given a pack manifest with the attestation, ingestion transcribes and translates every video, stores each segment with text in both languages, timestamps, and its source reference, and marks the video complete. Running ingestion again processes nothing. A manifest without the attestation is refused, and the unverified-rights warning is printed when a pack is registered. |
 | P0-21 | All default series ingested (§7.4, §7.3) | With no configuration, the default pack ingests the three Gita series first, in the order listed in §7.4, then the Sampoorna Srimad Bhagavatam series, and verse-lesson retrieval spans all of them. |
 | P0-22 | Mandatory defaults (§7.3) | A learner configured with only an email address and a timezone receives a complete, correct lesson the next morning using the default canon, pack, translation, pace, and delivery time. |
@@ -848,6 +863,7 @@ acceptance criterion is not a requirement.
 | P1-7 | Per-learner pace options | Weekdays only, every other day. Schema supports it from v1.0. |
 | P1-8 | Telugu passage alongside the English in "From {teacher}" | Stored already; a rendering option. |
 | P1-9 | Alternate translation per learner | Each translation is its own record with provenance; the lesson names whichever is used. |
+| P1-11 | Source type: audio or video files the operator owns (§7.2) | Same model call with the file instead of the URL; same segment record. |
 | P1-10 | Operator setup guide (§7.2 whose cloud) | States the GCP prerequisite first, the budget-alert step, the operator-identity step, and the rights warning verbatim. |
 
 ### P2 — design for in v1, build in v2
@@ -862,6 +878,7 @@ acceptance criterion is not a requirement.
 | P2-6 | Multiple operators (§7.2) | Every record is scoped to an operator ID even though v1 has one. |
 | P2-7 | Telugu-language lessons (§5) | The Telugu transcript is stored verbatim next to the English. |
 | P2-8 | The agent is not a counselor (§6.2 reserved) | Defined in the v2 spec before any external learner is added. |
+| P2-10 | Source types: podcast feed, text (§7.2) | The segment record and the pack manifest are source-agnostic from v1.0; only an ingestion adapter is added. |
 | P2-9 | A learner can have their data erased on request (§8.3) | Unsubscribe preserves progress by design; erasure is a separate, explicit act. From v1.0, every record about a learner is reachable and deletable by learner ID, so that v2 can offer erasure without a migration. |
 
 ## 10. Success metrics and exit criteria
@@ -877,7 +894,7 @@ signal to begin v2.
 |---|---|---|---|
 | Delivery reliability (P0-1, P0-3) | 30 consecutive days, 0 missed, 0 duplicate sends, 0 sends outside the window | Delivery records | Day 30 |
 | Ingestion completeness (P0-20, P0-21) | All three Gita series fully ingested before day 1; the Bhagavatam series fully ingested within the first week; every video has segments in both languages, timestamps, a source reference, and a completion marker | Ops digest and store inspection | Day 1 and day 7 |
-| Structural validity (P0-7, P0-8, P0-12) | 100% of sent lessons pass the structure check; 0 banned words in generated text; 0 lessons over the length bound | Automated pre-send validation log | Continuous |
+| Structural validity (P0-7, P0-8, P0-12) | 100% of sent lessons pass the structure check; 0 hard-tier banned words in sent generated text; soft-tier counts reported; 0 lessons over the length bound | Automated pre-send validation log | Continuous |
 | Provenance completeness (P0-13, P0-14) | 100% of lessons carry model ID, prompt version, canon commit, pack version, and a unique lesson ID | Lesson records | Continuous |
 | Canon-only fallback rate (P0-11) | Under 20% of lessons fall back to canon-only for lack of a relevant teacher passage; every fallback is flagged | Lesson records, ops digest | Day 30 |
 | Self fidelity audit (§6.2) | Udaya checks 20 lessons against the review appendix material: 0 fabricated verses, 0 misattributed teacher passages, at most 1 meaning error | Audit log | Days 15 and 30 |
@@ -1001,7 +1018,7 @@ and this document's status changes to "v1, superseded for v2 planning."
 | **Lesson** | One email: verse, meaning, teacher passage, question, footer |
 | **Idea** | The unit of a lesson: one verse or a short run of verses forming one thought |
 | **Learner** | A person receiving lessons |
-| **Reviewer** | A person on the operator's review list who receives the review edition by email and replies with corrections. v1 and v1.1 only; retired at v2 in favor of automated evals |
+| **Reviewer** | A person on the operator's review list who receives the review edition by email and replies with corrections. v1.1 only; retired at v2 in favor of automated evals |
 | **Review edition** | The learner's lesson plus an appendix of the raw source material behind it |
 | **Long form** | The static page for a lesson with the full verse record, context, and the teacher's complete passage |
 | **Operator** | The person running a deployment and managing learners and reviewers |
