@@ -961,6 +961,35 @@ GCP; GitHub Actions never holds the Gmail token or the Pinecone key.
 | D20 | Unsubscribe requires POST (confirm page or one-click); reactions on GET with scanner filtering, confirm step deferred to v2 | GET for both | Mail scanners prefetch links; a phantom unsubscribe is worse than a phantom reaction |
 | D21 | Python 3.13 for everything in v1 | Go for everything; Go for `links` only | The core work is prompts, evals, similarity, and content tooling, where Python's ecosystem is far deeper; yt-dlp is Python; ADK for v2 is Python-first; v0's tested tracing module is Python. Go would win on `links` cold start and on typed concurrency for ingest, and `links` is small and isolated enough to rewrite in Go in v2 if click latency matters with external learners. Cold start is measured in the contract run (§7.5) so that decision is made on a number |
 
+### 14.1 Evidence for D21: the ADK language SDKs, measured 2026-09-13
+
+Every official ADK SDK under `github.com/google`, with GitHub and registry
+numbers pulled on 2026-09-13.
+
+| SDK | Created | Stars | Forks | Contributors | Commits, last 90 days | Latest release | Registry downloads, last month |
+|---|---|---|---|---|---|---|---|
+| `adk-python` | 2025-04 | 21,524 | 4,003 | 421 | 1,298 | v2.9.0 (2026-09-10) | PyPI `google-adk`: 13.8 million |
+| `adk-go` | 2025-05 | 8,784 | 1,007 | 99 | 188 | v2.4.0 (2026-09-11) | Go has no public download counter |
+| `adk-java` | 2025-05 | 1,720 | 420 | 60 | 176 | v1.9.0 (2026-08-31) | Maven Central publishes no counts |
+| `adk-js` (TypeScript) | 2025-08 | 1,397 | 205 | 62 | 292 | v2.0.0 (2026-08-21) | npm `@google/adk`: 649 thousand |
+| `adk-kotlin` | 2026-05 | 206 | 30 | n/a | n/a | early | n/a |
+
+Feature surface, from each repository's top-level packages: `adk-python`
+has `evaluation`, `a2a`, `live`, `skills`, `code_executors`, `planners`,
+`memory`, `sessions`, `tools`, `plugins`, `telemetry`, and the `adk web`
+dev UI; `adk-go` has `agent`, `model`, `tool`, `session`, `memory`,
+`runner`, `server`, `telemetry`, `workflow`, `plugin`, `platform`, and **no
+evaluation package** (a code search for `evaluation` in its paths returns
+nothing). The ADK docs' evaluation, MCP, and A2A sections are written
+against Python.
+
+Reading: Go is a real, actively released SDK with a strong following, and
+Google teams building agent stacks in Go is consistent with these numbers.
+For this project the deciding gap is evaluation: product §6.2 and §10 make
+a golden-set eval harness a gate, and only the Python SDK ships one. The
+Python SDK also has four times the contributors and seven times the commit
+rate, which matters when a preview model or an API changes under us.
+
 ## 15. Review rules (input to `.greptile/`)
 
 1. No secrets in source; no Google API keys; every Google call via ADC; the
