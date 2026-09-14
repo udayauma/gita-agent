@@ -70,11 +70,35 @@ scheduler process or a VM, were rejected because each needs something
 kept alive and monitored, and each loses state on restart in ways the
 delivery records would then have to paper over.
 
+**Storage: three stores, one per shape of data (D3, D4, D5).**
+
+| Store | Holds | Shape | Why this store |
+|---|---|---|---|
+| Cloud Storage, bucket `raw` | The raw model output for every ingestion window: exactly the JSON Gemini returned, Telugu and English together, one object per window, under a retention lock. About 540 objects, ~30 MB for the default pack | Write-once blobs, never edited, read rarely | Immutable evidence of what the model said, enforced by the platform |
+| Cloud Storage, bucket `store` | The canon snapshot per pin; every rendered lesson (HTML and text); long-form pages (v1.1) | Write-once blobs, read by link | Cheap, durable, no instance |
+| Firestore | The parsed transcript **segments** (one document each: Telugu, English, timestamps, grade and signals, references; ~10,000 documents, ~20 MB), and every operational record: learners, positions, lessons, traces, deliveries, reactions, videos, packs, model calls | Small documents, key lookups, simple queries, transactions | The store of record for retrieval and rendering; transactional create for idempotency; zero idle cost |
+| Pinecone | One vector per segment from its English text, with filter metadata | Derived index | Similarity search; rebuildable from Firestore in about an hour, so nothing depends on it surviving |
+
+A transcription therefore exists twice on purpose, as immutable evidence
+in Cloud Storage and as a queryable document in Firestore, plus a derived
+vector in Pinecone. Nothing generated from the teacher's recordings is
+ever in the repository (product §7.2).
+
+**Why not Cloud SQL.** Cloud SQL is a managed virtual machine running
+Postgres. It runs whether or not anyone uses it, bills by the hour (about
+ten dollars a month at the smallest size, more with high availability),
+has a size chosen by hand, a maintenance window, and a connection limit
+managed through a proxy, and it never scales to zero. Everything else in
+this design costs nothing when idle and needs no capacity decision.
+Adding it would put one always-on server back into a system that has
+none, and it would be the most expensive component by an order of
+magnitude. Google's serverless data services are Firestore and BigQuery;
+Firestore fits the record shapes here.
+
 **Architecture: serverless throughout (D3, D4, D5).** Every store and
 service in the design shares the same properties: no instance, no
 capacity planning, pay per operation, scale to zero. Firestore rather
-than Cloud SQL was the decisive choice, because a database instance is
-the one component that would have broken the model. What serverless
+than Cloud SQL was the decisive choice, for the reason above. What serverless
 demands in return, and what this design is built around:
 
 - *Stateless execution.* Any job can be killed at any second; the next
