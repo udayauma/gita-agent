@@ -469,6 +469,7 @@ status: Literal["pending","sending","sent","failed","failed_final","blocked","ca
 window_opens_at, window_closes_at: datetime   # lesson and correction kinds: the recipient's window for W (W+delivery_time, +2h); welcome kind: created_at, +2h
 expected_recipient_status: Literal["welcome_pending","active"]   # the precondition every → sending claim checks: welcome_pending for welcome kinds, active for everything else
 recompose_count: int            # a pending document with no lesson is recomposed at most once
+rendered: {html: gcs_uri, text: gcs_uri} | None   # what was or will be sent; for lesson kinds the lesson's rendering, for welcome and correction kinds a deterministic render from texts.yaml and primer.md written at claim time, so a retry resends the same bytes
 attempts: list[{at, error: str|None, gmail_api_id: str|None}]
 first_attempt_at, sending_since, sent_at, operator_notified_at: datetime | None
 block_reasons: list[str]
@@ -683,13 +684,17 @@ sequenceDiagram
   participant C as Cloud Monitoring
   S->>D: run (every 5 min)
   D->>F: learners status in (welcome_pending, active); reviewers status in (welcome_pending, active)
-  D->>D: welcomes due: status=welcome_pending, primer.md marked reviewed, no welcome doc for this recipient in pending/sending/failed/uncertain (failed_final permits a new attempt)
-  loop each welcome due (learners and reviewers)
-    D->>F: create deliveries/{audience}:{id}:welcome:{attempt_n}:{date} pending, window [now, +2h] (skip if exists); pending->sending (CAS, recipient still welcome_pending)
-    D->>M: send welcome (learner or reviewer text)
-    D->>F: sending->sent; set first_lesson_date (learners); status=active (one transaction)
+  D->>D: welcome docs to claim: any pending welcome doc inside its window (created by auto-enrolment or by learner resend-welcome), plus failed ones inside their window
+  D->>D: welcomes to create: recipients in welcome_pending with primer.md marked reviewed and NO welcome doc of any status (a terminal doc means the operator decides via resend-welcome)
+  loop each welcome to create
+    D->>F: create deliveries/{audience}:{id}:welcome:1:{date} pending, window [now, +2h] (skip if exists)
   end
-  D->>D: retry: failed docs inside their window -> sending (CAS, recipient by audience still in expected_recipient_status, sending_since rewritten), resend stored HTML and text
+  loop each welcome doc to claim (learners and reviewers)
+    D->>F: pending|failed -> sending (CAS, recipient still welcome_pending, sending_since set); render welcome from texts.yaml + primer.md and store under rendered
+    D->>M: send welcome (the stored rendering)
+    D->>F: sending->sent + set first_lesson_date (learners) + status=active, requiring learner still welcome_pending (one transaction); if not, record the API id and leave for the sweep
+  end
+  D->>D: retry: failed lesson-kind docs inside their window -> sending (CAS, recipient by audience still in expected_recipient_status, sending_since rewritten), resend the stored rendering
   D->>D: sending docs with sending_since older than 180 s -> uncertain (CAS)
   D->>D: lessons due, per track: for window date W in {yesterday, today}: now in [W+delivery_time, +2h), W >= position.first_date, no doc of that kind for W
   D->>D: missed: for W >= position.first_date with now >= W+delivery_time+2h and no doc of that kind -> create failed_final reason=window_missed
@@ -803,7 +808,8 @@ override. The banned-word check is a compiled regex per tier from
   transaction on the current status (§6.5). `pending → sending` is written
   with the `message_id` and `sending_since` in a transaction that also
   re-reads the **recipient** (learner or reviewer, by `audience`) and
-  requires `status == active`; if the recipient unsubscribed since the run
+  requires the recipient to be in the document's
+  `expected_recipient_status`; if the recipient unsubscribed since the run
   began, the document becomes `cancelled` and nothing is sent or written
   (P0-4, within one request of the unsubscribe). `cancelled` is a normal
   outcome: it is excluded from the failure notification and the Monitoring
@@ -845,8 +851,10 @@ override. The banned-word check is a compiled regex per tier from
   attempt.
 - **Retries**: `failed` deliveries are found by a status query (not by
   date) and retried by later runs within their window, moving
-  `failed → sending` by compare-and-set with the learner-active check, and
-  resending the **same stored HTML and text** (never recomposed).
+  `failed → sending` by compare-and-set with the `expected_recipient_status`
+  check, and resending the **same stored rendering** from the document's
+  `rendered` pointer (never recomposed; for welcome and correction kinds
+  the rendering was stored at claim time).
   `pending` with no `lesson_id` older than 10 minutes (a crash during
   model calls) is composed once more; nothing was sent, so immutability is
   not at stake, and `recompose_count` enforces the once. After the window,
@@ -870,10 +878,14 @@ override. The banned-word check is a compiled regex per tier from
   (P0-27), sets `first_lesson_date` to the next `delivery_time` after now,
   and activates the learner, in one transaction with its delivery
   document. The welcome document is keyed `welcome:<attempt_n>:<date>`
-  and has a window of two hours from creation; a welcome is due only when
-  no welcome document for that recipient is `pending`, `sending`,
-  `failed`, or `uncertain`, so an `uncertain` welcome never repeats on its
-  own, while a `failed_final` one permits `learner resend-welcome`.
+  and has a window of two hours from creation. The job **creates** a
+  welcome document only for a recipient with no welcome document of any
+  status, and **claims** any pending or failed welcome document inside its
+  window, whoever created it. A terminal welcome (`sent`, `failed_final`,
+  `uncertain`, `cancelled`) never triggers an automatic new attempt; the
+  operator decides with `learner resend-welcome`, which creates the next
+  `attempt_n` document for the loop to claim. So an `uncertain` welcome
+  never repeats on its own, and a resend is always reachable.
 - `gita reviewer add --shadows <learner_id>` likewise writes
   `welcome_pending`; `deliver` reads reviewers in `welcome_pending` and
   `active` and sends the reviewer welcome (content §7.3) through the same
