@@ -831,7 +831,11 @@ override. The banned-word check is a compiled regex per tier from
   lesson is skipped. Every retry rewrites `sending_since` when it claims
   the document. The precondition on the recipient is the status the kind
   expects: `welcome_pending` for welcome kinds, `active` for all others,
-  so a failed welcome can be retried. On a lost response (timeout after the request was made):
+  so a failed welcome can be retried. For welcome kinds the `sending → sent`
+  transaction also requires the learner to still be `welcome_pending`; if
+  the operator has already run `activate`, the run records its API id and
+  leaves the document for the sweep, so nothing is overwritten. On a lost
+  response (timeout after the request was made):
   `uncertain`; it is **never resent**, because Gmail has no idempotency
   key and a duplicate violates P0-1. The notification asks the operator to
   check the Sent folder and, if the lesson went out, to run `learner
