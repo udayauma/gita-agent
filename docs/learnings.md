@@ -253,6 +253,40 @@ tell someone else. **Evidence** points at the commit, doc, or moment.
 - **Evidence.** Commits a946d5f (after pass one) and 4b6ec30 (after pass
   two); finding counts 81 → 35.
 
+### Review loops converge on completeness, not on simplicity
+
+- **Observation.** Seven independent review passes on the technical spec
+  found 81, 35, 27, 13, 11, 4, and 3 issues. Each finding was real and each
+  fix was correct. The delivery mechanism went from one paragraph to a
+  state machine with seven statuses, six document kinds, per-kind
+  preconditions, a 180-second timeout sweep, welcome attempt numbers, an
+  "uncertain" state for lost responses, key-rotation grace periods, and a
+  dozen operator recovery commands. The owner read it and said: I think
+  this might be over-complicated. She was right.
+- **Lesson.** A reviewer's job is to find what is wrong; it has no
+  incentive to find what is unnecessary. Every pass asked "what breaks?"
+  and never "what could we not build?" Seven passes of that produce a
+  design that is correct for a thousand learners and heavy for one. The
+  question "is this proportionate to v1?" has to be asked by a person
+  holding a complexity budget, and it has to be asked between passes, not
+  after.
+- **Lesson.** Distinguish the guarantee from the mechanism. The product
+  spec's guarantees (never send twice, never skip silently, fidelity over
+  completeness) are load-bearing. The mechanism that enforces them can be
+  as small as one create-if-absent document and a failure notification
+  when the only learner is also the operator who reads the notification.
+  The elaborated machine is the right answer for v2 and belongs in a
+  hardening backlog, not in v1.0.
+- **Lesson.** Stop signals for a review loop, revised: the count is
+  converging *and* the findings are no longer changing behavior *and* a
+  human has judged the result proportionate. The third condition is the
+  one the loop cannot supply.
+- **Practical note.** Sub-agents reading three thousand lines stalled
+  twice; giving them exact line ranges and a word cap made the later
+  passes take under two minutes. Narrow the reader as the target narrows.
+- **Evidence.** Commits 4755707 through 95d912d; the seven pass results in
+  the session transcript; the owner's message that stopped the loop.
+
 ### When the human's question is better than the spec
 
 - **Observation.** Three of the day's most consequential changes came from
@@ -331,8 +365,9 @@ grand). Themes, each mapping to entries above:
 8. **One reviewer is not enough, and neither is three by rule.** The
    owner, the author, and independent readers each catch a different
    class of error; the fix is a draft; stop on convergence, not on a
-   count. The 81 → 35 curve, and what the second pass found in the first
-   pass's fixes.
+   count. The 81 → 35 → 27 → 13 → 11 → 4 → 3 curve, what each pass found
+   in the previous pass's fixes, and why the loop converged on
+   completeness rather than simplicity until a person stopped it.
 9. **Serverless as habits, not a label.** Stateless, idempotent, cold-start
    aware, least-privilege, host-less observability; the design had all of
    them before anyone said the word. (Running thread; to be filled from
