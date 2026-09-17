@@ -253,40 +253,6 @@ tell someone else. **Evidence** points at the commit, doc, or moment.
 - **Evidence.** Commits a946d5f (after pass one) and 4b6ec30 (after pass
   two); finding counts 81 → 35.
 
-### Review loops converge on completeness, not on simplicity
-
-- **Observation.** Seven independent review passes on the technical spec
-  found 81, 35, 27, 13, 11, 4, and 3 issues. Each finding was real and each
-  fix was correct. The delivery mechanism went from one paragraph to a
-  state machine with seven statuses, six document kinds, per-kind
-  preconditions, a 180-second timeout sweep, welcome attempt numbers, an
-  "uncertain" state for lost responses, key-rotation grace periods, and a
-  dozen operator recovery commands. The owner read it and said: I think
-  this might be over-complicated. She was right.
-- **Lesson.** A reviewer's job is to find what is wrong; it has no
-  incentive to find what is unnecessary. Every pass asked "what breaks?"
-  and never "what could we not build?" Seven passes of that produce a
-  design that is correct for a thousand learners and heavy for one. The
-  question "is this proportionate to v1?" has to be asked by a person
-  holding a complexity budget, and it has to be asked between passes, not
-  after.
-- **Lesson.** Distinguish the guarantee from the mechanism. The product
-  spec's guarantees (never send twice, never skip silently, fidelity over
-  completeness) are load-bearing. The mechanism that enforces them can be
-  as small as one create-if-absent document and a failure notification
-  when the only learner is also the operator who reads the notification.
-  The elaborated machine is the right answer for v2 and belongs in a
-  hardening backlog, not in v1.0.
-- **Lesson.** Stop signals for a review loop, revised: the count is
-  converging *and* the findings are no longer changing behavior *and* a
-  human has judged the result proportionate. The third condition is the
-  one the loop cannot supply.
-- **Practical note.** Sub-agents reading three thousand lines stalled
-  twice; giving them exact line ranges and a word cap made the later
-  passes take under two minutes. Narrow the reader as the target narrows.
-- **Evidence.** Commits 4755707 through 95d912d; the seven pass results in
-  the session transcript; the owner's message that stopped the loop.
-
 ### When the human's question is better than the spec
 
 - **Observation.** Three of the day's most consequential changes came from
@@ -338,6 +304,100 @@ tell someone else. **Evidence** points at the commit, doc, or moment.
   it from the observation that natural-language instructions, in prompts
   and in skills alike, can hold a more capable model below what it could
   do.
+
+## 2026-09-16 · Day three: convergence, simplification, and the first reviewed PR
+
+### Review loops converge on completeness, not on simplicity
+
+- **Observation.** Seven independent review passes on the technical spec
+  found 81, 35, 27, 13, 11, 4, and 3 issues. Each finding was real and each
+  fix was correct. The delivery mechanism went from one paragraph to a
+  state machine with seven statuses, six document kinds, per-kind
+  preconditions, a 180-second timeout sweep, welcome attempt numbers, an
+  "uncertain" state for lost responses, key-rotation grace periods, and a
+  dozen operator recovery commands. The owner read it and said: I think
+  this might be over-complicated. She was right.
+- **Lesson.** A reviewer's job is to find what is wrong; it has no
+  incentive to find what is unnecessary. Every pass asked "what breaks?"
+  and never "what could we not build?" Seven passes of that produce a
+  design that is correct for a thousand learners and heavy for one. The
+  question "is this proportionate to v1?" has to be asked by a person
+  holding a complexity budget, and it has to be asked between passes, not
+  after.
+- **Lesson.** Distinguish the guarantee from the mechanism. The product
+  spec's guarantees (never send twice, never skip silently, fidelity over
+  completeness) are load-bearing. The mechanism that enforces them can be
+  as small as one create-if-absent document and a failure notification
+  when the only learner is also the operator who reads the notification.
+  The elaborated machine is the right answer for v2 and belongs in a
+  hardening backlog, not in v1.0.
+- **Lesson.** Stop signals for a review loop, revised: the count is
+  converging *and* the findings are no longer changing behavior *and* a
+  human has judged the result proportionate. The third condition is the
+  one the loop cannot supply.
+- **Practical note.** Sub-agents reading three thousand lines stalled
+  twice; giving them exact line ranges and a word cap made the later
+  passes take under two minutes. Narrow the reader as the target narrows.
+- **Evidence.** Commits 4755707 through 95d912d; the seven pass results in
+  the session transcript; the owner's message that stopped the loop.
+
+### Sub-agents stall on whole-file reads; give them line ranges
+
+- **Observation.** The fifth review pass failed twice with "no progress for
+  600 seconds" while reading three files totalling about 3,300 lines. The
+  retry was told exact line ranges to read with offset and limit, and to
+  keep its answer under a word cap. It finished in two and a half minutes.
+  The sixth and seventh passes, scoped the same way, took under two minutes
+  each.
+- **Lesson.** As the review target narrows, narrow the reader. A sub-agent
+  asked to "read all three documents" spends its budget on context it will
+  not use and can stall before it writes a word. State the line ranges,
+  the scenarios to trace, and the output cap.
+
+### The simplification pass: keep the guarantee, shrink the mechanism
+
+- **Observation.** After the owner stopped the review loop, the delivery
+  section was cut from seven statuses to four, six document kinds to four,
+  and a dozen recovery commands to three, in one pass with the owner
+  choosing the line. Nothing was discarded: every removed mechanism went
+  into an appendix with the scenario it addresses and the point at which it
+  becomes worth building.
+- **Lesson.** "Keep the guarantee, shrink the mechanism" is the move. The
+  product guarantees (never send twice, never skip silently) did not
+  change; the machinery that enforces them was sized to one learner who is
+  also the operator. The appendix is what makes the cut safe: the work of
+  seven reviews is scheduled against evidence rather than lost.
+- **Evidence.** Technical spec §8 and Appendix B; commit 2a274db.
+
+### The first PR under our own review rules
+
+- **Observation.** The clean-slate PR, docs only, was reviewed by Greptile
+  under the twelve rules derived from the technical spec. Score 0 of 5,
+  four findings, every one real: a retry path that could double-send when
+  two runs overlapped, a missed-window scan that only looked back two
+  days, a product-spec claim that a forwarded link "opens for no one
+  else" which a bearer token cannot deliver, and a timestamp contract
+  stated two different ways in two specs. Each finding cited the rule it
+  fired under and the spec section it contradicted. Fixed in one commit;
+  re-review 5 of 5.
+- **Lesson.** Rules written as "this document must be consistent with that
+  section" work, on documents as well as code. The reviewer had the specs
+  as context and used them. The one overclaim it caught in the product
+  spec had survived seven independent passes that were reading for
+  mechanism, not for promises.
+- **Lesson.** Greptile does not post a new comment on re-review. It edits
+  its original summary in place, increments "Reviews (N)", changes the
+  last-reviewed commit, and reacts with a thumbs-up on the request. A
+  triage loop that waits for a new comment waits forever. Detect the
+  edit.
+- **Evidence.** PR #1; commits 16307c3 and aa1487f.
+
+### Phase 0 complete
+
+- The specs and the review rules are on `main`; the v0 code is a tag.
+  Sixteen calendar days from "let's redesign" to a merged clean slate,
+  across four working sessions with the owner. The next PR is the first
+  with code in it, and it will be reviewed the same way.
 
 ---
 
