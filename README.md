@@ -16,14 +16,14 @@ into its own storage.
 
 ## Status
 
-**v1 (private MVP) — in design.** Specs are being written before code. See `docs/`.
+**v1 (private MVP) — specs complete, implementation starting at phase 0.** See `docs/task_plan.md`.
 
 | Document | Purpose |
 |---|---|
 | [`docs/product_spec.md`](docs/product_spec.md) | What we are building, for whom, and what a lesson is |
 | [`docs/content_spec.md`](docs/content_spec.md) | Canon, teacher packs, lesson sequence, fixed texts, audit log |
 | [`docs/technical_spec.md`](docs/technical_spec.md) | Architecture, protocols, data model, ingestion and delivery, tests and evals, decision log |
-| `docs/task_plan.md` | Phased, test-first implementation plan *(to follow)* |
+| [`docs/task_plan.md`](docs/task_plan.md) | Phased, test-first implementation plan; each phase ends in a reviewed PR |
 | [`docs/learnings.md`](docs/learnings.md) | Running log of agentic-development lessons |
 | [`docs/archive/`](docs/archive/) | The superseded v0 design (code at git tag `v0-legacy`) |
 
