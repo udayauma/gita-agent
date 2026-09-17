@@ -340,7 +340,12 @@ not merely unlisted:
 
 - The "read more" link carries a signed token for that lesson and that
   recipient, the same mechanism as the reaction row (§6.7). The page is served
-  only when the token is valid. A forwarded link opens for no one else.
+  only when the token is valid. The token is the credential: the page opens
+  for whoever holds the link, which in practice is the recipient, and
+  forwarding the email forwards access. There is no account to check
+  against, by design. This is accepted for a private v1 whose recipients
+  are people the operator knows, and it is one more reason the page is
+  retired at v2 (below).
 - There is no unsigned URL for a page, no index page, and no listing of
   lessons.
 - Every page instructs search engines not to index it, as a second layer.
@@ -857,7 +862,7 @@ acceptance criterion is not a requirement.
 | ID | Requirement | Notes |
 |---|---|---|
 | P1-1 | Reviewer role and review edition (§3, §6.6, §8.5) | Operator-managed list; email only; reviewer welcome email; banner on every review edition; appendix of raw sources; narrow yes-or-no questions; feedback by email reply, verified against a source before any correction, logged in the machine-readable audit log. Retired at v2. |
-| P1-2 | Long-form lesson page (§6.5) | Recipient-signed link in every footer; static; generated with the email; served only with a valid token; no unsigned URL; not indexed; tokens revoked on unsubscribe. v1 only; taken down at v2 launch. |
+| P1-2 | Long-form lesson page (§6.5) | Recipient-signed link in every footer; static; generated with the email; served only with a valid token, which is a bearer credential (forwarding the email forwards access, accepted for private v1); no unsigned URL; not indexed; tokens revoked on unsubscribe. v1 only; taken down at v2 launch. |
 | P1-3 | Bhagavatam story track (§7.4) | Daily, opt-in, off by default, its own email, separate progress. Content is already ingested in v1.0; this adds a template, an episode sequence, and a schedule. |
 | P1-4 | Additional learners added by the operator (§3 timing) | After gate 1 (§10.1) is passed. |
 | P1-5 | Correction note (§6.2 delivery) | Operator-triggered short note sent the next morning to learners who received a lesson with a material error. Never a resend, never an edit. |
@@ -918,7 +923,7 @@ does not permit starting v2.
 | Reviewer response rate | Reviewers reply, with a yes or a correction, to at least half of the narrow questions asked | Audit log | Weekly |
 | Golden set exists (P2-2) | At least 40 lessons in the golden set, each marked confirmed-good or corrected, machine-readable, keyed by lesson ID | Repo | Day 30 of v1.1 |
 | Golden set runs (§6.2 model independence) | The fidelity evals run against the golden set on demand and pass on the current model and prompt version | CI | Before gate 2 |
-| Long-form privacy (P1-2) | A forwarded long-form link opens for no one but the recipient; tokens revoked on unsubscribe; pages not indexed | Manual test | Once |
+| Long-form privacy (P1-2) | A long-form link opens only with its valid token, tokens are revoked on unsubscribe, and pages are not indexed; the link is a bearer credential and forwarding it forwards access, which is accepted for private v1 | Manual test | Once |
 | Story track (P1-3) | At least one learner opts in; 14 consecutive days delivered on its own email with separate progress; same structural validity as verse lessons | Delivery records | Day 14 after opt-in |
 | Correction note (P1-5) | Exercised at least once, deliberately, end to end | Manual test | Once |
 | Cost at scale | Per-learner monthly cost measured and recorded; total under the ceiling | Ops digest | Monthly |

@@ -443,8 +443,10 @@ and gives the confidence signal enough granularity to be useful.
 The model is asked for, in one call:
 
 1. A verbatim **Telugu transcript** of the window, in Telugu script, with a
-   `[mm:ss]` marker roughly every 30 seconds of speech, offsets relative to
-   the video start.
+   `[mm:ss]` marker roughly every 30 seconds of speech. Markers are
+   relative to the **clip the model was given**; the ingestion parser adds
+   the window's start offset so that every stored segment and every
+   citation is relative to the video start (technical spec §7.2).
 2. A **faithful English translation**, paragraph by paragraph, keeping the
    same markers. Sanskrit verses and scriptural names are transliterated in
    IAST in italics and followed by their meaning in parentheses. No

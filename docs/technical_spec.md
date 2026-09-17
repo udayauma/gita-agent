@@ -516,9 +516,11 @@ so a direct-reference lookup for dataset verse `13.k` matches either
 - **Lesson**: written once before send; never updated. Corrections create
   new pack versions.
 - **Delivery**: `status` moves `pending → sent | failed | blocked`, and
-  `failed → sent` on a successful retry inside the window. Writes to a
-  delivery document happen inside a transaction that reads it first, so two
-  overlapping runs cannot both compose or both send the same document.
+  `failed → pending` (a retry claim, inside the window only) then `pending
+  → sent | failed`. Writes to a delivery document happen inside a
+  transaction that reads it first, and a send is made only by the run whose
+  claim transaction committed, so two overlapping runs cannot both compose
+  or both send the same document.
   `attempts` is append-only. The Lesson and Trace are written in the same
   transaction that records `lesson_id` on the document, so a lost race
   leaves no orphan.
@@ -597,10 +599,13 @@ sequenceDiagram
   a re-run transcribes only missing windows. `--force` or `--regrade` are
   explicit.
 - **Timestamp origin**: the model is asked for `[mm:ss]` relative to the
-  clip; `ingest.parse` adds `k*570`. Whether the model already reports
-  full-video offsets for a clipped request is verified by the contract
-  test on window k=1 before the full run, and the parser normalizes either
-  way.
+  clip it was given, and `ingest.parse` adds the window's start offset
+  (`k*(W−O)`) to produce offsets relative to the video start, which is
+  what the segment record and every citation carry. Content spec §4.3 says
+  the same. Whether the model nonetheless reports full-video offsets for a
+  clipped request is verified by the contract test on window k=1 before
+  the full run, and the parser detects and handles that case rather than
+  offsetting twice.
 - **YouTube-hours quota**: the per-project limit for YouTube input on
   Vertex is not documented in this spec; the contract test ingests one
   full video and records the observed behavior in §7.5 before the full
@@ -671,7 +676,7 @@ sequenceDiagram
   S->>D: run (every 5 min)
   D->>F: learners status=active
   D->>D: due, per enabled track: for window date W in {yesterday, today}: now in [W+delivery_time, +2h), W >= track first_date, no doc for (learner, track, W)
-  D->>D: missed: any such W whose window has closed with no doc -> create doc status=failed reason=window_missed
+  D->>D: missed: every W from the track's last success (or first_date) through today whose window has closed with no doc -> create doc status=failed reason=window_missed
   loop each due learner and track
     D->>F: create deliveries/learner:{id}:{track}:{W} status=pending (transaction; skip if it exists)
     D->>F: read position; load pack (blocked if the chapter is unreviewed)
@@ -695,7 +700,7 @@ sequenceDiagram
       D->>F: lessons/{id} outcome=blocked + traces/{id} with attempts; status=blocked, block_reasons
     end
   end
-  D->>D: retry: failed docs with a lesson_id, inside their window -> resend the stored rendering
+  D->>D: retry: failed docs with a lesson_id, inside their window -> claim failed->pending in a transaction, then resend the stored rendering
   D->>D: stale: pending docs with no lesson older than 20 min and still inside their window -> compose again; past their window -> failed
   D->>M: one failure notification per run for failed and blocked docs not yet notified (blocked-unsubscribed excluded)
   D->>C: metrics delivery.failed, delivery.blocked
@@ -719,9 +724,14 @@ sequenceDiagram
 - The document is created with `create()` semantics in a transaction
   before any model call. If it already exists, the learner is skipped. This
   is the single guarantee against double sends (P0-1).
-- **Missed window** (P0-3): if a window has closed with no document, the
-  next run creates one with `status=failed` and reason `window_missed`, so
-  a crashed or unscheduled run is never silent.
+- **Missed window** (P0-3): the scan is not limited to yesterday and today.
+  For every window date from the day after the track's
+  `last_success_window_date` (or from `first_date`) through today whose
+  window has closed with no document, the next run creates one with
+  `status=failed` and reason `window_missed`, so an outage of any length is
+  fully recorded in the notification and the digest. Due selection itself
+  still considers only yesterday and today, because an older window is
+  never sent late.
 - SLA against P0-1: within 5 minutes when the run at that minute succeeds;
   within 10 minutes if one run is missed.
 
@@ -766,10 +776,12 @@ All fixed strings come from `texts.yaml` (content §7).
   `last_episode_end`, `lesson_index`, `day_count + 1`, pack and sequence
   versions, `last_success_window_date = W`) in one transaction.
 - **On an error response**: `failed`, with the error. Later runs inside the
-  same window retry by resending the **same stored rendering**, never
-  recomposing (P0-15). After the window closes the document stays `failed`
-  and the position does not advance, so the next window composes the same
-  lesson again.
+  same window retry: the run first moves the document `failed → pending`
+  in a transaction that reads it and appends the attempt, and only the run
+  whose transaction committed resends the **same stored rendering**, never
+  recomposing (P0-15). Two overlapping runs therefore cannot both resend.
+  After the window closes the document stays `failed` and the position
+  does not advance, so the next window composes the same lesson again.
 - **On a lost response** (the request was made, no answer arrived): treated
   as sent. Gmail has no idempotency key, so this accepts a small
   probability of a duplicate email rather than building an "uncertain"
