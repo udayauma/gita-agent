@@ -1,0 +1,122 @@
+{
+  "strictness": 2,
+  "commentTypes": [
+    "logic",
+    "syntax"
+  ],
+  "triggerOnUpdates": false,
+  "triggerOnDrafts": false,
+  "statusCheck": true,
+  "statusCommentsEnabled": true,
+  "includeConfidenceScore": true,
+  "fixWithAI": true,
+  "shouldUpdateDescription": false,
+  "fileChangeLimit": 80,
+  "ignorePatterns": ".venv/**\nvenv/**\n__pycache__/**\n*.py[cod]\nhtmlcov/**\n.pytest_cache/**\ndist/**\nbuild/**\n*.egg-info/**\ndocs/archive/**\naudit/golden/**\naudit/evals/**",
+  "autoApprove": {
+    "enabled": false
+  },
+  "instructions": "Python 3.13 project: Gita Agent, a service that emails one short Bhagavad Gita lesson per day to a private learner, built from a public-domain canon plus a teacher's transcribed Telugu discourses. Three Cloud Run Jobs (ingest, deliver, digest) and one small Cloud Run Service (links) in one package `gita/`, on Firestore, Cloud Storage, Pinecone, Vertex AI (Gemini), and the Gmail API. No agent framework in v1. Everything is specified: docs/product_spec.md (what a lesson is and the fidelity contract in section 6.2), docs/content_spec.md (where every word comes from), docs/technical_spec.md (architecture, records, sequences, tests). The project is developed test-first; deterministic unit tests with fakes live in tests/unit, live contract tests in tests/contract, and model-dependent evals in tests/evals. Judge every change against the specs it cites. Prioritise fidelity (no model-generated text in verse or teacher fields), idempotency of delivery, secret hygiene, and immutability of sent lessons over style. Do not comment on formatting, import order, naming, or docstrings.",
+  "rules": [
+    {
+      "id": "no-secrets-no-api-keys",
+      "rule": "Flag any credential, API key, OAuth token, service-account JSON, or signing key appearing literally in source, tests, config, Dockerfiles, or deploy scripts. Every Google Cloud call must use Application Default Credentials (the service account); the only permitted third-party key is Pinecone's, read from Secret Manager. A `GOOGLE_API_KEY` or AI Studio key anywhere is a finding.",
+      "severity": "high"
+    },
+    {
+      "id": "tests-accompany-behavior",
+      "rule": "A PR that adds or changes behavior in `gita/` without a corresponding change in `tests/unit` is a finding. Changed error paths and new branches need cases, not only the happy path. Tests must use the fakes in `tests/fakes`; patching SDK internals with unittest.mock is a finding.",
+      "scope": [
+        "gita/**"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "fidelity-verse-and-teacher",
+      "rule": "The verse fields of a lesson (Sanskrit, transliteration, translation) must be copied from the canon store and must never pass through a model call. The teacher passage must be produced by the paraphrase step from a stored transcript span and its cited segment IDs must be validated against the store. Any code path that lets model output reach verse fields, or composes teacher text without a stored span, is a P0 finding (product spec P0-9, P0-11).",
+      "scope": [
+        "gita/compose/**",
+        "gita/retrieval/**",
+        "gita/canon/**"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "validation-rows-covered",
+      "rule": "`gita/compose/validate.py` implements every row of content spec section 5.4. A change to it must keep every row covered by a test in `tests/unit`; removing or weakening a check (structure, byte-identity, attribution, retrieval-only, trace present, quotation marks, hard-tier banned words, length, provenance, links) is a finding.",
+      "scope": [
+        "gita/compose/validate.py"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "external-calls-bounded-and-traced",
+      "rule": "Every call to Vertex AI, Pinecone, Firestore, Cloud Storage, Gmail, YouTube (yt-dlp), or GitHub must have a timeout, a bounded retry with backoff on retryable errors only, and an OpenTelemetry span carrying `lesson_id` or `window_id`. Every Vertex call must record a `model_calls` document with token counts and priced cost at call time.",
+      "scope": [
+        "gita/**"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "structlog-only-no-pii",
+      "rule": "Use the project's structlog logger. `print()` and the bare `logging` module are findings in `gita/`. Log lines must never contain transcript text, translation text, lesson body text, or a learner's email address.",
+      "scope": [
+        "gita/**"
+      ],
+      "severity": "medium"
+    },
+    {
+      "id": "immutability-and-delivery-state",
+      "rule": "A lesson record and its trace are never modified after the delivery is sent; corrections create a new pack version. A delivery document's status only moves pending -> sent | failed | blocked, plus failed -> sent on a retry inside the window, and every write to a delivery document happens in a Firestore transaction that reads it first. Code that updates a sent lesson's parts, or writes delivery status outside a transaction, is a finding (technical spec sections 6.5 and 8.4).",
+      "scope": [
+        "gita/deliver/**",
+        "gita/store/**"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "erasure-covers-every-learner-collection",
+      "rule": "Every Firestore collection or Cloud Storage prefix that stores learner-scoped data must be deleted by `gita/store/erase.py` and covered by its test. A PR that adds a learner-scoped record without extending erasure is a finding (product spec P2-9).",
+      "scope": [
+        "gita/store/**",
+        "gita/deliver/**",
+        "gita/links/**"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "prompts-and-pack-artifacts-versioned",
+      "rule": "Files under `packs/*/prompts/` and the pack artifacts (`sequence.json`, `chapter_openings.json`, `episodes.json`, `primer.md`, `texts.yaml`, `banned_words.yaml`, `canon_overrides.json`) change only with a bump of `manifest.yaml` `version`. A prompt change must reference an eval report under `audit/evals/` in the PR description. Reviewed artifacts keep their per-chapter or per-video review status unless the reviewed content itself changed.",
+      "scope": [
+        "packs/**"
+      ],
+      "severity": "medium"
+    },
+    {
+      "id": "message-types-in-lockstep",
+      "rule": "A new outbound message type must appear in all three places at once: the `MessageType` enum (product spec P0-6 list), `texts.yaml`, and the subject-line table in content spec section 7.9. One without the others is a finding.",
+      "scope": [
+        "gita/**",
+        "packs/**",
+        "docs/content_spec.md"
+      ],
+      "severity": "medium"
+    },
+    {
+      "id": "docs-consistent-with-product-spec",
+      "rule": "Changes under `docs/` are reviewed for consistency with `docs/product_spec.md` section 6.2 (what a lesson never does) and section 9 (requirements). A technical or content change that contradicts a P0 without changing the product spec in the same PR is a finding; a change to a load-bearing product section (6.2, 5, 3) must say in the PR description that the owner decided it.",
+      "scope": [
+        "docs/**"
+      ],
+      "severity": "medium"
+    },
+    {
+      "id": "no-test-only-prod-branches",
+      "rule": "Flag production code that branches on test state (e.g. checking `PYTEST_CURRENT_TEST` or `GITA_LIVE_TESTS`) for any purpose other than the documented OpenTelemetry export gating in `gita/observability.py`.",
+      "scope": [
+        "gita/**"
+      ],
+      "severity": "medium"
+    }
+  ]
+}

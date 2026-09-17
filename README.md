@@ -1,14 +1,37 @@
-# Hinduism & Bhagavad Gita AI Agent
+# Gita Agent
 
-A sophisticated AI agent capable of answering questions about the Bhagavad Gita using personal video context. Built with Google ADK, Model Context Protocol (MCP), and Google Cloud.
+A service that sends one short Bhagavad Gita lesson by email every morning, in plain
+English, at the learner's pace, with every claim traceable to its source.
 
-## Project Structure
+Each lesson combines two layers:
 
-- **`docs/`**: Technical designs and task tracking.
-- **`agent/`**: Brain of the application. Google ADK (Python) agent with reasoning logic.
-- **`ingestion/`**: Async data pipeline. Fetches Google Meet videos from Drive, transcribes them (Cloud Speech-to-Text), and indexes them into Pinecone.
-- **`mcp_server/`**: Connects the Agent to the Data. Implements the Model Context Protocol to serve video transcripts as "Tools".
-- **`frontend/`**: React + TailwindCSS chat interface.
+- **The canon** — the verse in Sanskrit, transliteration, and a public-domain English
+  translation, from the open [`gita/gita`](https://github.com/gita/gita) dataset.
+- **The lens** — a teacher's explanation of that verse, transcribed and translated from
+  recorded discourses. The default teacher is Sri Chaganti Koteswara Rao (Telugu).
 
-## Quick Start
-*Detailed instructions coming soon during Implementation Phase.*
+The repository ships the pipeline, the canon loader, and pack **manifests** (playlist
+IDs). It never ships a teacher's content; each deployment generates its own transcripts
+into its own storage.
+
+## Status
+
+**v1 (private MVP) — specs complete, implementation starting at phase 0.** See `docs/task_plan.md`.
+
+| Document | Purpose |
+|---|---|
+| [`docs/product_spec.md`](docs/product_spec.md) | What we are building, for whom, and what a lesson is |
+| [`docs/content_spec.md`](docs/content_spec.md) | Canon, teacher packs, lesson sequence, fixed texts, audit log |
+| [`docs/technical_spec.md`](docs/technical_spec.md) | Architecture, protocols, data model, ingestion and delivery, tests and evals, decision log |
+| [`docs/task_plan.md`](docs/task_plan.md) | Phased, test-first implementation plan; each phase ends in a reviewed PR |
+| [`docs/learnings.md`](docs/learnings.md) | Running log of agentic-development lessons |
+| [`docs/archive/`](docs/archive/) | The superseded v0 design (code at git tag `v0-legacy`) |
+
+## Stack (planned)
+
+Python 3.13 · Gemini on Vertex AI · Cloud Run Jobs + Cloud Scheduler · Pinecone · email.
+No agent framework in v1; Google ADK arrives in v2 for reply-to-lesson conversation.
+
+## License
+
+Apache-2.0 (pending; see `chore/add-license`).
