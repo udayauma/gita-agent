@@ -1,0 +1,40 @@
+{
+  "files": [
+    {
+      "path": "docs/product_spec.md",
+      "description": "What we are building and for whom. Section 6.2 is the fidelity contract every lesson must satisfy; section 9 is the numbered requirement list (P0-n, P1-n, P2-n) that code and docs cite. Judge changes against these; flag code that satisfies a requirement differently from its acceptance criterion."
+    },
+    {
+      "path": "docs/content_spec.md",
+      "description": "Where every word in a lesson comes from: the pinned canon and its loader rules (section 2), the lesson sequence and per-learner position rule (section 3), the pack manifest, ingestion contract, confidence grading, retrieval rules, and composition trace (section 4), composition rules, validation rows, and the banned-word tiers (section 5), fixed texts and the placeholder legend (section 7), the audit log (section 8). Use it to check that code implements the mechanism as defined."
+    },
+    {
+      "path": "docs/technical_spec.md",
+      "description": "Architecture, protocols, and auth for every edge (section 4), record shapes and mutability rules (section 6), ingestion and delivery sequences (sections 7 and 8), the links service and token format (section 9), commands (section 10), the test plan (section 12), deployment and IAM (section 13), the decision log (section 14), and Appendix B listing hardening that is deliberately deferred. Do not suggest building anything from Appendix B in v1.0."
+    },
+    {
+      "path": "docs/task_plan.md",
+      "description": "The phased plan. Use it to judge whether a change belongs to the phase in progress or is scope creep from a later phase.",
+      "scope": [
+        "gita/**",
+        "tests/**",
+        "packs/**",
+        "deploy/**"
+      ]
+    },
+    {
+      "path": "gita/observability.py",
+      "description": "Tracing helpers carried from v0 with their tests: module-local provider, export gating precedence, structlog processor. Include when reviewing any module so span and logging conventions are checked against the real implementation.",
+      "scope": [
+        "gita/**"
+      ]
+    },
+    {
+      "path": "tests/fakes/README.md",
+      "description": "The fake implementations of the store, channel, and model-client seams that unit tests must use. Include when reviewing tests so new tests use the fakes rather than patching SDK internals.",
+      "scope": [
+        "tests/**"
+      ]
+    }
+  ]
+}
