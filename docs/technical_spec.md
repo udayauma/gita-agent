@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Status** | Draft; revised after two independent staff-level review passes (81 findings, then 35 on the revision, 2026-09-13); awaiting Udaya's review |
+| **Status** | Draft; seven independent review passes (81, 35, 27, 13, 11, 4, 3 findings) then a simplification pass with the owner on 2026-09-16 (Appendix B); open questions resolved |
 | **Owner** | Udaya Pillalamarri |
 | **Answers to** | `docs/product_spec.md` §9 (every P0; P1-1 to P1-7, P1-10, P1-11; P2-1 to P2-10 as design constraints), `docs/content_spec.md` (all sections) |
 | **Audience** | A senior or staff engineer who has to approve this, and the operator who has to run it |
-| **Date** | 2026-09-13 |
+| **Date** | 2026-09-16 |
 
 ---
 
@@ -21,8 +21,8 @@ in one Python package, no agent framework.
 - **`deliver`** runs every five minutes, composes and emails one lesson per
   due learner from the canon store and the transcript store, with a
   validation gate in front of every send and a transactional delivery
-  record as the only guarantee against double sends. It also sends welcome
-  emails and review editions.
+  record as the only guarantee against double sends. Review editions
+  (v1.1) go out in the same run; the welcome is sent by `learner add`.
 - **`digest`** sends the weekly ops digest and runs the monthly canon and
   model-deprecation checks.
 - **`links`** is a small HTTPS service that receives signed clicks:
@@ -199,10 +199,10 @@ C4Container
   Container_Boundary(proj, "GCP project (gita-agent-prod)") {
     Container(sched, "Cloud Scheduler", "cron", "deliver every 5 min; ingest weekly; digest weekly")
     Container(ingest, "ingest", "Cloud Run Job", "Discovery, windowed transcription+translation (8 windows in flight), grading, embedding, upsert")
-    Container(deliver, "deliver", "Cloud Run Job", "Due selection, welcome sends, retrieval, paraphrase, composition, validation, send, review editions")
+    Container(deliver, "deliver", "Cloud Run Job", "Due selection, retrieval, paraphrase, composition, validation, send, review editions")
     Container(digest, "digest", "Cloud Run Job", "Weekly digest; monthly canon and model-deprecation checks")
     Container(links, "links", "Cloud Run Service, min 0", "Signed-link endpoint: reactions, unsubscribe (GET confirm + POST), long form (v1.1)")
-    ContainerDb(fs, "Firestore (Native, nam5)", "document DB", "learners, reviewers, positions, lessons, traces, deliveries, reactions, segments, segment_overrides, videos, packs, model_calls")
+    ContainerDb(fs, "Firestore (Native, us-central1)", "document DB", "learners, reviewers, positions, lessons, traces, deliveries, reactions, segments, segment_overrides, videos, packs, model_calls")
     ContainerDb(gcs, "Cloud Storage", "object store", "two buckets: raw (retention policy) and store (canon snapshot, rendered lessons, long-form HTML)")
     ContainerDb(sm, "Secret Manager", "secrets", "gmail-refresh-token, pinecone-api-key, link-key, operator-config")
     Container(mon, "Cloud Monitoring + Trace + Logging", "observability", "OTel spans; structlog JSON; alerting policies")
@@ -225,7 +225,7 @@ C4Container
   Rel(deliver, fs, "read learners/positions/segments; write lessons, traces, deliveries, model_calls")
   Rel(deliver, pinecone, "query; fetch neighbor vectors")
   Rel(deliver, vertex, "embed query; paraphrase; compose")
-  Rel(deliver, gmail, "send lesson, welcome, review edition, failure notification")
+  Rel(deliver, gmail, "send lesson, review edition, failure notification")
   Rel(deliver, gcs, "read canon snapshot; write rendered HTML")
   Rel(deliver, sm, "gmail-refresh-token, pinecone-api-key, link-key, operator-config")
   Rel(learner, links, "GET+POST /r, GET+POST /u, GET /l")
@@ -254,7 +254,7 @@ C4Container
 | ingest | YouTube | HTTPS via pinned `yt-dlp` with a `deno` runtime, `--flat-playlist -j` | None | Metadata only. Datacenter IPs are sometimes bot-challenged; see §7.4 for the fallback |
 | ingest, deliver, digest | Vertex AI | `google-genai` SDK, `vertexai=True`, HTTPS (REST) | Service account (ADC) | Text model `gemini-3-flash-preview` with GA fallback named in §14 D17; embeddings `gemini-embedding-001` at 768 dims. Location `global` for Gemini; the embedding endpoint location is verified by contract test (§12.4) |
 | ingest | Vertex AI (YouTube input) | `Part(file_data=FileData(file_uri=<url>, mime_type="video/*"), video_metadata=VideoMetadata(start_offset, end_offset))` | Service account | Verified 2026-09-12 on window 0 of one video. Timestamp origin for clipped windows and any per-project YouTube-hours quota are verified by contract test before the full run (§7.2) |
-| ingest, deliver, links, digest | Firestore | `google-cloud-firestore`, gRPC | Service account | Native mode, `(default)` database, `nam5` assumed (open question E1, §18) |
+| ingest, deliver, links, digest | Firestore | `google-cloud-firestore`, gRPC | Service account | Native mode, `(default)` database, `us-central1` (E1, resolved), co-located with the jobs |
 | ingest, deliver, links | Cloud Storage | `google-cloud-storage`, HTTPS | Service account | Two buckets, uniform access, no public objects: `gita-agent-prod-raw` under an unlocked bucket retention policy (retention is bucket-level in GCS), and `gita-agent-prod-store` without one so erasure can delete rendered lessons (§13) |
 | ingest, deliver | Pinecone | `pinecone` SDK, HTTPS | API key from Secret Manager | Serverless; new index `gita-segments`, 768 dims, cosine; one namespace per `pack_id` |
 | deliver, digest, links | Gmail API | `google-api-python-client`, `users.messages.send`, and `users.messages.get(format=metadata)` on messages we sent | OAuth 2.0 refresh token for the operator's Google account, from Secret Manager; scopes `gmail.send` and `gmail.metadata` (headers only, to read back the Message-ID Gmail actually stamped) | The OAuth consent screen must be **In production** (unverified is fine under 100 users); in Testing status Google revokes refresh tokens after 7 days. Tokens are also revoked when the account password changes or when the per-client token cap is exceeded; the `delivery.failed` alarm and the re-consent runbook step in §13 cover that (§13) |
@@ -361,7 +361,7 @@ erDiagram
 | Position | Firestore `positions/{learner_id}:{track}` | learner + track | Last verse delivered is the record (content §3.4) |
 | Lesson | Firestore `lessons/{lesson_id}`; rendered HTML in GCS `lessons/<lesson_id>/<edition>.html` | random 128-bit ID | Immutable after send; provenance; what links, replies, and audits key on |
 | Trace | Firestore `traces/{lesson_id}` | lesson_id | Content §4.6 record; kept separate so the lesson document stays small |
-| Delivery | Firestore `deliveries/{audience}:{recipient_id}:{kind}:{attempt_n}:{window_date}` | audience + recipient + kind + attempt (1 except for welcome resends) + window date, where kind is `verse`, `story`, `welcome`, `review:verse`, `review:story`, `correction:<lesson_id>`, or `resend:<lesson_id>:<n>`; the date segment is the window date W for lesson and correction kinds and the creation date for welcome kinds | The idempotency key; reviewers, corrections, and resends get their own so nothing collides with the day's lesson and every send is retried and reported |
+| Delivery | Firestore `deliveries/{audience}:{recipient_id}:{kind}:{window_date}` | audience + recipient + kind + window date, where kind is `verse`, `story`, `review:verse`, `review:story`, `correction:<lesson_id>`, or `resend:<lesson_id>:<n>` | The idempotency key; reviewers, corrections, and resends get their own so nothing collides with the day's lesson and every send is retried and reported |
 | Reaction | Firestore `reactions/{lesson_id}:{learner_id}` with `history/` subcollection | lesson + learner | Latest wins by overwrite; history kept; the optional note lives on the same document |
 | Model call | Firestore `model_calls/{call_id}` | random | Written at call time (P0-25) |
 | Audit entry, golden set, eval reports | Repository `audit/` | lesson_id | Human judgments belong in version control (content §8) |
@@ -449,31 +449,23 @@ selection: {winner_segment_id, span_segment_ids: list[str], paraphrase_cited_ids
 outcome: Literal["teacher_section","canon_only","blocked"]
 reason_code: Literal["no_candidates","all_below_threshold","all_low_confidence",
                      "paraphrase_failed_validation","hard_banned_after_regeneration",
-                     "chapter_unreviewed"] | None   # a cancelled delivery writes no trace
+                     "chapter_unreviewed"] | None   # a delivery blocked for unsubscribed writes no trace
 attempts: list[{n: int, what_it_means, question, hard_hits: list[str], soft_hits: list[str]}]
 provenance: {embedding_model, paraphrase_model, paraphrase_prompt_version, compose_model, compose_prompt_version}
 ```
 
-**Delivery** `deliveries/{audience}:{recipient_id}:{kind}:{attempt_n}:{window_date}`
+**Delivery** `deliveries/{audience}:{recipient_id}:{kind}:{window_date}`
 ```
-audience: Literal["learner","reviewer"]; recipient_id; kind
-attempt_n: int                  # 1 for every kind except welcome, where resend-welcome creates attempt 2, 3, …; part of the key
-message_type: MessageType       # one enum, exactly the P0-6 list: welcome, lesson, story_lesson, correction,
-                                # unsubscribe_confirmation, reviewer_welcome, review_edition, failure_notification, ops_digest
-window_date: date               # the local date the delivery window belongs to (§8.2); part of the key
-lesson_id: str | None; message_id: str | None      # message_id as we set it
-sent_message_id: str | None     # as Gmail stamped it, read back with gmail.metadata; the thread reference for v2
-status: Literal["pending","sending","sent","failed","failed_final","blocked","cancelled","uncertain"]
-                                # pending and failed are retryable inside the window; sending times out to uncertain;
-                                # cancelled = recipient unsubscribed before the send (not a failure, not alarmed);
-                                # sent, failed_final, blocked, cancelled, uncertain are terminal
-window_opens_at, window_closes_at: datetime   # lesson and correction kinds: the recipient's window for W (W+delivery_time, +2h); welcome kind: created_at, +2h
-expected_recipient_status: Literal["welcome_pending","active"]   # the precondition every → sending claim checks: welcome_pending for welcome kinds, active for everything else
-recompose_count: int            # a pending document with no lesson is recomposed at most once
-rendered: {html: gcs_uri, text: gcs_uri} | None   # what was or will be sent; for lesson kinds the lesson's rendering, for welcome and correction kinds a deterministic render from texts.yaml and primer.md written at claim time, so a retry resends the same bytes
+audience: Literal["learner","reviewer"]; recipient_id
+kind: Literal["verse","story","review:verse","review:story"] | "correction:<lesson_id>" | "resend:<lesson_id>:<n>"
+window_date: date               # the window date W (§8.2); part of the key
+message_type: MessageType       # one enum, exactly the P0-6 list
+lesson_id: str | None; message_id: str | None; sent_message_id: str | None
+status: Literal["pending","sent","failed","blocked"]
+                                # pending: claimed, not yet sent; failed: retryable inside the window, final after it
 attempts: list[{at, error: str|None, gmail_api_id: str|None}]
-first_attempt_at, sending_since, sent_at, operator_notified_at: datetime | None
-block_reasons: list[str]
+first_attempt_at, sent_at, operator_notified_at: datetime | None
+block_reasons: list[str]        # e.g. chapter_unreviewed, unsubscribed, hard_banned_after_regeneration, window_missed
 ```
 
 **Reaction** `reactions/{lesson_id}:{learner_id}`
@@ -523,26 +515,13 @@ so a direct-reference lookup for dataset verse `13.k` matches either
 
 - **Lesson**: written once before send; never updated. Corrections create
   new pack versions.
-- **Delivery**: every status transition is a Firestore transaction with a
-  precondition on the current status (compare-and-set), so two overlapping
-  runs cannot both claim a document. Allowed transitions: `pending →
-  sending`; `sending → sent | failed | uncertain`; `failed → sending`
-  (retry, inside the window only; rewrites `sending_since`); `pending |
-  failed → failed_final` (window expired); `pending → blocked`; `pending |
-  failed → cancelled` (recipient no longer in the status the kind expects:
-  `welcome_pending` for welcome kinds, `active` for all others);
-  `uncertain → sent` only by the run that holds the Gmail API id for that
-  send (it has proof the message was accepted) **and** only if the
-  position has not already been advanced past `W` by the operator
-  (`last_success_window_date < W`, or for a welcome `learner.status ==
-  welcome_pending`); otherwise the run records its API id on the document
-  and leaves it `uncertain`. `sending` whose `sending_since` is older than
-  the **send timeout of 180 seconds** (Gmail client timeout 60 s, metadata
-  read, and the transaction, with margin) becomes `uncertain`. Terminal
-  states are `sent`, `failed_final`, `blocked`, `cancelled`, `uncertain`.
-  `attempts` is append-only. The Lesson and Trace for a delivery are
-  written **inside** the `pending → sending` transaction, so a run that
-  loses the claim writes nothing.
+- **Delivery**: `status` moves `pending → sent | failed | blocked`, and
+  `failed → sent` on a successful retry inside the window. Writes to a
+  delivery document happen inside a transaction that reads it first, so two
+  overlapping runs cannot both compose or both send the same document.
+  `attempts` is append-only. The Lesson and Trace are written in the same
+  transaction that records `lesson_id` on the document, so a lost race
+  leaves no orphan.
 - **Segment**: writes after creation are `superseded_by`, and the grade
   fields (`confidence`, `signals`, `graded`) by `ingest --regrade` only.
 - **Position, Learner, Reviewer, Video**: mutable state, by design.
@@ -670,6 +649,12 @@ client-supplied Message-ID; `links` cold-start time.
 
 ## 8. Delivery
 
+Deliberately minimal. v1.0 has one learner, who is also the operator who
+reads every failure notification, so the mechanism is the smallest one
+that keeps the product guarantees: never send twice, never skip silently,
+fidelity over completeness. The machinery that a hundred strangers would
+need is written down in Appendix B and waits for the gate that needs it.
+
 ### 8.1 Sequence
 
 ```mermaid
@@ -684,94 +669,61 @@ sequenceDiagram
   participant M as Gmail API
   participant C as Cloud Monitoring
   S->>D: run (every 5 min)
-  D->>F: learners status in (welcome_pending, active); reviewers status in (welcome_pending, active)
-  D->>D: welcome docs to claim: any pending welcome doc inside its window (created by auto-enrolment or by learner resend-welcome), plus failed ones inside their window
-  D->>D: welcomes to create: recipients in welcome_pending with primer.md marked reviewed and NO welcome doc of any status (a terminal doc means the operator decides via resend-welcome)
-  loop each welcome to create
-    D->>F: create deliveries/{audience}:{id}:welcome:1:{date} pending, window [now, +2h] (skip if exists); resend-welcome creates attempt_n+1
-  end
-  loop each welcome doc to claim (learners and reviewers)
-    D->>F: pending->sending (CAS, recipient still welcome_pending, sending_since set): render welcome from texts.yaml + primer.md once and store under rendered; failed->sending (CAS) reuses the stored rendering
-    D->>M: send welcome (the stored rendering)
-    D->>F: sending->sent + set first_lesson_date (learners) + status=active, requiring learner still welcome_pending (one transaction); if not, record the API id and leave for the sweep
-  end
-  D->>D: retry: failed lesson-kind docs inside their window -> sending (CAS, recipient by audience still in expected_recipient_status, sending_since rewritten), resend the stored rendering
-  D->>D: sending docs with sending_since older than 180 s -> uncertain (CAS)
-  D->>D: lessons due, per track: for window date W in {yesterday, today}: now in [W+delivery_time, +2h), W >= position.first_date, no doc of that kind for W
-  D->>D: missed: for W >= position.first_date with now >= W+delivery_time+2h and no doc of that kind -> create failed_final reason=window_missed
-  loop each due learner, each enabled track
-    D->>F: create deliveries/{kind}:{W} status=pending (transaction; skip if exists)
-    D->>F: read position; load pack
-    alt chapter unreviewed
-      D->>F: status=blocked reason=chapter_unreviewed
-    else
-      D->>D: next lesson: verse track = first entry whose last verse is after last_verse; story track = first episode whose end instant is after last_episode_end
-      D->>V: embed query (RETRIEVAL_QUERY); model_calls
-      D->>P: query top_k=25 filter superseded=false
-      D->>F: direct-ref candidates (refs/refs_alt); fetch candidate segments and overrides
-      D->>P: fetch neighbor vectors for on-topic check
-      D->>D: select; neighbors by position; trace rows
-      opt span selected
-        D->>V: paraphrase_v1(span); model_calls
+  D->>F: learners status=active
+  D->>D: due, per enabled track: for window date W in {yesterday, today}: now in [W+delivery_time, +2h), W >= track first_date, no doc for (learner, track, W)
+  D->>D: missed: any such W whose window has closed with no doc -> create doc status=failed reason=window_missed
+  loop each due learner and track
+    D->>F: create deliveries/learner:{id}:{track}:{W} status=pending (transaction; skip if it exists)
+    D->>F: read position; load pack (blocked if the chapter is unreviewed)
+    D->>D: next lesson (content §3.4)
+    D->>V: embed query; D->>P: query; D->>F: direct refs, segments, overrides
+    D->>D: select, neighbors, trace (content §4.5, §4.6)
+    opt span selected
+      D->>V: paraphrase
+    end
+    D->>V: compose (up to 3 attempts on a hard banned hit)
+    D->>D: validate (content §5.4)
+    alt passed
+      D->>F: lessons/{id} + traces/{id} (immutable) and delivery lesson_id, in one transaction that re-reads the learner: if unsubscribed, status=blocked reason=unsubscribed and stop
+      D->>G: rendered HTML and text under lessons/{learner_id}/{lesson_id}/
+      D->>M: send (Message-ID from lesson_id, List-Unsubscribe headers)
+      D->>F: status=sent + position advance (one transaction)
+      opt reviewers shadowing this learner (v1.1)
+        D->>M: send review edition; D->>F: deliveries/reviewer:{id}:review:{track}:{W} sent|failed
       end
-      D->>V: compose_v1 (up to 3 attempts on hard banned hit); model_calls per attempt
-      D->>D: validate: every content §5.4 row (structure, byte-identity, attribution, retrieval-only, trace, quotes, banned tiers, length, provenance, links)
-      alt passed
-        D->>F: one transaction: pending->sending (CAS) with message_id and sending_since, re-reading the recipient (if not in expected status: pending->cancelled, nothing written), and lessons/{id} + traces/{id} written only if the claim succeeds
-        D->>G: rendered learner HTML and text at lessons/{learner_id}/{lesson_id}/ (after the claim, so a lost claim leaves no object)
-        D->>M: send (Message-ID = f(lesson_id), List-Unsubscribe + Post)
-        D->>M: messages.get(format=metadata) -> sent_message_id
-        D->>F: sending->sent + position advance (last_verse or last_episode_end, lesson_index, day_count+1, pack_version, pack_digest, sequence_version, last_success_window_date=W) + re-read reviewers active and shadowing this learner inside the transaction, create their docs deliveries/reviewer:{id}:review:{track}:{W} pending (one transaction)
-        loop reviewer docs pending (v1.1)
-          D->>F: pending->sending (CAS, reviewer still active; else cancelled)
-          D->>M: send review edition (no reaction row)
-          D->>F: sending->sent
-        end
-      else blocked
-        D->>F: lessons/{id} outcome=blocked, traces/{id} with attempts and hits; status=blocked, block_reasons; position unchanged
-      end
+    else blocked
+      D->>F: lessons/{id} outcome=blocked + traces/{id} with attempts; status=blocked, block_reasons
     end
   end
-  D->>D: expire: pending/failed docs past their window -> failed_final (CAS); pending with no lesson older than 20 min (past the 15 min task timeout, so the composer is dead) and recompose_count=0 -> recompose once (CAS)
-  D->>D: corrections due: correction:{lesson_id} docs, whose window is the recipient's next lesson window, inside that window -> send (same machine)
-  D->>M: one failure notification per run listing blocked/failed_final/uncertain not yet notified (cancelled excluded), with banned-word hits and drafts for blocked, and any reviewer whose shadowed learner is no longer active; operator_notified_at set
-  D->>C: metrics delivery.blocked, delivery.failed, delivery.uncertain (alerting independent of Gmail)
+  D->>D: retry: failed docs with a lesson_id, inside their window -> resend the stored rendering
+  D->>D: stale: pending docs with no lesson older than 20 min and still inside their window -> compose again; past their window -> failed
+  D->>M: one failure notification per run for failed and blocked docs not yet notified (blocked-unsubscribed excluded)
+  D->>C: metrics delivery.failed, delivery.blocked
 ```
 
-### 8.2 Due selection and the delivery record
+### 8.2 Due selection and the delivery document
 
-- The job runs every 5 minutes. Due selection is anchored on a **window
-  date** `W`, evaluated per learner, per enabled track, for `W` in
-  {yesterday, today} in the learner's timezone. The window for `W` is
-  `[W + delivery_time, W + delivery_time + 2 h)` as instants, computed with
-  `zoneinfo`, so a 23:30 delivery time has a window that crosses midnight
-  and is still attributed to `W`. A learner is due for `W` when now is
-  inside that window, `W ≥ position.first_date` (the track's first window
-  date: `first_lesson_date` for the verse track, `story_track_enabled_date`
-  for the story track), and no delivery document of that track's kind
-  exists for `W`. The document is keyed by `W`, so the
-  same window can never produce two documents, and yesterday's document
-  never affects today's. Resend, correction, welcome, and review documents
-  never affect due selection. A delivery time that falls in a
-  daylight-saving gap is treated as the first valid instant after it; the
-  repeated hour in autumn is de-duplicated by the document key. Achievable
-  SLA against P0-1: within 5 minutes of `delivery_time` when the run at
-  that minute succeeds; within 10 minutes if one run is missed.
-- **Missed window**: for any `W ≥ position.first_date` whose window has
-  closed with no document of that kind, the next run creates a
-  `failed_final` document for `W` with `block_reasons=["window_missed"]`,
-  and the failure notification and Monitoring metric fire. The
-  `first_date` gate means a learner enrolled at 09:00 with a 07:00 delivery
-  time, or a story track switched on mid-day, never produces a phantom
-  miss: both `first_lesson_date` and `story_track_enabled_date` are the
-  date of the next `delivery_time` after the triggering instant. Reviewer documents are created inside the learner's `sent`
-  transaction, so a reviewer never silently misses an edition; if a
-  reviewer's shadowed learner unsubscribes or is erased, the reviewer is
-  listed in the failure notification and the digest until the operator
-  runs `reviewer update --shadows`. Nothing is skipped silently (P0-3).
-- The delivery document is created with `create()` semantics in a
-  Firestore transaction before any model call; if it exists, the learner
-  is skipped. This is the single guarantee against double sends.
+- The job runs every 5 minutes. For each active learner and each enabled
+  track, and for each window date `W` in {yesterday, today} in the
+  learner's timezone, the window is `[W + delivery_time, W + delivery_time
+  + 2 h)` as instants from `zoneinfo`. The learner is due for `W` when now
+  is inside that window, `W ≥` the track's `first_date`, and no delivery
+  document exists for `(learner, track, W)`. Keying by `W` means a 23:30
+  window that crosses midnight still belongs to its date, the repeated hour
+  in autumn cannot produce two documents, and a delivery time in a
+  daylight-saving gap is simply the first valid instant after it.
+- `first_date` is `first_lesson_date` for the verse track and the story
+  track's enable date, both computed as the date of the next
+  `delivery_time` after the triggering instant, so enrolling at 09:00 with
+  a 07:00 delivery time never produces a phantom miss.
+- The document is created with `create()` semantics in a transaction
+  before any model call. If it already exists, the learner is skipped. This
+  is the single guarantee against double sends (P0-1).
+- **Missed window** (P0-3): if a window has closed with no document, the
+  next run creates one with `status=failed` and reason `window_missed`, so
+  a crashed or unscheduled run is never silent.
+- SLA against P0-1: within 5 minutes when the run at that minute succeeds;
+  within 10 minutes if one run is missed.
 
 ### 8.3 Composition steps
 
@@ -780,135 +732,80 @@ sequenceDiagram
 | `next_lesson(position, sequence)` | position, sequence | entry, or `chapter_unreviewed` | none |
 | `build_query(entry, canon, translation)` | verse records | text, key terms | none |
 | `search(query, pack)` | query | scored candidates | embed (1) + Pinecone query |
-| `direct_refs(entry, pack)` | verse ids | segments whose `refs`/`refs_alt` hit | Firestore query (composite index in §13) |
+| `direct_refs(entry, pack)` | verse ids | segments whose `refs`/`refs_alt` hit | Firestore query |
 | `select(candidates, direct, settings)` | above | winner, trace rows | none |
-| `neighbors(winner, settings)` | winner | span | Firestore by position; Pinecone `fetch(ids)` + local cosine against the query vector for the on-topic floor; extension stops at the first `low`-graded segment on each side, recorded as `neighbor_low_confidence`, so the span always passes the retrieval-only validation row |
-| `apply_overrides(span)` | span | span with `segment_overrides` English substituted, override cited. Precedence: an override applies to the exact `segment_id` it names, regardless of that segment's grade; a re-ingested generation has no override until the audit re-applies one | Firestore |
+| `neighbors(winner, settings)` | winner | span | Firestore by position; Pinecone `fetch(ids)` + local cosine for the on-topic floor; extension stops at the first `low`-graded segment (`neighbor_low_confidence`) |
+| `apply_overrides(span)` | span | span with `segment_overrides` English substituted and cited; an override applies to the exact segment it names | Firestore |
 | `paraphrase(span)` | span (te+en) | passage, cited segment ids | Gemini (1) |
 | `compose(verse_block, teacher_block, banned)` | blocks | what_it_means, question | Gemini (1 to 3) |
 | `validate(lesson, canon, store)` | lesson | report | none |
-| `render(lesson, edition)` | lesson, texts.yaml | HTML+text for `learner` / `review` / `longform` / `text` | none |
+| `render(lesson, edition)` | lesson, texts.yaml | HTML and text for `learner` / `review` / `longform` / `text` | none |
 
 Validation implements content §5.4 row by row. Byte-identity compares the
 rendered verse fields to the canon snapshot, or to `canon_overrides.json`
-where an override exists for that verse, and the footer cites the
-override. The banned-word check is a compiled regex per tier from
-`banned_words.yaml`. All fixed strings come from `texts.yaml` (content §7).
+where an override exists, and the footer cites the override. The
+banned-word check is a compiled regex per tier from `banned_words.yaml`.
+All fixed strings come from `texts.yaml` (content §7).
 
-### 8.4 Sending, idempotency of the send itself, and retries
+### 8.4 Sending, retries, and notifications
 
 - The email is HTML with a plain-text alternative, inline CSS only, no
   images, no external resources (P0-17). Headers: `From` and `Reply-To`
   the operator identity; `Message-ID` deterministic from `lesson_id`;
   `List-Unsubscribe: <POST url>, <mailto:>` and `List-Unsubscribe-Post:
-  List-Unsubscribe=One-Click`; `X-Gita-Lesson-Id` for our own tooling (a
-  reply does not carry it; threading uses the Message-ID, §8.6). Subject
-  per content §7.9. The footer names the series, video, and timestamp
-  (P0-10).
-- **Send state machine**: every transition is a compare-and-set
-  transaction on the current status (§6.5). `pending → sending` is written
-  with the `message_id` and `sending_since` in a transaction that also
-  re-reads the **recipient** (learner or reviewer, by `audience`) and
-  requires the recipient to be in the document's
-  `expected_recipient_status`; if the recipient unsubscribed since the run
-  began, the document becomes `cancelled` and nothing is sent or written
-  (P0-4, within one request of the unsubscribe). `cancelled` is a normal
-  outcome: it is excluded from the failure notification and the Monitoring
-  metric. The Lesson and Trace are written in the same transaction, so a
-  run that loses the claim leaves no orphan. Then the Gmail call, then
-  `messages.get(format=metadata)` on the returned API id to record
-  `sent_message_id`. On success: `sent`, position advance, and the creation
-  of pending reviewer documents (reviewers re-read inside the transaction),
-  in one transaction. On an HTTP error: `failed`, with the error. A
-  `sending` document whose `sending_since` is older than the send timeout
-  of 180 seconds (a crash between the call and the `sent` transaction)
-  becomes `uncertain` on the next run; it is never resent by a sweep. The
-  one exception: the run that made the Gmail call still holds the API id,
-  and if its `sent` transaction finds the document already `uncertain`, it
-  may move it `uncertain → sent` **only if** the position has not been
-  advanced past `W` in the meantime (`last_success_window_date < W`); if
-  the operator has already run `set-position` or `activate`, the run
-  records its API id on the document and leaves it `uncertain`, so no
-  lesson is skipped. Every retry rewrites `sending_since` when it claims
-  the document. The precondition on the recipient is the status the kind
-  expects: `welcome_pending` for welcome kinds, `active` for all others,
-  so a failed welcome can be retried. For welcome kinds the `sending → sent`
-  transaction also requires the learner to still be `welcome_pending`; if
-  the operator has already run `activate`, the run records its API id and
-  leaves the document for the sweep, so nothing is overwritten. On a lost
-  response (timeout after the request was made):
-  `uncertain`; it is **never resent**, because Gmail has no idempotency
-  key and a duplicate violates P0-1. The notification asks the operator to
-  check the Sent folder and, if the lesson went out, to run `learner
-  set-position` before the next window; otherwise the next window composes
-  the same lesson again, which is the intended outcome for a lesson that
-  was never received. `learner set-position --learner <id> --verse c.v
-  [--day-count n]` sets `last_verse`, recomputes `lesson_index` by the
-  content §3.4 rule, increments `day_count` by one unless `--day-count` is
-  given, and sets `last_success_window_date` to the confirmed window date;
-  it refuses if the delivery document for `W` is already `sent`. An
-  uncertain **welcome** that did arrive is recovered with `learner activate
-  --learner <id> --first-lesson-date <date>`, which marks the learner
-  active without a second welcome and refuses if the welcome document is
-  `sent`, or is `sending` and still inside its 180-second timeout ("send in
-  flight; retry shortly"), so it never races a live send; one that did
-  not arrive is recovered with `learner resend-welcome`, which creates a new welcome document (a new
-  `attempt_n`), permitted because a terminal welcome never blocks a later
-  attempt.
-- **Retries**: `failed` deliveries are found by a status query (not by
-  date) and retried by later runs within their window, moving
-  `failed → sending` by compare-and-set with the `expected_recipient_status`
-  check, and resending the **same stored rendering** from the document's
-  `rendered` pointer (never recomposed; for welcome and correction kinds
-  the rendering was stored at claim time).
-  `pending` with no `lesson_id` older than 10 minutes (a crash during
-  model calls) is composed once more; nothing was sent, so immutability is
-  not at stake, and `recompose_count` enforces the once. After the window,
-  the document becomes `failed_final`,
-  the notification and metric fire, and the position does not advance.
-- **Notifications** are one email per run listing every `blocked`,
-  `failed_final`, or `uncertain` delivery not yet notified; `failed` is not
-  notified while retries remain (P0-3). For blocked lessons the notification
-  includes the hard-word hits and the drafts from the trace (content §5.5).
-  `operator_notified_at` is then set. Cloud Monitoring alerts on
-  the same events through its own channel (§11), so the operator learns of
-  a Gmail outage even though the notification itself uses Gmail.
+  List-Unsubscribe=One-Click`. Subject per content §7.9. The footer names
+  the series, video, and timestamp (P0-10). After the send, `messages.get(
+  format=metadata)` records the Message-ID Gmail actually stamped as
+  `sent_message_id`, which is the thread reference v2 will route replies
+  on (§8.6).
+- **Before the send**, the transaction that writes the Lesson and Trace
+  re-reads the learner; if the learner unsubscribed since the run began,
+  the delivery becomes `blocked` with reason `unsubscribed`, nothing is
+  sent, and nothing is alarmed (P0-4).
+- **On success**: `sent` and position advance (`last_verse` or
+  `last_episode_end`, `lesson_index`, `day_count + 1`, pack and sequence
+  versions, `last_success_window_date = W`) in one transaction.
+- **On an error response**: `failed`, with the error. Later runs inside the
+  same window retry by resending the **same stored rendering**, never
+  recomposing (P0-15). After the window closes the document stays `failed`
+  and the position does not advance, so the next window composes the same
+  lesson again.
+- **On a lost response** (the request was made, no answer arrived): treated
+  as sent. Gmail has no idempotency key, so this accepts a small
+  probability of a duplicate email rather than building an "uncertain"
+  state for one learner. The operator sees the digest either way. This is
+  the one guarantee v1.0 relaxes, and Appendix B holds the mechanism that
+  removes it when there are learners who are not the operator.
+- **A crash during composition** leaves a `pending` document with no
+  lesson. A later run inside the window composes it again after 20 minutes
+  (past the 15-minute task timeout, so the first composer is dead); past
+  the window it becomes `failed`. Two runs cannot both compose the same
+  document because the lesson write is a transaction on the document.
+- **Notifications** are one email per run listing every `failed` and
+  `blocked` delivery not yet notified, excluding `blocked` for
+  `unsubscribed`; for blocked lessons the notification includes the
+  banned-word hits and drafts from the trace. `operator_notified_at` is then
+  set. Cloud Monitoring alerts on the same events through its own channel
+  (§11), so a Gmail outage is still seen.
 
 ### 8.5 Welcome, review editions, corrections
 
-- `gita learner add <email> <timezone>` writes the learner with
-  `status=welcome_pending` and the defaults from product §7.3: the default
-  pack, the manifest's `default_translation`, `delivery_time` 07:00,
-  `pace` daily, `story_track` off (P0-22). The next `deliver` run sends the
-  welcome (content §7.1–7.2) only if `primer.md` is marked reviewed
-  (P0-27), sets `first_lesson_date` to the next `delivery_time` after now,
-  and activates the learner, in one transaction with its delivery
-  document. The welcome document is keyed `welcome:<attempt_n>:<date>`
-  (the record's `attempt_n` is 1, and each `resend-welcome` creates the
-  next attempt) and has a window of two hours from creation. The job
-  **creates** a
-  welcome document only for a recipient with no welcome document of any
-  status, and **claims** any pending or failed welcome document inside its
-  window, whoever created it. A terminal welcome (`sent`, `failed_final`,
-  `uncertain`, `cancelled`) never triggers an automatic new attempt; the
-  operator decides with `learner resend-welcome`, which creates the next
-  `attempt_n` document for the loop to claim. So an `uncertain` welcome
-  never repeats on its own, and a resend is always reachable.
-- `gita reviewer add --shadows <learner_id>` likewise writes
-  `welcome_pending`; `deliver` reads reviewers in `welcome_pending` and
-  `active` and sends the reviewer welcome (content §7.3) through the same
-  machine. `reviewer update --shadows` re-points a reviewer whose learner
-  has left. Review editions are sent in the
-  loop after a learner send, each with its own delivery document
-  (`audience=reviewer`) so failures are retried and reported like any
-  other.
-- `gita correction send --lesson <id> --text "..."` (P1-5) creates a
-  pending delivery document of kind `correction:<lesson_id>` for every
-  learner who received that lesson and is still active, with
-  `window_opens_at`/`window_closes_at` set to that recipient's **next
-  lesson window**, not the creation time. `deliver` sends each one inside
-  that window, so a correction never arrives outside the window (product
-  §6.2) and never expires before it can be sent. It never edits the
+- **Welcome**: `gita learner add <email> <timezone>` writes the learner with
+  the product §7.3 defaults, renders the welcome from `texts.yaml` and
+  `primer.md` (refusing if the primer is not marked reviewed, P0-27), sends
+  it immediately through the same Gmail channel from the operator's
+  machine, and sets `first_lesson_date` and `status=active` on success. If
+  the send fails, the command fails visibly and the learner stays
+  `welcome_pending`; the operator re-runs it. No delivery document is
+  involved. The same shape serves `reviewer add` (v1.1).
+- **Review editions** (v1.1): after a learner's `sent`, each reviewer
+  shadowing that learner receives the review edition, recorded as
+  `deliveries/reviewer:{id}:review:{track}:{W}` with `sent` or `failed`;
+  failures are in the notification like any other.
+- **Corrections** (v1.1): `gita correction send --lesson <id> --text` creates
+  a `correction:<lesson_id>` document per active recipient, carrying that
+  recipient's next lesson window; `deliver` sends it inside that window
+  (product §6.2), by the same send and retry rules. It never edits the
   lesson.
 
 ### 8.6 The channel abstraction (P2-3)
@@ -923,13 +820,11 @@ class Channel(Protocol):
 that is exactly the P0-6 list and is referenced by the Delivery record and
 by `texts.yaml`), lesson_id, subject, body editions (`html`, `text`, and
 the `text` short rendering), links. `GmailChannel` builds MIME and sends.
-The **thread reference** is the sent message's `Message-ID` as Gmail
-stamped it (`sent_message_id`), because a reply carries `In-Reply-To` and
-`References`, never the original's custom headers. `route_reply` in v1
-resolves those headers to a lesson by `sent_message_id`, logs the match,
-and returns `None`; a subject-line lesson reference is the fallback when
-headers are stripped. A v2 SMS adapter implements both without touching
-the delivery job.
+The **thread reference** is `sent_message_id`, because a reply carries
+`In-Reply-To` and `References`, never the original's custom headers.
+`route_reply` in v1 resolves those headers to a lesson, logs the match,
+and returns `None`; a subject-line lesson reference is the fallback. A v2
+SMS adapter implements both without touching the delivery job.
 
 ## 9. The links service
 
@@ -950,25 +845,22 @@ the delivery job.
   for `/r`), then checks `v` against the recipient's current
   `link_key_version`. Unsubscribe bumps the version, so every issued link
   for that recipient stops working on the next request (P0-4). The key
-  version byte is the Secret Manager version number of `link-key`. Both
-  `links` and `deliver` receive `LINK_KEY_CURRENT=<n>:<base64>` and
-  `LINK_KEY_PREVIOUS=<n>:<base64>`; rotation deploys `links` first, then
-  the jobs, so no link is minted with a key the service cannot read. The
-  previous key stays readable for 30 days, and a second rotation inside
-  that grace period is refused by the rotation script, so no key is ever
-  dropped while links minted with it are still inside the grace period;
-  links in emails older than 30 days stop working, which the digest notes
-  at rotation time.
+  version byte is the Secret Manager version number of `link-key`. In v1.0
+  there is one key; rotating it means redeploying `links` and the jobs
+  together and accepting that links in already-sent emails stop working,
+  which the digest notes. Reading a previous key for a grace period is in
+  Appendix B.
 - **Scanner protection**: unsubscribe is never performed on GET.
   Reactions on GET are ignored for requests with `HEAD`, known
   security-scanner user agents, or no `Accept: text/html`, and the
   thank-you page includes a small "undo" link (a `texts.yaml` string,
-  content §7.8). This is adequate for a private v1; before external
-  learners (v2) reactions move to a confirm step as well.
+  content §7.8). Accepted for v1 (E5, resolved); before external learners
+  (v2) reactions move to a confirm step as well.
 - Sends the unsubscribe confirmation via `GmailChannel` (content §7.6),
   which is why it holds the Gmail token.
-- `--min-instances 0`, `--max-instances 2`, `--cpu-boost`, 1 CPU / 512
-  MiB, concurrency 40; the slim image has no Vertex or Pinecone
+- Served at the default `*.run.app` address in v1 (E2, resolved; a custom
+  domain is a v1.1 nicety once the website exists). `--min-instances 0`,
+  `--max-instances 2`, `--cpu-boost`, 1 CPU / 512 MiB, concurrency 40; the slim image has no Vertex or Pinecone
   dependency. Cold start is measured in the contract run and recorded in
   §7.5 (last item).
 - Responses set `Cache-Control: no-store`; the long form adds
@@ -983,8 +875,8 @@ entrypoints. Every command emits spans.
 |---|---|---|
 | `ingest [--pack] [--video] [--window] [--force] [--regrade] [--task-index i --tasks n]` | Discovery, windowed ingestion, grading, embedding; `--regrade` recomputes grades from raw; sharding for large runs | P0-20, P0-21, P0-23; content §4.3–4.6 |
 | `deliver` | The scheduled job (§8) | P0-1..P0-5 |
-| `deliver resend --lesson <id>` | Resends the stored HTML and text of a lesson to its learner under a delivery document of kind `resend:<lesson_id>:<n>`, which never affects due selection; never recomposes (P1-6 "resend") | P0-15, D9 |
-| `learner add/update/list/erase`, `learner set-position --learner <id> --verse c.v [--day-count n]`, `learner activate --learner <id> --first-lesson-date <date>`, `learner resend-welcome --learner <id>` | Enrollment; preference edits (delivery time, pace; `--story-track on` sets `story_track_enabled_date` and creates the story position); erasure; "skip to lesson" (P1-6); recovery from an uncertain welcome that arrived (`activate`) or did not (`resend-welcome`) | P0-22, P2-9 |
+| `deliver resend --lesson <id>` | Resends the stored rendering of a lesson to its learner under a `resend:<lesson_id>:<n>` document that never affects due selection; never recomposes (P1-6 "resend") | P0-15, D9 |
+| `learner add/update/list/erase`, `learner set-position --learner <id> --verse c.v [--day-count n]` | Enrollment (sends the welcome immediately, §8.5); preference edits (delivery time, pace; `--story-track on` sets the story track's first date and creates its position); erasure; "skip to lesson" (P1-6): sets `last_verse`, recomputes `lesson_index`, increments `day_count` unless given, sets `last_success_window_date` | P0-22, P2-9 |
 | `reviewer add --shadows <learner_id> / update --shadows / remove / list` | Reviewer list; a shadow is required on add and re-pointed when a learner leaves | P1-1 |
 | `correction send --lesson <id> --text` | Creates correction delivery documents for recipients of a lesson; `deliver` sends them in each recipient's window | P1-5 |
 | `digest [--week]` | Weekly digest; monthly canon and model checks | P0-24 |
@@ -1016,7 +908,7 @@ Cloud Run without a build; it contains nothing sensitive.
   text, no learner email.
 - **Alarms independent of Gmail**: Cloud Monitoring alerting policies on
   Cloud Run Job execution failure for each job, and on log-based metrics
-  `delivery.blocked`, `delivery.failed`, `delivery.uncertain` > 0, delivered
+  `delivery.blocked` (excluding unsubscribed) and `delivery.failed` > 0, delivered
   to the operator's email and, optionally, SMS through Monitoring's own
   channels.
 - **Cost**: `pricing.py` holds a versioned table; every Vertex call is
@@ -1057,13 +949,13 @@ wrong endpoint in v0.
 | `compose.compose` | Prompt assembly; regeneration loop max 3; attempts recorded in trace; blocked path | FakeGemini scripted |
 | `compose.validate` | Every content §5.4 row, hard vs warning | none |
 | `compose.render` | Four editions; labels and marker; footer with series; canon-only line; override citation; no external resources; headers including deterministic Message-ID | Golden fixtures |
-| `deliver.due` | Window-date rule for yesterday and today; per-track independence; DST gap and repeated hour; first_lesson_date; a 23:30 window crossing midnight is attributed to its date and produces one document; missed-window failure per track | Frozen clock |
-| `deliver.state` | `create()` idempotency under concurrent runs; every transition is compare-and-set and two overlapping runs cannot both claim a document; the losing composer writes no Lesson or Trace; pending→sending re-reads the recipient by audience (unsubscribed → cancelled, not sent, not alarmed); failed→sending retry inside the window only, rewriting sending_since; sending older than 180 s → uncertain; the run holding the Gmail id may move uncertain → sent; failed_final after the window; uncertain never resent by a sweep; pending-without-lesson recompose once via recompose_count; sent+advance+reviewer re-read and doc creation in one transaction; welcome uses the same machine keyed by attempt with precondition welcome_pending, a failed welcome retries, an uncertain welcome never repeats on its own, failed_final permits resend-welcome; uncertain→sent refused after set-position or activate; rendered objects written only after the claim under the learner's prefix; advance writes every position field; corrections take the recipient's next lesson window; recompose only after the task timeout; missed-window gated by first_date computed as the next delivery time; corrections sent only inside the recipient's window; resend and correction kinds never affect due selection | FakeFirestore with transactions |
-| `deliver.position` | Next lesson by last verse; a regrouped sequence never skips a verse and may repeat one; story track next episode by end instant with the same rule after a re-cut; day count continues; `set-position` semantics | Fixture sequences and episode lists |
-| `deliver.welcome` | welcome_pending → active with first_lesson_date; reviewer welcome | FakeGmail |
+| `deliver.due` | Window-date rule for yesterday and today; per-track independence; DST gap and repeated hour; first_date computed as the next delivery time; a 23:30 window crossing midnight produces one document; missed-window failure per track | Frozen clock |
+| `deliver.state` | `create()` idempotency under concurrent runs; lesson write and learner re-read in one transaction (unsubscribed → blocked, not sent, not alarmed); failed retried inside the window with the same rendering, final after; stale pending composed again after 20 minutes; lost response treated as sent; sent + advance in one transaction | FakeFirestore with transactions |
+| `deliver.position` | Next lesson by last verse; a regrouped sequence never skips a verse and may repeat one; story track next episode by end instant with the same rule; day count continues; `set-position` semantics | Fixture sequences and episode lists |
+| `learner.add` | Welcome rendered from texts and primer, refused if the primer is unreviewed, sent synchronously, first_lesson_date set and status active only on success; reviewer add likewise (v1.1) | FakeGmail |
 | `deliver.notify` | One notification per run; `operator_notified_at`; metric emission | FakeGmail, FakeMetrics |
 | `channel.gmail` | MIME, headers, subjects, text alternative; `route_reply` logs and returns None | FakeGmail |
-| `links` | Encrypt/verify; tamper rejected; purpose must match the route; key-version bump; key rotation grace with previous key; reaction latest-wins and undo; note; GET /u renders, POST /u performs exactly once; scanner filtering; long-form auth | Test client, FakeFirestore |
+| `links` | Encrypt/verify; tamper rejected; purpose must match the route; key-version bump; reaction latest-wins and undo; note; GET /u renders, POST /u performs exactly once; scanner filtering; long-form auth | Test client, FakeFirestore |
 | `digest` | Every P0-24 item; cost re-sum; canon check with fake GitHub; model check with fake list; discovery-blocked notice | Fixture week |
 | `audit` | Schema; golden derivation snapshots inputs; excludes rejected/logged | Fixture log |
 | `store.erase` | Chunked deletes; subcollections; re-runnable; model_calls keep tokens | FakeFirestore, FakeGCS |
@@ -1091,8 +983,10 @@ them, and against a hand-built starter set until the golden set exists.
 
 Each run records model IDs, prompt versions, judge model, and golden-set
 hash, and writes `audit/evals/<date>.json`. A model or prompt change ships
-only with a report attached to its PR (P0-13). The judge model is open
-question E4.
+only with a report attached to its PR (P0-13). The judge model is Gemini
+Pro on Vertex in v1 (E4, resolved); at gate 2 a sample is re-judged with
+Claude to measure disagreement before deciding whether a second family is
+worth a second provider.
 
 ### 12.4 Contract tests (live, gated by `GITA_LIVE_TESTS=1`)
 
@@ -1149,14 +1043,13 @@ GCP; GitHub Actions never holds the Gmail token or the Pinecone key.
   long-form HTML, with no retention so erasure can delete.
 - **Firestore composite indexes** (`deploy/firestore.indexes.json`):
   `segments(pack_id, superseded_by, refs array)`, `segments(pack_id,
-  superseded_by, refs_alt array)`, `deliveries(recipient_id, kind, status, created_at)`, `deliveries(status, sending_since)`, `deliveries(status, operator_notified_at)`, `deliveries(status, lesson_id, created_at)`, `deliveries(audience, recipient_id, kind, status)`, `learners(operator_id, status)`, `model_calls(operator_id,
+  superseded_by, refs_alt array)`, `deliveries(recipient_id, kind, status, window_date)`, `deliveries(status, operator_notified_at)`, `deliveries(status, lesson_id, created_at)`, `learners(operator_id, status)`, `model_calls(operator_id,
   at)`.
 - **Secrets**: `gmail-refresh-token` (one-time local OAuth flow, consent
   screen **In production**; scopes `gmail.send` and `gmail.metadata`),
-  `pinecone-api-key`, `link-key` (32 random bytes; current and previous
-  versions both injected), `operator-config` (YAML). Injected as
-  environment variables with explicit version references, resolved at
-  instance or task start.
+  `pinecone-api-key`, `link-key` (32 random bytes, one version in v1.0),
+  `operator-config` (YAML). Injected as environment variables with explicit
+  version references, resolved at instance or task start.
 - **Gmail token runbook**: the token is revoked by Google if the consent
   screen is in Testing status (after 7 days), if the account password
   changes, or if the per-client token cap is exceeded. The symptom is
@@ -1188,7 +1081,7 @@ GCP; GitHub Actions never holds the Gmail token or the Pinecone key.
 | D6 | `gemini-embedding-001` at 768 dims, batch size verified by contract test | `text-embedding-005`; 3072 dims | Current model; small index; quality difference negligible at 10k documents |
 | D7 | Gmail API with the operator's OAuth refresh token, consent screen in production | SendGrid/Resend; Workspace delegation | Operator identity is a personal account by decision; tiny volume; replies land where reviewer feedback belongs; no third party sees addresses |
 | D8 | `deliver` every 5 minutes; 2-hour due window; transactional delivery document per recipient, track, and day | Per-learner schedules; a long-running process | Any timezone with one schedule; meets the 5-minute SLA when the run succeeds; the document is the idempotency guarantee; missed windows become explicit failures |
-| D9 | Retry resends stored HTML; uncertain sends are never resent; pending-without-lesson recomposes once | Recompose on retry; resend on uncertainty | Immutability and byte-identical retries; Gmail has no idempotency key, so a duplicate is a worse failure than a missed day |
+| D9 | Retry resends the stored rendering, never recomposes; a lost response is treated as sent in v1.0 (Appendix B holds the uncertain-state mechanism for v1.1) | Recompose on retry | Immutability and byte-identical retries; Gmail has no idempotency key; for one learner who is also the operator, a rare duplicate is cheaper than the machinery to prevent it |
 | D10 | AEAD-encrypted link tokens with per-recipient key version and a key-version prefix | Signed-but-readable payload; random tokens in the store; JWT | Opaque links satisfy P0-17 literally; revocation is one write; key rotation does not break issued links |
 | D11 | Reviewer shadows one named learner; review editions have their own delivery documents | Own position; all learners' lessons | Zero extra composition; a re-render of an existing lesson; retried and reported like any send |
 | D12 | One package, two images (full and slim), many entrypoints; pack in the image | Separate services; pack loaded from GCS | One digest per lesson; reviewed content ships with code; a slim image keeps `links` cold starts short |
@@ -1289,10 +1182,38 @@ rate, which matters when a preview model or an API changes under us.
 
 ## 18. Open questions
 
-| # | Question | Who | Blocking? |
-|---|---|---|---|
-| E1 | Firestore region `nam5` (US multi-region) is what this spec assumes. Confirm, or choose `us-central1`. | Udaya | Before phase 1 |
-| E2 | Custom domain for `links` or the default `*.run.app` URL? Default works; a custom domain is a v1.1 nicety. | Udaya | No |
-| E3 | Gmail OAuth: a one-time browser consent on Udaya's machine produces the refresh token with `gmail.send` and `gmail.metadata` scopes, and the consent screen must be set to production status; a password change on the account revokes the token and requires re-consent (§13 runbook). Acceptable, or use a dedicated Google account as the operator identity? | Udaya | Before first send |
-| E4 | Judge model for evals: a second Gemini model, or Claude via its API? A different family reduces shared blind spots but adds a provider. Recommendation: Gemini Pro in v1, revisit at gate 2. | Udaya | No |
-| E5 | Reactions on GET with scanner filtering (D20) is a private-v1 compromise. Accept for v1, with a confirm step before v2? | Udaya | No |
+All resolved on 2026-09-16 by Udaya; each choice is folded into the section
+that references it.
+
+| # | Question | Decision |
+|---|---|---|
+| E1 | Firestore region | **`us-central1`**, co-located with the jobs (§4.1). |
+| E2 | Custom domain for `links` | **Default `*.run.app` in v1**; a custom domain when the website exists (§9). |
+| E3 | Gmail OAuth flow | **One-time consent on Udaya's own account**, consent screen in production status, scopes `gmail.send` and `gmail.metadata`; a password change revokes the token and the §13 runbook covers re-consent. A dedicated account remains a config-level fallback. |
+| E4 | Judge model for evals | **Gemini Pro in v1**; re-judge a sample with Claude at gate 2 (§12.3). |
+| E5 | Reactions on GET with scanner filtering | **Accepted for v1**; confirm step before external learners (§9, D20). |
+
+## Appendix B. Hardening deferred to v1.1 and v2
+
+Seven independent review passes on this document (81, 35, 27, 13, 11, 4,
+and 3 findings) produced a delivery mechanism that was correct for a
+thousand learners and heavy for one. The owner judged it disproportionate
+for v1.0, and §8 was cut back to the minimum that keeps the product
+guarantees while the only learner is the operator. Nothing found in those
+passes was wrong; each item below names the scenario it addresses and the
+point at which it becomes worth building. They are the v1.1 hardening
+backlog, to be scheduled against evidence from v1.0.
+
+| Mechanism | Scenario it addresses | Build when |
+|---|---|---|
+| `sending` state with `sending_since`, a 180-second timeout sweep to an `uncertain` state that is never resent, and `uncertain → sent` only by the run holding the Gmail API id and only if the position has not been advanced by the operator | A crash between the Gmail call and the `sent` transaction; a lost response. v1.0 treats a lost response as sent and accepts a rare duplicate | First learner who is not the operator (v1.1) |
+| Compare-and-set precondition on every status transition, with `expected_recipient_status` per document kind | Two overlapping runs claiming the same retry; a welcome retry for a learner still `welcome_pending`. v1.0 keeps one transaction per document write, which covers the compose and send races | v1.1 |
+| Welcome as a delivery document with `attempt_n`, a two-hour window, `learner resend-welcome`, and `learner activate` for an uncertain welcome | Welcome sends that fail, expire, or complete uncertainly. v1.0 sends the welcome synchronously from `learner add` and the operator re-runs the command | Self-serve signup (v2), when a person other than the operator triggers the welcome |
+| `cancelled` terminal state, excluded from alarms | Distinguishing "recipient unsubscribed before the send" from a failure in metrics. v1.0 uses `blocked` with reason `unsubscribed` and excludes it from notifications | v1.1 |
+| `recompose_count` to enforce a single recomposition | A composer that crashes repeatedly. v1.0 bounds it by the window instead | v1.1 |
+| Reviewer documents created inside the learner's `sent` transaction, orphaned-shadow detection, `reviewer update --shadows` | A reviewer whose shadowed learner unsubscribes or is erased | v1.1, with the reviewer role |
+| `link-key` rotation with a key-version byte read against current and previous versions, `links` deployed before jobs, a 30-day grace period, rotation refused inside it | Rotating the link key without breaking links in sent emails. v1.0 rotates by redeploying both together | v1.1 |
+| Rendered objects written only after the delivery claim, under the learner's prefix | Orphaned rendered files from a lost claim. v1.0 already writes under the learner's prefix, so erasure finds them | Already partly done; complete in v1.1 |
+| Firestore composite indexes for `sending_since` and audience-scoped queries | The sweeps above | With the mechanisms above |
+| Reactions behind a confirm step, like unsubscribe | Mail scanners recording phantom reactions for strangers | Before external learners (v2, D20) |
+
