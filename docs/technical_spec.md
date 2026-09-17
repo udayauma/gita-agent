@@ -361,7 +361,7 @@ erDiagram
 | Position | Firestore `positions/{learner_id}:{track}` | learner + track | Last verse delivered is the record (content §3.4) |
 | Lesson | Firestore `lessons/{lesson_id}`; rendered HTML in GCS `lessons/<lesson_id>/<edition>.html` | random 128-bit ID | Immutable after send; provenance; what links, replies, and audits key on |
 | Trace | Firestore `traces/{lesson_id}` | lesson_id | Content §4.6 record; kept separate so the lesson document stays small |
-| Delivery | Firestore `deliveries/{audience}:{recipient_id}:{kind}:{window_date}` | audience + recipient + kind + window date, where kind is `verse`, `story`, `welcome:<attempt_n>`, `review:verse`, `review:story`, `correction:<lesson_id>`, or `resend:<lesson_id>:<n>`; the date segment is the window date W for lesson and correction kinds and the creation date for welcome kinds | The idempotency key; reviewers, corrections, and resends get their own so nothing collides with the day's lesson and every send is retried and reported |
+| Delivery | Firestore `deliveries/{audience}:{recipient_id}:{kind}:{attempt_n}:{window_date}` | audience + recipient + kind + attempt (1 except for welcome resends) + window date, where kind is `verse`, `story`, `welcome`, `review:verse`, `review:story`, `correction:<lesson_id>`, or `resend:<lesson_id>:<n>`; the date segment is the window date W for lesson and correction kinds and the creation date for welcome kinds | The idempotency key; reviewers, corrections, and resends get their own so nothing collides with the day's lesson and every send is retried and reported |
 | Reaction | Firestore `reactions/{lesson_id}:{learner_id}` with `history/` subcollection | lesson + learner | Latest wins by overwrite; history kept; the optional note lives on the same document |
 | Model call | Firestore `model_calls/{call_id}` | random | Written at call time (P0-25) |
 | Audit entry, golden set, eval reports | Repository `audit/` | lesson_id | Human judgments belong in version control (content §8) |
@@ -454,9 +454,10 @@ attempts: list[{n: int, what_it_means, question, hard_hits: list[str], soft_hits
 provenance: {embedding_model, paraphrase_model, paraphrase_prompt_version, compose_model, compose_prompt_version}
 ```
 
-**Delivery** `deliveries/{audience}:{recipient_id}:{kind}:{window_date}`
+**Delivery** `deliveries/{audience}:{recipient_id}:{kind}:{attempt_n}:{window_date}`
 ```
 audience: Literal["learner","reviewer"]; recipient_id; kind
+attempt_n: int                  # 1 for every kind except welcome, where resend-welcome creates attempt 2, 3, …; part of the key
 message_type: MessageType       # one enum, exactly the P0-6 list: welcome, lesson, story_lesson, correction,
                                 # unsubscribe_confirmation, reviewer_welcome, review_edition, failure_notification, ops_digest
 window_date: date               # the local date the delivery window belongs to (§8.2); part of the key
@@ -687,10 +688,10 @@ sequenceDiagram
   D->>D: welcome docs to claim: any pending welcome doc inside its window (created by auto-enrolment or by learner resend-welcome), plus failed ones inside their window
   D->>D: welcomes to create: recipients in welcome_pending with primer.md marked reviewed and NO welcome doc of any status (a terminal doc means the operator decides via resend-welcome)
   loop each welcome to create
-    D->>F: create deliveries/{audience}:{id}:welcome:1:{date} pending, window [now, +2h] (skip if exists)
+    D->>F: create deliveries/{audience}:{id}:welcome:1:{date} pending, window [now, +2h] (skip if exists); resend-welcome creates attempt_n+1
   end
   loop each welcome doc to claim (learners and reviewers)
-    D->>F: pending|failed -> sending (CAS, recipient still welcome_pending, sending_since set); render welcome from texts.yaml + primer.md and store under rendered
+    D->>F: pending->sending (CAS, recipient still welcome_pending, sending_since set): render welcome from texts.yaml + primer.md once and store under rendered; failed->sending (CAS) reuses the stored rendering
     D->>M: send welcome (the stored rendering)
     D->>F: sending->sent + set first_lesson_date (learners) + status=active, requiring learner still welcome_pending (one transaction); if not, record the API id and leave for the sweep
   end
@@ -848,9 +849,10 @@ override. The banned-word check is a compiled regex per tier from
   it refuses if the delivery document for `W` is already `sent`. An
   uncertain **welcome** that did arrive is recovered with `learner activate
   --learner <id> --first-lesson-date <date>`, which marks the learner
-  active without a second welcome and likewise refuses if the welcome
-  document is `sent`; one that did not arrive is recovered with `learner
-  resend-welcome`, which creates a new welcome document (a new
+  active without a second welcome and refuses if the welcome document is
+  `sent`, or is `sending` and still inside its 180-second timeout ("send in
+  flight; retry shortly"), so it never races a live send; one that did
+  not arrive is recovered with `learner resend-welcome`, which creates a new welcome document (a new
   `attempt_n`), permitted because a terminal welcome never blocks a later
   attempt.
 - **Retries**: `failed` deliveries are found by a status query (not by
@@ -882,7 +884,9 @@ override. The banned-word check is a compiled regex per tier from
   (P0-27), sets `first_lesson_date` to the next `delivery_time` after now,
   and activates the learner, in one transaction with its delivery
   document. The welcome document is keyed `welcome:<attempt_n>:<date>`
-  and has a window of two hours from creation. The job **creates** a
+  (the record's `attempt_n` is 1, and each `resend-welcome` creates the
+  next attempt) and has a window of two hours from creation. The job
+  **creates** a
   welcome document only for a recipient with no welcome document of any
   status, and **claims** any pending or failed welcome document inside its
   window, whoever created it. A terminal welcome (`sent`, `failed_final`,
